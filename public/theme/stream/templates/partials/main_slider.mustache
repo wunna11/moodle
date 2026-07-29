@@ -1,0 +1,79 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template theme_stream/partials/main_slider
+
+    Bootstrap 5 homepage slider template.
+
+    Example context (json):
+    {
+        "slides": [
+            {
+                "index": 0,
+                "active": true,
+                "single": false,
+                "sliderimage": "beautiful.jpg",
+                "herotitle": "Slider title",
+                "slidermotto": "This is my motto",
+                "sliderlink": "https://example.com",
+                "sliderbutton": "My text"
+            }
+        ]
+    }
+}}
+
+<div id="herocarousel" class="main-carousel carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        {{#slides}}
+            {{^single}}
+                <button type="button" data-bs-target="#herocarousel" data-bs-slide-to="{{index}}" {{#active}}class="active" aria-current="true"{{/active}} aria-label="{{#str}}jumptoslide, theme_stream{{/str}}"></button>
+            {{/single}}
+        {{/slides}}
+    </div>
+    <div class="carousel-inner">
+        {{#slides}}
+            <div class="carousel-item {{#active}}active{{/active}}">
+                <img class="d-block w-100" src="{{{sliderimage}}}" alt="Slide {{index}} image">
+                <div class="overlay slide{{index}}">
+                    <div class="container">
+                        <div class="carousel-caption">
+                            <h1 class="display-4">{{herotitle}}</h1>
+                            <p class="h5">{{slidermotto}}</p>
+                            {{#sliderlink}}
+                                <a href="{{{sliderlink}}}" class="btn btn-primary btn-lg mt-3" role="button">{{sliderbutton}}</a>
+                            {{/sliderlink}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {{/slides}}
+    </div>
+    {{#slides}}
+        {{#active}}
+            {{^single}}
+                <button class="carousel-control-prev" type="button" data-bs-target="#herocarousel" data-bs-slide="prev" title="{{#str}}prev, theme_stream{{/str}}">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">{{#str}}prev, theme_stream{{/str}}</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#herocarousel" data-bs-slide="next" title="{{#str}}next, theme_stream{{/str}}">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">{{#str}}next, theme_stream{{/str}}</span>
+                </button>
+            {{/single}}
+        {{/active}}
+    {{/slides}}
+</div>
