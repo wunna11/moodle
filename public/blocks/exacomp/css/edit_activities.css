@@ -1,0 +1,37 @@
+
+.verticalText {
+    display: inline-block;
+    overflow: hidden;
+    width: 1.5em;
+    /*float: right;*/
+    /*vertical-align: bottom;*/
+    /*margin-top: 135px;*/
+    /*position: absolute;*/
+    /*bottom: 0px;*/
+}
+
+.verticalTextInner {
+    display: inline-block;
+    white-space: nowrap;
+    line-height: 1.5;
+    transform: translate(0, 100%) rotate(-90deg);
+    transform-origin: 0 0;
+}
+
+.verticalTextInner:after {
+    content: "";
+    display: block;
+    margin: -1.5em 0 100%;
+}
+
+.verticalCell {
+    width: 30px;
+}
+
+#block_exacomp .cell.verticalCell {
+    vertical-align: bottom !important;
+}
+
+#block_exacomp .spaltenbrowser .colgroup-link.current-colgroup {
+    font-weight: bold;
+}

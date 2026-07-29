@@ -1,0 +1,13 @@
+
+.exacomp-courseselect-filter {
+    border: none;
+}
+
+.exacomp-courseselect-filter .cell.no-border {
+    border: none !important;
+}
+
+
+#block_exacomp .cell {
+    text-align: left;
+}
