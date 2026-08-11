@@ -29,7 +29,7 @@ use context_system;
 use core_user;
 use local_kopere_dashboard\service\placeholders;
 use local_kopere_dashboard\util\userdate;
-use Mustache_Engine;
+use Mustache\Engine;
 use pdf;
 use stdClass;
 use stored_file;
@@ -210,7 +210,7 @@ class pdf_service {
             $USER = $originaluser;
         }
 
-        $engine = new Mustache_Engine([
+        $engine = new Engine([
             "escape" => static function($value) {
                 return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
             },

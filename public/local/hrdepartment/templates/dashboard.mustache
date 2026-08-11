@@ -1,0 +1,218 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_hrdepartment/dashboard
+
+    Organisation-wide HR summary: employee counts, payroll totals for the
+    current period, leave stats, today's attendance, and a quick-glance
+    list of pending leave requests.
+
+    Example context (json):
+    {
+        "lecturercount": 24,
+        "staffcount": 41,
+        "totalemployees": 65,
+        "inactiveemployees": 3,
+        "payrollperiod": "2026-08",
+        "currency": "USD",
+        "payrollbase": "125,000.00",
+        "payrollallowances": "8,200.00",
+        "payrolldeductions": "3,100.00",
+        "payrollnet": "130,100.00",
+        "payrollpending": 5,
+        "payrollprocessed": 2,
+        "payrollpaid": 58,
+        "leavepending": 4,
+        "leaveapprovedthismonth": 12,
+        "onleavetoday": 3,
+        "attendancepresent": 55,
+        "attendanceabsent": 2,
+        "attendanceleave": 3,
+        "attendancehalfday": 1,
+        "attendancetotalmarked": 61,
+        "hasrecentleave": true,
+        "recentleave": [
+            {
+                "fullname": "Jane Doe",
+                "leavetypename": "Annual Leave",
+                "startdate": "12 Aug 2026",
+                "enddate": "14 Aug 2026",
+                "totaldays": 3,
+                "url": "#"
+            }
+        ],
+        "lecturersurl": "#",
+        "staffurl": "#",
+        "attendanceurl": "#",
+        "leaveurl": "#",
+        "payrollurl": "#"
+    }
+}}
+<div class="local-hrdepartment-dashboard">
+
+    <div class="row">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{{lecturersurl}}" class="card h-100 text-decoration-none">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">{{#str}}lecturers, local_hrdepartment{{/str}}</div>
+                    <div class="display-6">{{lecturercount}}</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{{staffurl}}" class="card h-100 text-decoration-none">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">{{#str}}staff, local_hrdepartment{{/str}}</div>
+                    <div class="display-6">{{staffcount}}</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">{{#str}}totalemployees, local_hrdepartment{{/str}}</div>
+                    <div class="display-6">{{totalemployees}}</div>
+                    <div class="text-muted small">{{#str}}inactiveemployeescount, local_hrdepartment{{/str}}: {{inactiveemployees}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <a href="{{leaveurl}}" class="card h-100 text-decoration-none">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase">{{#str}}leavepending, local_hrdepartment{{/str}}</div>
+                    <div class="display-6">{{leavepending}}</div>
+                    <div class="text-muted small">{{#str}}onleavetoday, local_hrdepartment{{/str}}: {{onleavetoday}}</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>{{#str}}payrollsummary, local_hrdepartment{{/str}} &mdash; {{payrollperiod}}</span>
+                    <a href="{{payrollurl}}" class="btn btn-sm btn-outline-secondary">{{#str}}viewpayroll, local_hrdepartment{{/str}}</a>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-3">
+                        <tbody>
+                            <tr>
+                                <th scope="row">{{#str}}payrollbase, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{currency}} {{payrollbase}}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">{{#str}}payrollallowances, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{currency}} {{payrollallowances}}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">{{#str}}payrolldeductions, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{currency}} {{payrolldeductions}}</td>
+                            </tr>
+                            <tr class="font-weight-bold">
+                                <th scope="row">{{#str}}payrollnet, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{currency}} {{payrollnet}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <span class="badge badge-secondary mr-1">{{#str}}status_pending, local_hrdepartment{{/str}}: {{payrollpending}}</span>
+                    <span class="badge badge-info mr-1">{{#str}}status_processed, local_hrdepartment{{/str}}: {{payrollprocessed}}</span>
+                    <span class="badge badge-success">{{#str}}status_paid, local_hrdepartment{{/str}}: {{payrollpaid}}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>{{#str}}attendancetoday, local_hrdepartment{{/str}}</span>
+                    <a href="{{attendanceurl}}" class="btn btn-sm btn-outline-secondary">{{#str}}viewattendance, local_hrdepartment{{/str}}</a>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-3">
+                        <tbody>
+                            <tr>
+                                <th scope="row">{{#str}}attendance_present, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{attendancepresent}}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">{{#str}}attendance_absent, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{attendanceabsent}}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">{{#str}}attendance_leave, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{attendanceleave}}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">{{#str}}attendance_halfday, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{attendancehalfday}}</td>
+                            </tr>
+                            <tr class="font-weight-bold">
+                                <th scope="row">{{#str}}totalmarked, local_hrdepartment{{/str}}</th>
+                                <td class="text-right">{{attendancetotalmarked}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="text-muted small">{{#str}}leaveapprovedthismonth, local_hrdepartment{{/str}}: {{leaveapprovedthismonth}}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>{{#str}}pendingleaverequests, local_hrdepartment{{/str}}</span>
+                    <a href="{{leaveurl}}" class="btn btn-sm btn-outline-secondary">{{#str}}viewleave, local_hrdepartment{{/str}}</a>
+                </div>
+                {{#hasrecentleave}}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{#str}}employee, local_hrdepartment{{/str}}</th>
+                                <th>{{#str}}leavetype, local_hrdepartment{{/str}}</th>
+                                <th>{{#str}}startdate, local_hrdepartment{{/str}}</th>
+                                <th>{{#str}}enddate, local_hrdepartment{{/str}}</th>
+                                <th class="text-right">{{#str}}totaldays, local_hrdepartment{{/str}}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#recentleave}}
+                            <tr>
+                                <td><a href="{{url}}">{{fullname}}</a></td>
+                                <td>{{leavetypename}}</td>
+                                <td>{{startdate}}</td>
+                                <td>{{enddate}}</td>
+                                <td class="text-right">{{totaldays}}</td>
+                            </tr>
+                            {{/recentleave}}
+                        </tbody>
+                    </table>
+                </div>
+                {{/hasrecentleave}}
+                {{^hasrecentleave}}
+                <div class="card-body text-muted">
+                    {{#str}}nopendingleave, local_hrdepartment{{/str}}
+                </div>
+                {{/hasrecentleave}}
+            </div>
+        </div>
+    </div>
+
+</div>

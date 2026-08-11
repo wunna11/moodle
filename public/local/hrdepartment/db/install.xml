@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/hrdepartment/db" VERSION="20260811" COMMENT="XMLDB file for Moodle local/hrdepartment"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+    <TABLES>
+        <TABLE NAME="hrdep_department" COMMENT="Organisational departments/units">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="code" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="parentid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_code" UNIQUE="true" FIELDS="code"/>
+                <INDEX NAME="idx_parentid" UNIQUE="false" FIELDS="parentid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_employee" COMMENT="Core employee record for both lecturers and staff, linked to a Moodle user account">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="employeecode" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="lecturer|staff"/>
+                <FIELD NAME="departmentid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to hrdep_department.id"/>
+                <FIELD NAME="designation" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="reportsto" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to hrdep_employee.id, manager for leave approval routing"/>
+                <FIELD NAME="employmentstatus" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|inactive|terminated"/>
+                <FIELD NAME="phone" TYPE="char" LENGTH="30" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="address" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="emergencycontact" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="joindate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_userid" UNIQUE="true" FIELDS="userid"/>
+                <INDEX NAME="idx_employeecode" UNIQUE="true" FIELDS="employeecode"/>
+                <INDEX NAME="idx_departmentid" UNIQUE="false" FIELDS="departmentid"/>
+                <INDEX NAME="idx_reportsto" UNIQUE="false" FIELDS="reportsto"/>
+                <INDEX NAME="idx_type" UNIQUE="false" FIELDS="type"/>
+                <INDEX NAME="idx_employmentstatus" UNIQUE="false" FIELDS="employmentstatus"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_lecturerdetails" COMMENT="Academic-only extension fields for employees of type lecturer">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="employeeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_employee.id, one-to-one"/>
+                <FIELD NAME="qualification" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="specialization" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_employeeid" UNIQUE="true" FIELDS="employeeid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_courseassign" COMMENT="Moodle course assignments for lecturers">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="employeeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_employee.id"/>
+                <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_course.id"/>
+                <FIELD NAME="roleassigned" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="startdate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="enddate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|ended"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_employeeid" UNIQUE="false" FIELDS="employeeid"/>
+                <INDEX NAME="idx_courseid" UNIQUE="false" FIELDS="courseid"/>
+                <INDEX NAME="idx_empcourse" UNIQUE="false" FIELDS="employeeid, courseid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_attendance" COMMENT="Daily attendance log for staff and lecturers">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="employeeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_employee.id"/>
+                <FIELD NAME="attendancedate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Midnight timestamp of the attendance day"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="present|absent|leave|halfday"/>
+                <FIELD NAME="remarks" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="recordedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_emp_date" UNIQUE="true" FIELDS="employeeid, attendancedate"/>
+                <INDEX NAME="idx_attendancedate" UNIQUE="false" FIELDS="attendancedate"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_leavetype" COMMENT="Configurable leave types (e.g. Annual, Sick, Unpaid)">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="defaultdays" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="requiresapproval" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_name" UNIQUE="true" FIELDS="name"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_leavebalance" COMMENT="Per-employee, per-year leave balance tracking by leave type">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="employeeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_employee.id"/>
+                <FIELD NAME="leavetypeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_leavetype.id"/>
+                <FIELD NAME="year" TYPE="int" LENGTH="4" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="allocated" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="used" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="remaining" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_emp_type_year" UNIQUE="true" FIELDS="employeeid, leavetypeid, year"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_leaveapplication" COMMENT="Leave applications submitted by employees and their approval workflow state">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="employeeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_employee.id"/>
+                <FIELD NAME="leavetypeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_leavetype.id"/>
+                <FIELD NAME="startdate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="enddate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="totaldays" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|approved|rejected|cancelled"/>
+                <FIELD NAME="approvedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="approvalnote" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_employeeid" UNIQUE="false" FIELDS="employeeid"/>
+                <INDEX NAME="idx_leavetypeid" UNIQUE="false" FIELDS="leavetypeid"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_payroll" COMMENT="Payroll record per employee per period (YYYY-MM)">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="employeeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_employee.id"/>
+                <FIELD NAME="period" TYPE="char" LENGTH="7" NOTNULL="true" SEQUENCE="false" COMMENT="YYYY-MM"/>
+                <FIELD NAME="basesalary" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="allowances" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="deductions" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="netsalary" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="paymentstatus" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|processed|paid"/>
+                <FIELD NAME="paymentdate" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="processedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_emp_period" UNIQUE="true" FIELDS="employeeid, period"/>
+                <INDEX NAME="idx_period" UNIQUE="false" FIELDS="period"/>
+                <INDEX NAME="idx_paymentstatus" UNIQUE="false" FIELDS="paymentstatus"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_payrollitem" COMMENT="Itemised allowance/deduction breakdown lines for a payroll record">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="payrollid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_payroll.id"/>
+                <FIELD NAME="itemtype" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="allowance|deduction"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="amount" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_payrollid" UNIQUE="false" FIELDS="payrollid"/>
+            </INDEXES>
+        </TABLE>
+    </TABLES>
+</XMLDB>

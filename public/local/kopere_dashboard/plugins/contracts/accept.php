@@ -26,6 +26,7 @@ use koperedashboard_contracts\audit\logger;
 use koperedashboard_contracts\contracts\manager;
 use local_kopere_dashboard\output\layout;
 use local_kopere_dashboard\service\placeholders;
+use Mustache\Engine;
 
 require_once(__DIR__ . "/../../../../config.php");
 
@@ -68,7 +69,7 @@ if (optional_param("accept", 0, PARAM_INT) == 1 && confirm_sesskey()) {
 }
 
 $placeholderdata = placeholders::build_data($courseid);
-$engine = new Mustache_Engine([
+$engine = new Engine([
     "escape" => static function($value) {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
     },

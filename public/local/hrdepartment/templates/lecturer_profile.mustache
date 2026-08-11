@@ -1,0 +1,150 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_hrdepartment/lecturer_profile
+
+    A single lecturer's profile: contact/employment details, academic
+    fields, and their Moodle course assignment history.
+
+    Example context (json):
+    {
+        "fullname": "Jane Doe",
+        "email": "jane@example.com",
+        "employeecode": "EMP-0042",
+        "departmentname": "Computer Science",
+        "designation": "Senior Lecturer",
+        "reportstoname": "Head of Department",
+        "employmentstatus": "Active",
+        "isactive": true,
+        "phone": "+1 555 0100",
+        "emergencycontact": "+1 555 0199",
+        "address": "123 Campus Way",
+        "joindate": "1 Jan 2024",
+        "qualification": "PhD Computer Science",
+        "specialization": "Machine Learning",
+        "hasassignments": true,
+        "assignments": [
+            {
+                "coursename": "CS101: Intro to Programming",
+                "courseurl": "#",
+                "roleassigned": "editingteacher",
+                "startdate": "1 Jan 2026",
+                "enddate": "-",
+                "isactive": true,
+                "unassignurl": "#"
+            }
+        ],
+        "editurl": "#",
+        "assignurl": "#",
+        "deactivateurl": "#",
+        "reactivateurl": "#"
+    }
+}}
+<div class="local-hrdepartment-lecturer-profile">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h3 class="mb-0">{{fullname}}</h3>
+            <div class="text-muted">{{email}} &middot; {{employeecode}}</div>
+        </div>
+        <div>
+            <a href="{{editurl}}" class="btn btn-secondary">{{#str}}edit{{/str}}</a>
+            <a href="{{assignurl}}" class="btn btn-primary">{{#str}}assigncourse, local_hrdepartment{{/str}}</a>
+            {{#isactive}}
+            <a href="{{deactivateurl}}" class="btn btn-outline-danger">{{#str}}deactivate, local_hrdepartment{{/str}}</a>
+            {{/isactive}}
+            {{^isactive}}
+            <a href="{{reactivateurl}}" class="btn btn-outline-success">{{#str}}reactivate, local_hrdepartment{{/str}}</a>
+            {{/isactive}}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header">{{#str}}profiledetails, local_hrdepartment{{/str}}</div>
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><th scope="row">{{#str}}department, local_hrdepartment{{/str}}</th><td>{{departmentname}}</td></tr>
+                        <tr><th scope="row">{{#str}}designation, local_hrdepartment{{/str}}</th><td>{{designation}}</td></tr>
+                        <tr><th scope="row">{{#str}}reportsto, local_hrdepartment{{/str}}</th><td>{{reportstoname}}</td></tr>
+                        <tr><th scope="row">{{#str}}employmentstatus, local_hrdepartment{{/str}}</th><td>{{employmentstatus}}</td></tr>
+                        <tr><th scope="row">{{#str}}joindate, local_hrdepartment{{/str}}</th><td>{{joindate}}</td></tr>
+                        <tr><th scope="row">{{#str}}phone, local_hrdepartment{{/str}}</th><td>{{phone}}</td></tr>
+                        <tr><th scope="row">{{#str}}emergencycontact, local_hrdepartment{{/str}}</th><td>{{emergencycontact}}</td></tr>
+                        <tr><th scope="row">{{#str}}address, local_hrdepartment{{/str}}</th><td>{{address}}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100">
+                <div class="card-header">{{#str}}academicdetails, local_hrdepartment{{/str}}</div>
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><th scope="row">{{#str}}qualification, local_hrdepartment{{/str}}</th><td>{{qualification}}</td></tr>
+                        <tr><th scope="row">{{#str}}specialization, local_hrdepartment{{/str}}</th><td>{{specialization}}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{#str}}courseassignments, local_hrdepartment{{/str}}</div>
+        {{#hasassignments}}
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>{{#str}}course, local_hrdepartment{{/str}}</th>
+                        <th>{{#str}}role, local_hrdepartment{{/str}}</th>
+                        <th>{{#str}}startdate, local_hrdepartment{{/str}}</th>
+                        <th>{{#str}}enddate, local_hrdepartment{{/str}}</th>
+                        <th>{{#str}}status, local_hrdepartment{{/str}}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#assignments}}
+                    <tr>
+                        <td><a href="{{courseurl}}">{{coursename}}</a></td>
+                        <td>{{roleassigned}}</td>
+                        <td>{{startdate}}</td>
+                        <td>{{enddate}}</td>
+                        <td>
+                            {{#showactive}}<span class="badge badge-success">{{#str}}status_active, local_hrdepartment{{/str}}</span>{{/showactive}}
+                            {{#showsuspended}}<span class="badge badge-warning" title="{{#str}}status_suspendedinmoodle_desc, local_hrdepartment{{/str}}">{{#str}}status_suspendedinmoodle, local_hrdepartment{{/str}}</span>{{/showsuspended}}
+                            {{^isactive}}<span class="badge badge-secondary">{{#str}}courseassignended, local_hrdepartment{{/str}}</span>{{/isactive}}
+                        </td>
+                        <td>
+                            {{#isactive}}<a href="{{unassignurl}}">{{#str}}endassignment, local_hrdepartment{{/str}}</a>{{/isactive}}
+                            {{#canreactivate}}<a href="{{reactivateurl}}">{{#str}}reactivateassignment, local_hrdepartment{{/str}}</a>{{/canreactivate}}
+                        </td>
+                    </tr>
+                    {{/assignments}}
+                </tbody>
+            </table>
+        </div>
+        {{/hasassignments}}
+        {{^hasassignments}}
+        <div class="card-body text-muted">{{#str}}nocourseassignments, local_hrdepartment{{/str}}</div>
+        {{/hasassignments}}
+    </div>
+
+</div>
