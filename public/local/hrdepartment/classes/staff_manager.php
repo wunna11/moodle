@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Business logic for lecturer profile management.
+ * Business logic for general staff profile management.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
@@ -27,34 +27,32 @@ namespace local_hrdepartment;
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Class lecturer_manager
+ * Class staff_manager
  *
- * Encapsulates create/update/deactivate logic for hrdep_employee records
- * of type "lecturer" plus their hrdep_lecturerdetails extension row.
- * Staff management (task 4) reuses employee_manager-style logic but
- * without the academic fields; this class stays lecturer-specific.
+ * Mirrors lecturer_manager, but for hrdep_employee records of type
+ * "staff": the same core employment fields, with no academic fields
+ * (qualification/specialization) and no course assignment capability -
+ * staff aren't assigned to teach courses per the plugin's scope.
  */
-class lecturer_manager {
+class staff_manager {
 
     /**
-     * Returns a lecturer's combined employee + lecturer-details + user
-     * record, or false if not found or not a lecturer.
+     * Returns a staff member's combined employee + user record, or
+     * false if not found or not of type staff.
      *
      * @param int $employeeid
      * @return \stdClass|false
      */
-    public static function get_lecturer(int $employeeid) {
+    public static function get_staff(int $employeeid) {
         global $DB;
 
-        $sql = "SELECT e.*, ld.qualification, ld.specialization,
-                       u.firstname, u.lastname, u.email,
+        $sql = "SELECT e.*, u.firstname, u.lastname, u.email,
                        d.name AS departmentname
                   FROM {hrdep_employee} e
                   JOIN {user} u ON u.id = e.userid
-             LEFT JOIN {hrdep_lecturerdetails} ld ON ld.employeeid = e.id
              LEFT JOIN {hrdep_department} d ON d.id = e.departmentid
                  WHERE e.id = :id AND e.type = :type";
-        $record = $DB->get_record_sql($sql, ['id' => $employeeid, 'type' => constants::EMPLOYEE_TYPE_LECTURER]);
+        $record = $DB->get_record_sql($sql, ['id' => $employeeid, 'type' => constants::EMPLOYEE_TYPE_STAFF]);
 
         if (!$record) {
             return false;
@@ -66,7 +64,7 @@ class lecturer_manager {
     }
 
     /**
-     * Creates a new lecturer (employee + lecturer-details rows).
+     * Creates a new staff employee record.
      *
      * @param \stdClass $data form data
      * @param int $usermodified
@@ -80,7 +78,7 @@ class lecturer_manager {
         $employee = new \stdClass();
         $employee->userid = (int) $data->userid;
         $employee->employeecode = trim($data->employeecode);
-        $employee->type = constants::EMPLOYEE_TYPE_LECTURER;
+        $employee->type = constants::EMPLOYEE_TYPE_STAFF;
         $employee->departmentid = self::resolve_department($data->departmentid ?? null);
         $employee->designation = $data->designation ?? '';
         $employee->reportsto = !empty($data->reportsto) ? (int) $data->reportsto : null;
@@ -93,22 +91,12 @@ class lecturer_manager {
         $employee->timemodified = $now;
         $employee->usermodified = $usermodified;
 
-        $employeeid = $DB->insert_record('hrdep_employee', $employee);
-
-        $details = new \stdClass();
-        $details->employeeid = $employeeid;
-        $details->qualification = $data->qualification ?? '';
-        $details->specialization = $data->specialization ?? '';
-        $details->timecreated = $now;
-        $details->timemodified = $now;
-        $DB->insert_record('hrdep_lecturerdetails', $details);
-
-        return $employeeid;
+        return $DB->insert_record('hrdep_employee', $employee);
     }
 
     /**
-     * Updates an existing lecturer's employee + lecturer-details rows.
-     * The linked Moodle userid is intentionally never changed here.
+     * Updates an existing staff member's employee record. The linked
+     * Moodle userid is intentionally never changed here.
      *
      * @param int $employeeid
      * @param \stdClass $data form data
@@ -117,8 +105,6 @@ class lecturer_manager {
      */
     public static function update(int $employeeid, \stdClass $data, int $usermodified): void {
         global $DB;
-
-        $now = time();
 
         $employee = new \stdClass();
         $employee->id = $employeeid;
@@ -131,34 +117,20 @@ class lecturer_manager {
         $employee->address = $data->address ?? '';
         $employee->emergencycontact = $data->emergencycontact ?? '';
         $employee->joindate = $data->joindate ?? null;
-        $employee->timemodified = $now;
+        $employee->timemodified = time();
         $employee->usermodified = $usermodified;
+
         $DB->update_record('hrdep_employee', $employee);
-
-        $details = $DB->get_record('hrdep_lecturerdetails', ['employeeid' => $employeeid]);
-        if (!$details) {
-            $details = new \stdClass();
-            $details->employeeid = $employeeid;
-            $details->timecreated = $now;
-        }
-        $details->qualification = $data->qualification ?? '';
-        $details->specialization = $data->specialization ?? '';
-        $details->timemodified = $now;
-
-        if (!empty($details->id)) {
-            $DB->update_record('hrdep_lecturerdetails', $details);
-        } else {
-            $DB->insert_record('hrdep_lecturerdetails', $details);
-        }
     }
 
     /**
-     * Sets an employee's employment status (used for deactivate/reactivate)
-     * and syncs their course assignments to match: deactivating suspends
-     * Moodle enrolment on active assignments (role kept, for a clean
-     * restore); reactivating validates and restores them. Also suspends
-     * or unsuspends the linked Moodle account itself, so a deactivated
-     * lecturer can no longer log in at all.
+     * Sets an employee's employment status (used for deactivate/reactivate),
+     * suspends/unsuspends the linked Moodle account to match, and syncs
+     * their course assignments. Staff members ordinarily have no course
+     * assignments, so that part returns an empty result set for them -
+     * it's still called for consistency with lecturer_manager and in
+     * case a staff record ever does pick one up (e.g. a promotion to a
+     * teaching role handled elsewhere).
      *
      * @param int $employeeid
      * @param string $status one of constants::EMPLOYMENT_STATUS_*
@@ -222,10 +194,10 @@ class lecturer_manager {
     }
 
     /**
-     * Returns Moodle users eligible to be linked as a new lecturer:
+     * Returns Moodle users eligible to be linked as a new staff member:
      * confirmed, not deleted, not suspended, and not already linked to
-     * an hrdep_employee record (unless it's the current employee being
-     * edited, in which case they stay in the list).
+     * an hrdep_employee record of any type (unless it's the current
+     * employee being edited).
      *
      * @param int|null $keepuserid a userid to always include (the current linked user when editing)
      * @return array userid => "Fullname (email)"
@@ -258,8 +230,8 @@ class lecturer_manager {
     }
 
     /**
-     * Returns active employees who could act as a manager (reportsto),
-     * excluding the given employee itself.
+     * Returns active employees (of any type) who could act as a manager
+     * (reportsto), excluding the given employee itself.
      *
      * @param int|null $excludeemployeeid
      * @return array employeeid => fullname (employeecode)

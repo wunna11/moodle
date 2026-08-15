@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Sortable, searchable, paginated lecturer listing.
+ * Sortable, searchable, paginated staff listing.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
@@ -33,9 +33,9 @@ use local_hrdepartment\user_account_sync;
 use moodle_url;
 
 /**
- * Class lecturers_table
+ * Class staff_table
  */
-class lecturers_table extends \table_sql {
+class staff_table extends \table_sql {
 
     /**
      * Constructor.
@@ -47,38 +47,31 @@ class lecturers_table extends \table_sql {
         parent::__construct($uniqueid);
 
         $this->define_columns([
-            'fullname', 'employeecode', 'departmentname', 'designation',
-            'qualification', 'specialization', 'employmentstatus', 'actions',
+            'fullname', 'employeecode', 'departmentname', 'designation', 'employmentstatus', 'actions',
         ]);
         $this->define_headers([
             get_string('fullname'),
             get_string('employeecode', 'local_hrdepartment'),
             get_string('department', 'local_hrdepartment'),
             get_string('designation', 'local_hrdepartment'),
-            get_string('qualification', 'local_hrdepartment'),
-            get_string('specialization', 'local_hrdepartment'),
             get_string('employmentstatus', 'local_hrdepartment'),
             get_string('actions'),
         ]);
 
         $this->sortable(true, 'lastname', SORT_ASC);
-        $this->no_sorting('qualification');
-        $this->no_sorting('specialization');
         $this->no_sorting('actions');
         $this->collapsible(false);
-        $this->set_attribute('class', 'generaltable local-hrdepartment-lecturers-table');
+        $this->set_attribute('class', 'generaltable local-hrdepartment-staff-table');
 
         $fields = "e.id, e.userid, e.employeecode, e.designation, e.employmentstatus,
                    u.firstname, u.lastname,
-                   d.name AS departmentname,
-                   ld.qualification, ld.specialization";
+                   d.name AS departmentname";
         $from = "{hrdep_employee} e
                  JOIN {user} u ON u.id = e.userid
-            LEFT JOIN {hrdep_department} d ON d.id = e.departmentid
-            LEFT JOIN {hrdep_lecturerdetails} ld ON ld.employeeid = e.id";
+            LEFT JOIN {hrdep_department} d ON d.id = e.departmentid";
 
         $where = 'e.type = :type';
-        $params = ['type' => constants::EMPLOYEE_TYPE_LECTURER];
+        $params = ['type' => constants::EMPLOYEE_TYPE_STAFF];
 
         if ($search !== '') {
             $where .= ' AND (' . $this->get_db()->sql_like('u.firstname', ':search1', false) . '
@@ -105,13 +98,13 @@ class lecturers_table extends \table_sql {
     }
 
     /**
-     * Renders the fullname column as a link to the lecturer's profile.
+     * Renders the fullname column as a link to the staff member's profile.
      *
      * @param \stdClass $row
      * @return string
      */
     public function col_fullname($row): string {
-        $url = new moodle_url('/local/hrdepartment/lecturer/view.php', ['id' => $row->id]);
+        $url = new moodle_url('/local/hrdepartment/staff/view.php', ['id' => $row->id]);
         return \html_writer::link($url, fullname($row));
     }
 
@@ -147,27 +140,21 @@ class lecturers_table extends \table_sql {
     }
 
     /**
-     * Renders the row action links (view, edit, assign course, deactivate/reactivate).
+     * Renders the row action links (view, edit, deactivate/reactivate).
      *
      * @param \stdClass $row
      * @return string
      */
     public function col_actions($row): string {
-        global $OUTPUT;
-
         $actions = [];
 
         $actions[] = \html_writer::link(
-            new moodle_url('/local/hrdepartment/lecturer/view.php', ['id' => $row->id]),
+            new moodle_url('/local/hrdepartment/staff/view.php', ['id' => $row->id]),
             get_string('view')
         );
         $actions[] = \html_writer::link(
-            new moodle_url('/local/hrdepartment/lecturer/edit.php', ['id' => $row->id]),
+            new moodle_url('/local/hrdepartment/staff/edit.php', ['id' => $row->id]),
             get_string('edit')
-        );
-        $actions[] = \html_writer::link(
-            new moodle_url('/local/hrdepartment/lecturer/courseassign.php', ['id' => $row->id]),
-            get_string('assigncourse', 'local_hrdepartment')
         );
 
         // Match the Active/Suspended label in col_employmentstatus(): base
@@ -175,12 +162,12 @@ class lecturers_table extends \table_sql {
         // the stored HR status.
         if (!user_account_sync::is_account_suspended($row->userid)) {
             $actions[] = \html_writer::link(
-                new moodle_url('/local/hrdepartment/lecturer/delete.php', ['id' => $row->id]),
+                new moodle_url('/local/hrdepartment/staff/delete.php', ['id' => $row->id]),
                 get_string('deactivate', 'local_hrdepartment')
             );
         } else {
             $actions[] = \html_writer::link(
-                new moodle_url('/local/hrdepartment/lecturer/delete.php', ['id' => $row->id, 'reactivate' => 1]),
+                new moodle_url('/local/hrdepartment/staff/delete.php', ['id' => $row->id, 'reactivate' => 1]),
                 get_string('reactivate', 'local_hrdepartment')
             );
         }

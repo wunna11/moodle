@@ -93,6 +93,30 @@ $capabilities = [
         ],
     ],
 
+    // Student leave: a read-only report on top of the site's existing
+    // mod_attendance activity data, the same architecture as Attendance
+    // above - a student is "on leave" when a lecturer marks them with
+    // the site's configured leave status while taking attendance, not
+    // through any action in this plugin. Distinct from the
+    // employee-scoped manageleavetypes/approveleave/applyownleave
+    // capabilities above, which predate the project's "Entity Scope
+    // Isolation" rule and are left unused/reserved - see
+    // hrdepartment-entity-scope memory.
+    'local/hrdepartment:manageleave' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'local/hrdepartment:viewownleave' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'user' => CAP_ALLOW,
+        ],
+    ],
+
     // Payroll.
     'local/hrdepartment:managepayroll' => [
         'captype' => 'write',

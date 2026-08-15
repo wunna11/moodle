@@ -65,4 +65,15 @@ class renderer extends plugin_renderer_base {
         $data = $page->export_for_template($this);
         return $this->render_from_template('local_hrdepartment/lecturer_profile', $data);
     }
+
+    /**
+     * Renders a staff member's profile page.
+     *
+     * @param staff_profile $page
+     * @return string
+     */
+    public function render_staff_profile(staff_profile $page): string {
+        $data = $page->export_for_template($this);
+        return $this->render_from_template('local_hrdepartment/staff_profile', $data);
+    }
 }

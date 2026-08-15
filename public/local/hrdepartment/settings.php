@@ -61,4 +61,16 @@ if ($hassiteconfig) {
         18,
         PARAM_INT
     ));
+
+    // Student Leave (leave/*.php) is a read-only report on top of
+    // mod_attendance's own attendance_statuses, which are configurable
+    // per site/activity (see hrdepartment-entity-scope memory) - this
+    // tells the report which status description means "on leave".
+    $settings->add(new admin_setting_configtext(
+        'local_hrdepartment/leavestatuslabel',
+        get_string('leavestatuslabel', 'local_hrdepartment'),
+        get_string('leavestatuslabel_desc', 'local_hrdepartment'),
+        'Leave',
+        PARAM_TEXT
+    ));
 }

@@ -31,11 +31,13 @@ $string['pluginname'] = 'HR Department';
 $string['hrdepartment:managedashboard'] = 'View HR dashboard summary metrics';
 $string['hrdepartment:managelecturers'] = 'Manage lecturer profiles and course assignments';
 $string['hrdepartment:managestaff'] = 'Manage staff profiles';
-$string['hrdepartment:manageattendance'] = 'Log and edit attendance for staff and lecturers';
+$string['hrdepartment:manageattendance'] = 'View student attendance reports for any course (sourced from the Attendance activity)';
 $string['hrdepartment:viewownattendance'] = 'View own attendance history';
 $string['hrdepartment:manageleavetypes'] = 'Configure leave types and allocations';
 $string['hrdepartment:approveleave'] = 'Approve or reject leave applications';
 $string['hrdepartment:applyownleave'] = 'Apply for own leave';
+$string['hrdepartment:manageleave'] = 'View student leave reports for any course (sourced from the Attendance activity)';
+$string['hrdepartment:viewownleave'] = 'View own leave history';
 $string['hrdepartment:managepayroll'] = 'Process and edit payroll records';
 $string['hrdepartment:viewownpayroll'] = 'View own payslips and payroll history';
 $string['hrdepartment:viewallrecords'] = 'View all HR records regardless of reporting line';
@@ -63,6 +65,7 @@ $string['designation'] = 'Designation';
 $string['reportsto'] = 'Reports to';
 $string['employmentstatus'] = 'Employment status';
 $string['status_active'] = 'Active';
+$string['status_suspended'] = 'Suspended';
 $string['status_inactive'] = 'Inactive';
 $string['status_terminated'] = 'Terminated';
 $string['status_pending'] = 'Pending';
@@ -166,3 +169,73 @@ $string['errorreactivateinactiveemployee'] = 'This lecturer is not active - reac
 $string['errorduplicateassignment'] = 'This lecturer already has an active assignment for this course.';
 $string['status_suspendedinmoodle'] = 'Suspended in Moodle';
 $string['status_suspendedinmoodle_desc'] = 'This assignment is marked active in HR, but the Moodle enrolment has been suspended (or removed) directly on the course\'s Participants page.';
+
+// Staff management strings.
+$string['addstaffmember'] = 'Add staff member';
+$string['editstaffmember'] = 'Edit staff member';
+$string['staffcreated'] = 'Staff profile created.';
+$string['staffdeactivated'] = 'Staff member deactivated.';
+$string['staffreactivated'] = 'Staff member reactivated.';
+$string['errorstaffnotfound'] = 'Staff record not found.';
+
+// Attendance tracking strings.
+//
+// This module is a read-only report: student attendance is taken in the
+// site's mod_attendance activity (Attendance) as normal, and this plugin
+// just surfaces that data organised as Course -> Day/session -> record
+// list, scoped by the same manageable-courses logic used elsewhere in
+// the plugin (HR/admin see every course, a lecturer sees their own).
+$string['attendancedate'] = 'Date';
+$string['student'] = 'Student';
+$string['remarks'] = 'Remarks';
+$string['recordedby'] = 'Recorded by';
+$string['recordedat'] = 'Recorded at';
+$string['allcourses'] = 'All courses';
+$string['allstatuses'] = 'All statuses';
+$string['filter'] = 'Filter';
+$string['noattendancerecords'] = 'No attendance records yet.';
+$string['attendancehistoryfor'] = 'Attendance history: {$a}';
+$string['myattendance'] = 'My attendance';
+$string['attendanceactivity'] = 'Activity';
+$string['sessions'] = 'Sessions';
+$string['sessioncount'] = 'Sessions recorded';
+$string['lastsession'] = 'Last session';
+$string['viewsessions'] = 'View sessions';
+$string['viewrecords'] = 'View records';
+$string['backtocourses'] = 'Back to courses';
+$string['backtosessions'] = 'Back to sessions';
+$string['nocoursesattendance'] = 'None of your courses have any attendance sessions recorded yet.';
+$string['nosessionsforcourse'] = 'No attendance sessions have been recorded for this course yet.';
+$string['norecordsforsession'] = 'No students have been marked for this session yet.';
+$string['errorsessionnotfound'] = 'Attendance session not found.';
+$string['errorcoursenotfound'] = 'Course not found.';
+$string['openinattendanceactivity'] = 'Open in Attendance activity';
+
+// Student leave management strings.
+//
+// Corrected to match the Attendance module's architecture (see
+// hrdepartment-entity-scope memory): this is a read-only report on top
+// of the site's existing mod_attendance activity data. A student is "on
+// leave" when a lecturer marks them with the site's configured leave
+// status while taking attendance in mod_attendance - this plugin never
+// writes leave data of its own, and has no separate application/
+// approval workflow or balance/allocation (mod_attendance has no such
+// concept to source one from).
+$string['leaveoverview'] = 'Leave overview';
+$string['leavelookup'] = 'Student leave lookup';
+$string['leaverequestdetail'] = 'Leave record detail';
+$string['leavereports'] = 'Reports & export';
+$string['searchstudentplaceholder'] = 'Search by name or email';
+$string['activeleavetoday'] = "On leave today";
+$string['leavethismonth'] = 'On leave this month';
+$string['totalleaverecords'] = 'Total leave records';
+$string['bycourseleave'] = 'By course';
+$string['recentleaverecords'] = 'Recent leave records';
+$string['norecentleaverecords'] = 'No leave records yet.';
+$string['noleaverecordsfound'] = 'No leave records match your search.';
+$string['leavestatuslabel'] = 'Leave status';
+$string['leavestatuslabel_desc'] = 'The mod_attendance status description that counts as "on leave" for this report (matched case-insensitively). Change this if your site uses a different label than "Leave" (e.g. "Excused").';
+$string['errorrecordnotfound'] = 'Leave record not found.';
+$string['datefrom'] = 'From';
+$string['dateto'] = 'To';
+$string['exportcsv'] = 'Export CSV';

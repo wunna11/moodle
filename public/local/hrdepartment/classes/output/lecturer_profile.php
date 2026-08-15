@@ -28,6 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 
 use local_hrdepartment\constants;
 use local_hrdepartment\course_assignment_manager;
+use local_hrdepartment\user_account_sync;
 use moodle_url;
 use renderable;
 use renderer_base;
@@ -60,7 +61,14 @@ class lecturer_profile implements renderable, templatable {
         $lecturer = $this->lecturer;
         $dateformat = get_string('strftimedatefullshort', 'langconfig');
 
-        $employeeactive = $lecturer->employmentstatus === constants::EMPLOYMENT_STATUS_ACTIVE;
+        // The stored employmentstatus (active/inactive/terminated) can
+        // drift from reality: a Moodle account can be suspended (or
+        // unsuspended) directly via Site administration > Users,
+        // bypassing this plugin entirely. Rather than showing the stored
+        // status text alongside a separate "drift" badge, treat the live
+        // Moodle account state as the single source of truth for the
+        // Active/Suspended label and for which action button shows.
+        $employeeactive = !user_account_sync::is_account_suspended($lecturer->userid);
 
         $assignments = [];
         foreach (course_assignment_manager::get_assignments_for_employee($lecturer->id) as $assignment) {
@@ -122,8 +130,10 @@ class lecturer_profile implements renderable, templatable {
             'departmentname' => $lecturer->departmentname ?: '-',
             'designation' => $lecturer->designation ?: '-',
             'reportstoname' => $this->get_manager_name($lecturer->reportsto),
-            'employmentstatus' => get_string('status_' . $lecturer->employmentstatus, 'local_hrdepartment'),
-            'isactive' => $lecturer->employmentstatus === constants::EMPLOYMENT_STATUS_ACTIVE,
+            'employmentstatus' => $employeeactive
+                ? get_string('status_active', 'local_hrdepartment')
+                : get_string('status_suspended', 'local_hrdepartment'),
+            'isactive' => $employeeactive,
             'phone' => $lecturer->phone ?: '-',
             'emergencycontact' => $lecturer->emergencycontact ?: '-',
             'address' => $lecturer->address ?: '-',

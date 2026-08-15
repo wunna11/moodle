@@ -1,0 +1,76 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_hrdepartment/staff_profile
+
+    A single staff member's profile: contact and employment details.
+    No academic details or course assignments card - staff have neither.
+
+    Example context (json):
+    {
+        "fullname": "John Smith",
+        "email": "john@example.com",
+        "employeecode": "EMP-0099",
+        "departmentname": "Finance",
+        "designation": "Accounts Officer",
+        "reportstoname": "Finance Manager",
+        "employmentstatus": "Active",
+        "isactive": true,
+        "phone": "+1 555 0200",
+        "emergencycontact": "+1 555 0299",
+        "address": "45 Campus Way",
+        "joindate": "3 Mar 2025",
+        "editurl": "#",
+        "deactivateurl": "#",
+        "reactivateurl": "#"
+    }
+}}
+<div class="local-hrdepartment-staff-profile">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h3 class="mb-0">{{fullname}}</h3>
+            <div class="text-muted">{{email}} &middot; {{employeecode}}</div>
+        </div>
+        <div>
+            <a href="{{editurl}}" class="btn btn-secondary">{{#str}}edit{{/str}}</a>
+            {{#isactive}}
+            <a href="{{deactivateurl}}" class="btn btn-outline-danger">{{#str}}deactivate, local_hrdepartment{{/str}}</a>
+            {{/isactive}}
+            {{^isactive}}
+            <a href="{{reactivateurl}}" class="btn btn-outline-success">{{#str}}reactivate, local_hrdepartment{{/str}}</a>
+            {{/isactive}}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">{{#str}}profiledetails, local_hrdepartment{{/str}}</div>
+        <table class="table table-sm mb-0">
+            <tbody>
+                <tr><th scope="row">{{#str}}department, local_hrdepartment{{/str}}</th><td>{{departmentname}}</td></tr>
+                <tr><th scope="row">{{#str}}designation, local_hrdepartment{{/str}}</th><td>{{designation}}</td></tr>
+                <tr><th scope="row">{{#str}}reportsto, local_hrdepartment{{/str}}</th><td>{{reportstoname}}</td></tr>
+                <tr><th scope="row">{{#str}}employmentstatus, local_hrdepartment{{/str}}</th><td>{{employmentstatus}}</td></tr>
+                <tr><th scope="row">{{#str}}joindate, local_hrdepartment{{/str}}</th><td>{{joindate}}</td></tr>
+                <tr><th scope="row">{{#str}}phone, local_hrdepartment{{/str}}</th><td>{{phone}}</td></tr>
+                <tr><th scope="row">{{#str}}emergencycontact, local_hrdepartment{{/str}}</th><td>{{emergencycontact}}</td></tr>
+                <tr><th scope="row">{{#str}}address, local_hrdepartment{{/str}}</th><td>{{address}}</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>

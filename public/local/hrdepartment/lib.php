@@ -42,7 +42,7 @@ function local_hrdepartment_extend_navigation(global_navigation $nav) {
 
     $cancontent = has_capability('local/hrdepartment:managedashboard', $context)
         || has_capability('local/hrdepartment:viewownattendance', $context)
-        || has_capability('local/hrdepartment:applyownleave', $context)
+        || has_capability('local/hrdepartment:viewownleave', $context)
         || has_capability('local/hrdepartment:viewownpayroll', $context);
 
     if (!$cancontent) {
@@ -106,8 +106,8 @@ function local_hrdepartment_get_tabs(string $selected): array {
         );
     }
 
-    if (has_capability('local/hrdepartment:approveleave', $context)
-        || has_capability('local/hrdepartment:applyownleave', $context)) {
+    if (has_capability('local/hrdepartment:manageleave', $context)
+        || has_capability('local/hrdepartment:viewownleave', $context)) {
         $tabs[] = new tabobject(
             'leave',
             (new moodle_url('/local/hrdepartment/leave/index.php'))->out(false),

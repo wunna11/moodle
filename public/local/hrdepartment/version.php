@@ -25,7 +25,10 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_hrdepartment';
-$plugin->version   = 2026081100;
+$plugin->version   = 2026081500;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.1.0';
+$plugin->release   = '0.3.1';
+$plugin->dependencies = [
+    'mod_attendance' => ANY_VERSION,
+];
