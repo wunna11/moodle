@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\form\lecturer_form;
 use local_hrdepartment\lecturer_manager;
 
@@ -32,7 +33,7 @@ require_login();
 $id = optional_param('id', 0, PARAM_INT);
 
 $context = context_system::instance();
-require_capability('local/hrdepartment:managelecturers', $context);
+access_manager::require_manage('local/hrdepartment:managelecturers');
 
 $lecturer = null;
 if ($id) {
@@ -86,7 +87,6 @@ if ($lecturer) {
         'employeecode' => $lecturer->employeecode,
         'departmentid' => $lecturer->departmentid,
         'designation' => $lecturer->designation,
-        'reportsto' => $lecturer->reportsto,
         'employmentstatus' => $lecturer->employmentstatus,
         'phone' => $lecturer->phone,
         'address' => $lecturer->address,
@@ -99,11 +99,26 @@ if ($lecturer) {
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('lecturers');
-echo $OUTPUT->tabtree($tabs, 'lecturers');
+echo local_hrdepartment_render_tab_bar('lecturers');
 
-echo $OUTPUT->heading($title);
+$subtitle = $id
+    ? get_string('editlecturerdesc', 'local_hrdepartment')
+    : get_string('addlecturerdesc', 'local_hrdepartment');
 
+echo html_writer::start_div('local-hrdepartment-lecturer-form');
+
+echo html_writer::start_div('hrdept-form-hero');
+echo html_writer::tag('div', '<i class="icon fa fa-chalkboard-teacher" aria-hidden="true"></i>', ['class' => 'hrdept-form-hero-icon']);
+echo html_writer::start_div('hrdept-form-hero-text');
+echo html_writer::tag('h2', $title, ['class' => 'hrdept-form-hero-title']);
+echo html_writer::tag('p', $subtitle, ['class' => 'hrdept-form-hero-subtitle']);
+echo html_writer::end_div();
+echo html_writer::end_div();
+
+echo html_writer::start_div('hrdept-form-card');
 $form->display();
+echo html_writer::end_div();
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

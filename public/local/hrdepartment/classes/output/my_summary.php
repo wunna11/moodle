@@ -58,10 +58,18 @@ class my_summary implements renderable, templatable {
      * @return array
      */
     public function export_for_template(renderer_base $output): array {
+        global $USER;
+
+        $hero = [
+            'herogreeting' => get_string('hrdashboardhero', 'local_hrdepartment', fullname($USER)),
+            'herosubtitle' => get_string('myhrsubtitle', 'local_hrdepartment'),
+            'herodate' => userdate(time(), get_string('strftimedaydate', 'langconfig')),
+        ];
+
         $snapshot = dashboard_helper::get_my_snapshot($this->userid);
 
         if (!$snapshot) {
-            return ['hasprofile' => false];
+            return $hero + ['hasprofile' => false];
         }
 
         $leavebalances = [];
@@ -82,10 +90,11 @@ class my_summary implements renderable, templatable {
                 'netsalary' => number_format((float) $payroll->netsalary, 2),
                 'currency' => get_config('local_hrdepartment', 'currency') ?: 'USD',
                 'paymentstatus' => get_string('status_' . $payroll->paymentstatus, 'local_hrdepartment'),
+                'paymentstatusclass' => 'hrdept-pill-' . $payroll->paymentstatus,
             ];
         }
 
-        return [
+        return $hero + [
             'hasprofile' => true,
             'employeecode' => $snapshot->employee->employeecode,
             'designation' => $snapshot->employee->designation,

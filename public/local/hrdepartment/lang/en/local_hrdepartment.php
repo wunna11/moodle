@@ -31,8 +31,11 @@ $string['pluginname'] = 'HR Department';
 $string['hrdepartment:managedashboard'] = 'View HR dashboard summary metrics';
 $string['hrdepartment:managelecturers'] = 'Manage lecturer profiles and course assignments';
 $string['hrdepartment:managestaff'] = 'Manage staff profiles';
+$string['hrdepartment:managestudents'] = 'View the students directory and their course enrolments';
 $string['hrdepartment:manageattendance'] = 'View student attendance reports for any course (sourced from the Attendance activity)';
 $string['hrdepartment:viewownattendance'] = 'View own attendance history';
+$string['hrdepartment:managestudentleave'] = 'Manage student leave: create/edit leave requests, approve/reject them, configure leave types, and set leave balances (globally, or per delegated student profile)';
+$string['hrdepartment:viewstudentleave'] = 'View student leave requests and balances (globally, or per delegated student profile)';
 $string['hrdepartment:manageleavetypes'] = 'Configure leave types and allocations';
 $string['hrdepartment:approveleave'] = 'Approve or reject leave applications';
 $string['hrdepartment:applyownleave'] = 'Apply for own leave';
@@ -56,13 +59,13 @@ $string['setting_defaultannualleavedays_desc'] = 'Default number of annual leave
 $string['dashboard'] = 'Dashboard';
 $string['lecturers'] = 'Lecturers';
 $string['staff'] = 'Staff';
+$string['students'] = 'Students';
 $string['attendance'] = 'Attendance';
 $string['leave'] = 'Leave';
 $string['payroll'] = 'Payroll';
 $string['department'] = 'Department';
 $string['employeecode'] = 'Employee code';
 $string['designation'] = 'Designation';
-$string['reportsto'] = 'Reports to';
 $string['employmentstatus'] = 'Employment status';
 $string['status_active'] = 'Active';
 $string['status_suspended'] = 'Suspended';
@@ -103,8 +106,13 @@ $string['startdate'] = 'Start date';
 $string['enddate'] = 'End date';
 $string['totaldays'] = 'Days';
 $string['nopendingleave'] = 'No pending leave requests.';
+$string['hrdashboardhero'] = 'Welcome back, {$a}';
+$string['hrdashboardsubtitle'] = "Here's what's happening across your organisation today.";
+$string['quickaccess'] = 'Quick access';
+$string['noaccessdashboard'] = 'You do not currently have access to any HR Department dashboard sections.';
 
 // My HR (self-service) strings.
+$string['myhrsubtitle'] = 'Here is your personal HR snapshot.';
 $string['noemployeerecord'] = 'No HR employee record is linked to your account yet. Contact HR if you believe this is a mistake.';
 $string['myattendancethismonth'] = 'My attendance this month';
 $string['myleavebalance'] = 'My leave balance';
@@ -142,6 +150,16 @@ $string['erroruseralreadylinked'] = 'This Moodle user is already linked to anoth
 $string['errorlecturernotfound'] = 'Lecturer record not found.';
 $string['errorassignmentnotfound'] = 'Course assignment not found.';
 
+// Lecturers directory strings.
+$string['lecturersdirectory'] = 'Lecturers directory';
+$string['totallecturers'] = 'Total lecturers';
+$string['departments'] = 'Departments';
+$string['alldepartments'] = 'All departments';
+$string['searchlecturerplaceholder'] = 'Search by name, email or employee code';
+$string['nolecturersfound'] = 'No lecturers match your filters.';
+$string['addlecturerdesc'] = 'Link a Moodle account and fill in their employment and academic details.';
+$string['editlecturerdesc'] = "Update this lecturer's employment and academic details.";
+
 // Course assignment strings.
 $string['course'] = 'Course';
 $string['role'] = 'Role';
@@ -178,6 +196,32 @@ $string['staffdeactivated'] = 'Staff member deactivated.';
 $string['staffreactivated'] = 'Staff member reactivated.';
 $string['errorstaffnotfound'] = 'Staff record not found.';
 
+// Staff directory strings.
+$string['staffdirectory'] = 'Staff directory';
+$string['totalstaff'] = 'Total staff';
+$string['searchstaffplaceholder'] = 'Search by name, email or employee code';
+$string['nostaffmembersfound'] = 'No staff match your filters.';
+$string['addstaffmemberdesc'] = 'Link a Moodle account and fill in their employment details.';
+$string['editstaffmemberdesc'] = "Update this staff member's employment details.";
+
+// Students directory strings.
+//
+// Read-only: every Moodle user holding the "student" role in at least
+// one course, sourced from core enrolment/role assignment data, with
+// their enrolled courses - see local_hrdepartment\student_manager.
+$string['studentsdirectory'] = 'Students directory';
+$string['totalstudents'] = 'Total students';
+$string['totalenrolments'] = 'Course enrolments';
+$string['courseswithstudents'] = 'Courses with students';
+$string['enrolledcourses'] = 'Enrolled courses';
+$string['nocoursesenrolled'] = 'Not enrolled in any course yet.';
+$string['nostudentsfound'] = 'No students match your filters.';
+$string['resetfilters'] = 'Reset';
+$string['viewstudents'] = 'View students';
+$string['backtostudents'] = 'Back to students';
+$string['gotocourse'] = 'Go to course';
+$string['errorstudentnotfound'] = 'Student record not found.';
+
 // Attendance tracking strings.
 //
 // This module is a read-only report: student attendance is taken in the
@@ -211,19 +255,39 @@ $string['errorsessionnotfound'] = 'Attendance session not found.';
 $string['errorcoursenotfound'] = 'Course not found.';
 $string['openinattendanceactivity'] = 'Open in Attendance activity';
 
+// Attendance page hero/subheader subtitles (2026-08-17 Attendance/Leave
+// redesign - see hrdepartment-entity-scope memory).
+$string['attendanceoverviewsubtitle'] = 'A live, read-only view of every course\'s Attendance activity - taken the normal way, in each course.';
+$string['myattendancesubtitle'] = 'Your attendance record across every course you\'re enrolled in.';
+$string['attendancesessionssubtitle'] = 'Sessions recorded via this course\'s Attendance activity.';
+$string['attendancerecordssubtitle'] = 'Who was marked for this session.';
+$string['attendancehistorysubtitle'] = 'Status summary and full record history.';
+
 // Student leave management strings.
 //
-// Corrected to match the Attendance module's architecture (see
-// hrdepartment-entity-scope memory): this is a read-only report on top
-// of the site's existing mod_attendance activity data. A student is "on
-// leave" when a lecturer marks them with the site's configured leave
-// status while taking attendance in mod_attendance - this plugin never
-// writes leave data of its own, and has no separate application/
-// approval workflow or balance/allocation (mod_attendance has no such
-// concept to source one from).
+// Restored 2026-08-15 as a self-contained request/approval workflow
+// (hrdep_studentleaveapp, hrdep_studentleavetype, hrdep_studentleavebalance
+// - see local_hrdepartment\student_leave_manager). HR/staff log a leave
+// request on a student's behalf; an HR/Admin/Approver reviews it
+// (approve/reject) - evaluated globally (local/hrdepartment:
+// managestudentleave held at CONTEXT_SYSTEM) or per delegated student
+// profile (the same capability held on that one student's CONTEXT_USER),
+// never through course enrolment. See db/access.php.
+//
+// A few strings below (leavelookup, activeleavetoday, bycourseleave,
+// leavestatuslabel*, errorrecordnotfound) are reserved/unused leftovers
+// from the read-only mod_attendance-report iteration this supersedes -
+// left defined, not wired to any page (see hrdepartment-entity-scope
+// memory), same as the reserved capabilities in db/access.php.
 $string['leaveoverview'] = 'Leave overview';
+$string['leaveoverviewsubtitle'] = 'Review, approve, and track student leave across your institution.';
+$string['leaverequestssubtitle'] = 'Search and filter every student leave application.';
+$string['leavereportssubtitle'] = 'Filter applications and export them to CSV.';
+$string['leavebalancessubtitle'] = 'Look up a student and adjust their allocated leave days per type.';
+$string['leavetypessubtitle'] = 'Configure the leave types students can request.';
+$string['leaverequests'] = 'Leave requests';
 $string['leavelookup'] = 'Student leave lookup';
-$string['leaverequestdetail'] = 'Leave record detail';
+$string['leaverequestdetail'] = 'Leave request detail';
 $string['leavereports'] = 'Reports & export';
 $string['searchstudentplaceholder'] = 'Search by name or email';
 $string['activeleavetoday'] = "On leave today";
@@ -239,3 +303,79 @@ $string['errorrecordnotfound'] = 'Leave record not found.';
 $string['datefrom'] = 'From';
 $string['dateto'] = 'To';
 $string['exportcsv'] = 'Export CSV';
+
+// Student leave requests.
+$string['logleaverequest'] = 'Log leave request';
+$string['editleaverequest'] = 'Edit leave request';
+$string['leaverequestcreated'] = 'Leave request logged.';
+$string['leaverequestupdated'] = 'Leave request updated.';
+$string['erroreditnotpending'] = 'This leave request has already been reviewed and can no longer be edited.';
+$string['errorreviewnotpending'] = 'This leave request has already been reviewed.';
+$string['errorapplicationnotfound'] = 'Leave request not found.';
+$string['errornotastudent'] = 'The selected user does not hold the student role.';
+$string['reason'] = 'Reason';
+$string['submittedby'] = 'Submitted by';
+$string['reviewedby'] = 'Reviewed by';
+$string['reviewnote'] = 'Review note';
+$string['approve'] = 'Approve';
+$string['reject'] = 'Reject';
+$string['leaveapproved'] = 'Leave request approved.';
+$string['leaverejected'] = 'Leave request rejected.';
+$string['leavecancelled'] = 'Leave request cancelled.';
+$string['cancelleaverequest'] = 'Cancel leave';
+$string['confirmcancelleave'] = 'Cancel this leave request for {$a}? If it was approved, the days will be returned to their balance.';
+$string['allleavetypes'] = 'All leave types';
+
+// Student self-service leave application (leave/apply.php,
+// leave/myrequests.php) - added so a student prepares their own leave
+// request instead of only HR/staff logging one on their behalf via
+// leave/edit.php, and picks which of their own course teachers should
+// review it. See student_leave_manager::can_review_application().
+$string['applyforleave'] = 'Apply for leave';
+$string['applyforleavesubtitle'] = 'Choose a leave type, pick the dates, and select one of your own course teachers to review it.';
+$string['myleaverequests'] = 'My leave requests';
+$string['myleaverequestssubtitle'] = 'Everything you\'ve submitted, and where it stands.';
+$string['nomyleaverequests'] = "You haven't submitted any leave requests yet.";
+$string['selectapprover'] = 'Approving teacher';
+$string['approver'] = 'Approver';
+$string['noapproverassigned'] = 'Not assigned';
+$string['errorapprovernotteacher'] = 'Please choose one of your own course teachers as the approving teacher.';
+$string['leaverequestsubmitted'] = 'Your leave request has been submitted.';
+$string['notastudentnoaccess'] = 'This page is only available to users holding the student role.';
+$string['myapprovals'] = 'Leave requests to review';
+$string['myapprovalssubtitle'] = 'Applications where a student has chosen you as their approving teacher.';
+$string['nomyapprovals'] = "No students have chosen you as their approving teacher yet.";
+$string['logleaverequestsubtitle'] = 'Log a leave request on a student\'s behalf.';
+$string['editleaverequestsubtitle'] = 'Update the details of this pending leave request.';
+$string['setallocationsubtitle'] = 'Set how many days of this leave type the student is allocated for the year.';
+$string['addleavetypesubtitle'] = 'Define a new type of student leave.';
+$string['editleavetypesubtitle'] = 'Update this leave type\'s settings.';
+$string['leaveattendanceheading'] = 'Leave and Attendance Checking';
+
+// Leave types.
+$string['leavetypes'] = 'Leave types';
+$string['addleavetype'] = 'Add leave type';
+$string['editleavetype'] = 'Edit leave type';
+$string['leavetypename'] = 'Name';
+$string['leavetypedescription'] = 'Description';
+$string['maxdaysperyear'] = 'Max days per year';
+$string['requiresapproval'] = 'Requires approval';
+$string['active'] = 'Active';
+$string['deleteleavetype'] = 'Delete';
+$string['noleavetypes'] = 'No leave types have been configured yet.';
+$string['leavetypesaved'] = 'Leave type saved.';
+$string['leavetypedeleted'] = 'Leave type deleted.';
+$string['errorleavetypenotfound'] = 'Leave type not found.';
+$string['errorleavetypeinuse'] = 'This leave type is still used by an existing leave request or balance; deactivate it instead of deleting it.';
+$string['errorleavetypenameinuse'] = 'A leave type with this name already exists.';
+$string['confirmdeleteleavetype'] = 'Delete the leave type "{$a}"? This cannot be undone.';
+
+// Leave balances.
+$string['leavebalances'] = 'Leave balances';
+$string['academicyear'] = 'Academic year';
+$string['setallocation'] = 'Set allocation';
+$string['allocateddays'] = 'Allocated days';
+$string['balanceupdated'] = 'Leave balance updated.';
+$string['nobalancesforstudent'] = 'No leave types are configured yet.';
+$string['pickastudent'] = 'Search for a student above to view or adjust their leave balance.';
+$string['nostudentsfound'] = 'No students found matching your search.';

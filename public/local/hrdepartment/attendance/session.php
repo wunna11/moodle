@@ -25,7 +25,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\student_attendance_manager;
+use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
 
@@ -41,7 +43,7 @@ if (!$session) {
 }
 
 if (!student_attendance_manager::can_view_course_attendance($session->courseid)) {
-    require_capability('local/hrdepartment:manageattendance', $context);
+    access_manager::require_manage('local/hrdepartment:manageattendance');
 }
 
 $PAGE->set_context($context);
@@ -50,21 +52,20 @@ $PAGE->set_pagelayout('standard');
 $dateformat = get_string('strftimedatefullshort', 'langconfig');
 $title = $session->shortname . ' - ' . userdate($session->sessdate, $dateformat);
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('attendance');
-echo $OUTPUT->tabtree($tabs, 'attendance');
+echo local_hrdepartment_render_tab_bar('attendance');
 
-echo html_writer::link(
+echo html_writer::start_div('local-hrdepartment-attendance');
+
+echo local_hrdepartment_render_subheader(
+    $title,
+    format_string($session->attendancename),
     new moodle_url('/local/hrdepartment/attendance/course.php', ['courseid' => $session->courseid]),
-    '&laquo; ' . get_string('backtosessions', 'local_hrdepartment'),
-    ['class' => 'mb-2 d-inline-block']
+    get_string('backtosessions', 'local_hrdepartment')
 );
-
-echo $OUTPUT->heading($title);
-echo html_writer::div(format_string($session->attendancename), 'text-muted mb-3');
 
 if (!empty($session->cmid)) {
     echo html_writer::div(
@@ -80,7 +81,11 @@ if (!empty($session->cmid)) {
 $records = student_attendance_manager::get_session_records($sessionid);
 
 if (empty($records)) {
-    echo $OUTPUT->notification(get_string('norecordsforsession', 'local_hrdepartment'), 'info');
+    echo local_hrdepartment_render_empty_state(
+        get_string('norecordsforsession', 'local_hrdepartment'),
+        'fa-users-slash'
+    );
+    echo html_writer::end_div();
     echo $OUTPUT->footer();
     exit;
 }
@@ -118,6 +123,8 @@ foreach ($records as $record) {
     ];
 }
 
-echo html_writer::table($table);
+echo local_hrdepartment_render_table_card(html_writer::table($table));
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

@@ -15,8 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Student Leave Lookup: search every leave-marked mod_attendance record
- * by student, optionally scoped to a course. Read-only - see
+ * Leave requests: search/filter every student leave application. See
  * local_hrdepartment\student_leave_manager.
  *
  * @package   local_hrdepartment
@@ -24,8 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use local_hrdepartment\course_assignment_manager;
-use local_hrdepartment\student_attendance_manager;
+use local_hrdepartment\student_leave_manager;
 use local_hrdepartment\table\student_leave_table;
 
 require_once(__DIR__ . '/../../../config.php');
@@ -33,32 +31,41 @@ require_once(__DIR__ . '/../../../config.php');
 require_login();
 
 $context = context_system::instance();
-$canviewall = has_capability('local/hrdepartment:manageleave', $context);
-$manageablecourses = student_attendance_manager::get_manageable_courses((int) $USER->id, $canviewall);
 
-if (!$canviewall && empty($manageablecourses)) {
-    require_capability('local/hrdepartment:manageleave', $context);
+$canmanage = student_leave_manager::can_manage();
+if (!$canmanage) {
+    require_capability(student_leave_manager::CAP_VIEW, $context);
 }
 
 $search = optional_param('search', '', PARAM_TEXT);
-$courseid = optional_param('courseid', 0, PARAM_INT);
+$status = optional_param('status', '', PARAM_ALPHA);
+$leavetypeid = optional_param('leavetypeid', 0, PARAM_INT);
 
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/hrdepartment/leave/lookup.php', ['search' => $search, 'courseid' => $courseid]));
+$PAGE->set_url(new moodle_url('/local/hrdepartment/leave/lookup.php', [
+    'search' => $search, 'status' => $status, 'leavetypeid' => $leavetypeid,
+]));
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(get_string('leavelookup', 'local_hrdepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_title(get_string('leaverequests', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('leave');
-echo $OUTPUT->tabtree($tabs, 'leave');
+echo local_hrdepartment_render_tab_bar('leave');
 
-echo $OUTPUT->heading(get_string('leavelookup', 'local_hrdepartment'));
+echo html_writer::start_div('local-hrdepartment-leave');
 
-$courseidsrestriction = $canviewall ? null : array_keys($manageablecourses);
+echo local_hrdepartment_render_page_hero(
+    get_string('leaverequests', 'local_hrdepartment'),
+    get_string('leaverequestssubtitle', 'local_hrdepartment'),
+    $canmanage ? [[
+        'url' => new moodle_url('/local/hrdepartment/leave/edit.php'),
+        'label' => get_string('logleaverequest', 'local_hrdepartment'),
+        'icon' => 'fa-calendar-plus',
+    ]] : []
+);
 
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'form-inline mb-3']);
+echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'hrdept-filter-bar']);
 echo html_writer::empty_tag('input', [
     'type' => 'text',
     'name' => 'search',
@@ -67,16 +74,27 @@ echo html_writer::empty_tag('input', [
     'class' => 'form-control mr-2 mb-2',
 ]);
 
-$courseoptions = [0 => get_string('allcourses', 'local_hrdepartment')];
-$allcourses = $canviewall ? course_assignment_manager::get_course_options() : $manageablecourses;
-$courseoptions += $allcourses;
-echo html_writer::select($courseoptions, 'courseid', $courseid, null, ['class' => 'form-control mr-2 mb-2']);
+$statusoptions = [
+    '' => get_string('allstatuses', 'local_hrdepartment'),
+    'pending' => get_string('status_pending', 'local_hrdepartment'),
+    'approved' => get_string('status_approved', 'local_hrdepartment'),
+    'rejected' => get_string('status_rejected', 'local_hrdepartment'),
+    'cancelled' => get_string('status_cancelled', 'local_hrdepartment'),
+];
+echo html_writer::select($statusoptions, 'status', $status, null, ['class' => 'form-control mr-2 mb-2']);
+
+$leavetypeoptions = [0 => get_string('allleavetypes', 'local_hrdepartment')] + student_leave_manager::get_leave_type_options();
+echo html_writer::select($leavetypeoptions, 'leavetypeid', $leavetypeid, null, ['class' => 'form-control mr-2 mb-2']);
 
 echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('filter', 'local_hrdepartment'), 'class' => 'btn btn-secondary mb-2']);
 echo html_writer::end_tag('form');
 
-$table = new student_leave_table('local-hrdepartment-student-leave', $search, $courseid, $courseidsrestriction);
+echo html_writer::start_div('hrdept-table-card');
+$table = new student_leave_table('local-hrdepartment-student-leave', $search, $status, $leavetypeid, $canmanage);
 $table->define_baseurl($PAGE->url);
 $table->out(20, true);
+echo html_writer::end_div();
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

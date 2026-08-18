@@ -85,14 +85,6 @@ class lecturer_form extends \moodleform {
         $mform->setType('designation', PARAM_TEXT);
 
         $mform->addElement(
-            'autocomplete',
-            'reportsto',
-            get_string('reportsto', 'local_hrdepartment'),
-            lecturer_manager::get_potential_managers($employeeid ?: null),
-            ['noselectionstring' => get_string('none')]
-        );
-
-        $mform->addElement(
             'select',
             'employmentstatus',
             get_string('employmentstatus', 'local_hrdepartment'),

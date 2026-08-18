@@ -1,0 +1,185 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_hrdepartment/students_directory
+
+    A searchable/filterable, paginated card grid of every student
+    (any Moodle user holding the "student" role in at least one course).
+    Each card links out to local_hrdepartment/student_profile for the
+    full enrolled-course list, rather than showing it inline, so a card
+    stays a consistent size no matter how many courses a student has.
+
+    Example context (json):
+    {
+        "totalstudents": 128,
+        "totalenrolments": 341,
+        "courseswithstudents": 14,
+        "activestudents": 121,
+        "suspendedstudents": 7,
+        "search": "",
+        "formaction": "#",
+        "courseoptions": [
+            { "value": 0, "label": "All courses", "issel": true },
+            { "value": 12, "label": "CS101: Intro to Programming", "issel": false }
+        ],
+        "statusoptions": [
+            { "value": "", "label": "All statuses", "issel": true },
+            { "value": "active", "label": "Active", "issel": false },
+            { "value": "suspended", "label": "Suspended", "issel": false }
+        ],
+        "hasstudents": true,
+        "resultcount": 128,
+        "students": [
+            {
+                "id": 42,
+                "fullname": "Aye Aye Mon",
+                "email": "aye@example.com",
+                "location": "Yangon, Myanmar",
+                "avatarhtml": "<img src=\"#\">",
+                "profileurl": "#",
+                "coursesurl": "#",
+                "issuspended": false,
+                "hascourses": true,
+                "coursecount": 5
+            }
+        ],
+        "haspaging": true,
+        "pagingbarhtml": "<div class=\"paging\">...</div>"
+    }
+}}
+<div class="local-hrdepartment-students">
+
+    <div class="hrdept-stats-strip">
+        <div class="hrdept-stat-card hrdept-stat-total">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-graduate" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{totalstudents}}</div>
+                <div class="hrdept-stat-label">{{#str}}totalstudents, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-enrolments">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-book" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{totalenrolments}}</div>
+                <div class="hrdept-stat-label">{{#str}}totalenrolments, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-courses">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-graduation-cap" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{courseswithstudents}}</div>
+                <div class="hrdept-stat-label">{{#str}}courseswithstudents, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-active">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-check" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{activestudents}}</div>
+                <div class="hrdept-stat-label">{{#str}}status_active, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+    </div>
+
+    <form method="get" action="{{formaction}}" class="hrdept-filter-bar">
+        <div class="hrdept-filter-search">
+            <i class="icon fa fa-search" aria-hidden="true"></i>
+            <input
+                type="text"
+                name="search"
+                value="{{search}}"
+                placeholder="{{#str}}searchstudentplaceholder, local_hrdepartment{{/str}}"
+                class="form-control"
+            >
+        </div>
+        <select name="courseid" class="form-control hrdept-filter-select">
+            {{#courseoptions}}
+            <option value="{{value}}" {{#issel}}selected{{/issel}}>{{label}}</option>
+            {{/courseoptions}}
+        </select>
+        <select name="status" class="form-control hrdept-filter-select">
+            {{#statusoptions}}
+            <option value="{{value}}" {{#issel}}selected{{/issel}}>{{label}}</option>
+            {{/statusoptions}}
+        </select>
+        <button type="submit" class="btn btn-primary hrdept-filter-submit">
+            <i class="icon fa fa-filter" aria-hidden="true"></i> {{#str}}filter, local_hrdepartment{{/str}}
+        </button>
+        <a href="{{formaction}}" class="btn btn-link hrdept-filter-reset">{{#str}}resetfilters, local_hrdepartment{{/str}}</a>
+    </form>
+
+    <div class="hrdept-result-count text-muted small mb-2">
+        {{resultcount}} {{#str}}students, local_hrdepartment{{/str}}
+    </div>
+
+    {{#hasstudents}}
+    <div class="hrdept-student-grid">
+        {{#students}}
+        <div class="hrdept-student-card {{#issuspended}}hrdept-student-suspended{{/issuspended}}">
+            <div class="hrdept-student-card-header">
+                <div class="hrdept-student-avatar">{{{avatarhtml}}}</div>
+                <div class="hrdept-student-identity">
+                    <a href="{{profileurl}}" class="hrdept-student-name" title="{{fullname}}">{{fullname}}</a>
+                    <div class="hrdept-student-email" title="{{email}}">
+                        <i class="icon fa fa-envelope" aria-hidden="true"></i> {{email}}
+                    </div>
+                    {{#location}}
+                    <div class="hrdept-student-location">
+                        <i class="icon fa fa-map-marker-alt" aria-hidden="true"></i> {{location}}
+                    </div>
+                    {{/location}}
+                </div>
+                <span class="hrdept-status-badge {{#issuspended}}hrdept-status-suspended{{/issuspended}}{{^issuspended}}hrdept-status-active{{/issuspended}}">
+                    {{#issuspended}}{{#str}}status_suspended, local_hrdepartment{{/str}}{{/issuspended}}
+                    {{^issuspended}}{{#str}}status_active, local_hrdepartment{{/str}}{{/issuspended}}
+                </span>
+            </div>
+            <div class="hrdept-student-card-body">
+                {{#hascourses}}
+                <a href="{{coursesurl}}" class="hrdept-view-courses-btn">
+                    <span class="hrdept-view-courses-icon"><i class="icon fa fa-book" aria-hidden="true"></i></span>
+                    <span class="hrdept-view-courses-text">
+                        <span class="hrdept-view-courses-label">{{#str}}enrolledcourses, local_hrdepartment{{/str}}</span>
+                        <span class="hrdept-view-courses-count">{{coursecount}}</span>
+                    </span>
+                    <span class="hrdept-view-courses-arrow"><i class="icon fa fa-chevron-right" aria-hidden="true"></i></span>
+                </a>
+                {{/hascourses}}
+                {{^hascourses}}
+                <div class="hrdept-view-courses-btn hrdept-view-courses-empty">
+                    <span class="hrdept-view-courses-icon"><i class="icon fa fa-book" aria-hidden="true"></i></span>
+                    <span class="hrdept-view-courses-text text-muted small">{{#str}}nocoursesenrolled, local_hrdepartment{{/str}}</span>
+                </div>
+                {{/hascourses}}
+            </div>
+        </div>
+        {{/students}}
+    </div>
+    {{/hasstudents}}
+    {{^hasstudents}}
+    <div class="hrdept-empty-state">
+        <i class="icon fa fa-user-slash" aria-hidden="true"></i>
+        <p>{{#str}}nostudentsfound, local_hrdepartment{{/str}}</p>
+    </div>
+    {{/hasstudents}}
+
+    {{#haspaging}}
+    <div class="hrdept-paging">
+        {{{pagingbarhtml}}}
+    </div>
+    {{/haspaging}}
+
+</div>

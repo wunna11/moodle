@@ -24,6 +24,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\constants;
 use local_hrdepartment\staff_manager;
 
@@ -36,7 +37,7 @@ $reactivate = optional_param('reactivate', 0, PARAM_BOOL);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
 $context = context_system::instance();
-require_capability('local/hrdepartment:managestaff', $context);
+access_manager::require_manage('local/hrdepartment:managestaff');
 
 $staff = staff_manager::get_staff($id);
 if (!$staff) {
@@ -64,8 +65,7 @@ if ($confirm && confirm_sesskey()) {
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('staff');
-echo $OUTPUT->tabtree($tabs, 'staff');
+echo local_hrdepartment_render_tab_bar('staff');
 
 $confirmstring = $reactivate
     ? get_string('confirmreactivate', 'local_hrdepartment', $staff->fullname)

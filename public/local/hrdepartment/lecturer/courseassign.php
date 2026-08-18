@@ -23,6 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\course_assignment_manager;
 use local_hrdepartment\form\courseassign_form;
 use local_hrdepartment\lecturer_manager;
@@ -34,7 +35,7 @@ require_login();
 $id = required_param('id', PARAM_INT);
 
 $context = context_system::instance();
-require_capability('local/hrdepartment:managelecturers', $context);
+access_manager::require_manage('local/hrdepartment:managelecturers');
 
 $lecturer = lecturer_manager::get_lecturer($id);
 if (!$lecturer) {
@@ -72,8 +73,7 @@ if ($data = $form->get_data()) {
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('lecturers');
-echo $OUTPUT->tabtree($tabs, 'lecturers');
+echo local_hrdepartment_render_tab_bar('lecturers');
 
 echo $OUTPUT->heading(get_string('assigncourseto', 'local_hrdepartment', $lecturer->fullname));
 

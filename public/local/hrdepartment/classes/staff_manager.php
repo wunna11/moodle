@@ -36,6 +36,156 @@ defined('MOODLE_INTERNAL') || die();
  */
 class staff_manager {
 
+    /** @var int default number of staff cards per page. */
+    const PAGE_SIZE = 12;
+
+    /**
+     * Builds the shared WHERE clause + params used by both
+     * count_staff() and get_staff_list(): every staff-type hrdep_employee
+     * row, optionally narrowed by department, live account status, and a
+     * name/email/employee-code search. Must be used together with a FROM
+     * that joins {hrdep_employee} e to {user} u.
+     *
+     * Status is filtered on the live Moodle account (u.suspended) rather
+     * than the stored employmentstatus field, matching the Active/
+     * Suspended label shown on the list and profile pages - see
+     * staff_profile::export_for_template()'s comment on why the stored
+     * status can drift from reality.
+     *
+     * @param string $search name/email/employee code search, '' = any
+     * @param int $departmentid 0 = any department
+     * @param string $status '' = any, 'active' = not suspended, 'suspended' = suspended
+     * @return array [string $where, array $params]
+     */
+    protected static function build_where(string $search, int $departmentid, string $status): array {
+        global $DB;
+
+        $params = ['type' => constants::EMPLOYEE_TYPE_STAFF];
+        $where = 'e.type = :type';
+
+        if ($departmentid) {
+            $where .= ' AND e.departmentid = :departmentid';
+            $params['departmentid'] = $departmentid;
+        }
+
+        if ($status === 'active') {
+            $where .= ' AND u.suspended = 0';
+        } else if ($status === 'suspended') {
+            $where .= ' AND u.suspended = 1';
+        }
+
+        if ($search !== '') {
+            $like = '%' . $DB->sql_like_escape($search) . '%';
+            $where .= ' AND (' . $DB->sql_like('u.firstname', ':search1', false) . '
+                          OR ' . $DB->sql_like('u.lastname', ':search2', false) . '
+                          OR ' . $DB->sql_like('u.email', ':search3', false) . '
+                          OR ' . $DB->sql_like('e.employeecode', ':search4', false) . ')';
+            $params['search1'] = $like;
+            $params['search2'] = $like;
+            $params['search3'] = $like;
+            $params['search4'] = $like;
+        }
+
+        return [$where, $params];
+    }
+
+    /**
+     * Counts staff matching the given filters, for pagination.
+     *
+     * @param string $search
+     * @param int $departmentid
+     * @param string $status
+     * @return int
+     */
+    public static function count_staff(string $search, int $departmentid, string $status): int {
+        global $DB;
+
+        [$where, $params] = self::build_where($search, $departmentid, $status);
+
+        $sql = "SELECT COUNT(e.id)
+                  FROM {hrdep_employee} e
+                  JOIN {user} u ON u.id = e.userid
+                 WHERE $where";
+
+        return (int) $DB->count_records_sql($sql, $params);
+    }
+
+    /**
+     * Returns one page of staff matching the given filters, for the Staff
+     * directory card grid.
+     *
+     * @param string $search
+     * @param int $departmentid
+     * @param string $status
+     * @param int $page zero-based page number
+     * @param int $perpage
+     * @return \stdClass[] employeeid, employeecode, designation, employmentstatus, departmentid,
+     *                     departmentname, plus user_picture::fields() columns (userid as "id")
+     *                     and fullname
+     */
+    public static function get_staff_list(string $search, int $departmentid, string $status, int $page, int $perpage): array {
+        global $DB;
+
+        [$where, $params] = self::build_where($search, $departmentid, $status);
+
+        $fields = \user_picture::fields('u', ['suspended']);
+
+        $sql = "SELECT e.id AS employeeid, e.employeecode, e.designation, e.employmentstatus, e.departmentid,
+                       d.name AS departmentname,
+                       $fields
+                  FROM {hrdep_employee} e
+                  JOIN {user} u ON u.id = e.userid
+             LEFT JOIN {hrdep_department} d ON d.id = e.departmentid
+                 WHERE $where
+              ORDER BY u.lastname ASC, u.firstname ASC";
+
+        $records = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
+
+        $stafflist = [];
+        foreach ($records as $record) {
+            $record->fullname = fullname($record);
+            $stafflist[] = $record;
+        }
+
+        return $stafflist;
+    }
+
+    /**
+     * Returns organisation-wide staff stats for the directory's stat
+     * strip: total staff, the active/suspended account split (live
+     * Moodle state, see build_where()), and how many distinct departments
+     * have at least one staff member.
+     *
+     * @return \stdClass
+     */
+    public static function get_summary_stats(): \stdClass {
+        global $DB;
+
+        $type = constants::EMPLOYEE_TYPE_STAFF;
+        $stats = new \stdClass();
+
+        $stats->totalstaff = (int) $DB->count_records('hrdep_employee', ['type' => $type]);
+
+        $stats->suspendedstaff = (int) $DB->count_records_sql(
+            "SELECT COUNT(e.id)
+               FROM {hrdep_employee} e
+               JOIN {user} u ON u.id = e.userid
+              WHERE e.type = :type AND u.suspended = 1",
+            ['type' => $type]
+        );
+
+        $stats->activestaff = $stats->totalstaff - $stats->suspendedstaff;
+
+        $stats->departmentcount = (int) $DB->count_records_sql(
+            "SELECT COUNT(DISTINCT e.departmentid)
+               FROM {hrdep_employee} e
+              WHERE e.type = :type AND e.departmentid IS NOT NULL",
+            ['type' => $type]
+        );
+
+        return $stats;
+    }
+
     /**
      * Returns a staff member's combined employee + user record, or
      * false if not found or not of type staff.
@@ -81,7 +231,6 @@ class staff_manager {
         $employee->type = constants::EMPLOYEE_TYPE_STAFF;
         $employee->departmentid = self::resolve_department($data->departmentid ?? null);
         $employee->designation = $data->designation ?? '';
-        $employee->reportsto = !empty($data->reportsto) ? (int) $data->reportsto : null;
         $employee->employmentstatus = $data->employmentstatus ?? constants::EMPLOYMENT_STATUS_ACTIVE;
         $employee->phone = $data->phone ?? '';
         $employee->address = $data->address ?? '';
@@ -111,7 +260,6 @@ class staff_manager {
         $employee->employeecode = trim($data->employeecode);
         $employee->departmentid = self::resolve_department($data->departmentid ?? null);
         $employee->designation = $data->designation ?? '';
-        $employee->reportsto = !empty($data->reportsto) ? (int) $data->reportsto : null;
         $employee->employmentstatus = $data->employmentstatus ?? constants::EMPLOYMENT_STATUS_ACTIVE;
         $employee->phone = $data->phone ?? '';
         $employee->address = $data->address ?? '';
@@ -224,38 +372,6 @@ class staff_manager {
         $options = [];
         foreach ($users as $user) {
             $options[$user->id] = fullname($user) . ' (' . $user->email . ')';
-        }
-
-        return $options;
-    }
-
-    /**
-     * Returns active employees (of any type) who could act as a manager
-     * (reportsto), excluding the given employee itself.
-     *
-     * @param int|null $excludeemployeeid
-     * @return array employeeid => fullname (employeecode)
-     */
-    public static function get_potential_managers(?int $excludeemployeeid = null): array {
-        global $DB;
-
-        $params = ['active' => constants::EMPLOYMENT_STATUS_ACTIVE];
-        $excludesql = '';
-        if ($excludeemployeeid) {
-            $excludesql = 'AND e.id <> :excludeid';
-            $params['excludeid'] = $excludeemployeeid;
-        }
-
-        $sql = "SELECT e.id, e.employeecode, u.firstname, u.lastname
-                  FROM {hrdep_employee} e
-                  JOIN {user} u ON u.id = e.userid
-                 WHERE e.employmentstatus = :active $excludesql
-              ORDER BY u.lastname ASC, u.firstname ASC";
-        $records = $DB->get_records_sql($sql, $params);
-
-        $options = [];
-        foreach ($records as $record) {
-            $options[$record->id] = fullname($record) . ' (' . $record->employeecode . ')';
         }
 
         return $options;

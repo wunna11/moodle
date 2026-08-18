@@ -17,18 +17,28 @@
 /**
  * HR Department landing page.
  *
- * Users with local/hrdepartment:managedashboard see the organisation-wide
- * summary (lecturer/staff counts, payroll totals, leave stats). Users who
- * only hold self-service capabilities see a personal "My HR" snapshot
- * instead of being blocked outright.
+ * Users who satisfy access_manager::can_access_hr_department() - Moodle
+ * "staff" role + an HR-department Staff record, or a site administrator,
+ * see the organisation-wide summary (lecturer/staff counts, payroll
+ * totals, leave stats); users who only hold self-service capabilities
+ * see a personal "My HR" snapshot instead; a user with neither sees a
+ * simple "no access" notice.
+ *
+ * ("My roles" - a self-service list of every Moodle role assignment held
+ * by the current user - was removed 2026-08-17. It was not specific to
+ * this plugin's own data, so it was dropped in favour of Preferences >
+ * Roles > This user's role assignments, the standard Moodle location for
+ * that information.)
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\output\dashboard_summary;
 use local_hrdepartment\output\my_summary;
+use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../config.php');
 
@@ -39,29 +49,25 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/hrdepartment/index.php'));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('pluginname', 'local_hrdepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 $renderer = $PAGE->get_renderer('local_hrdepartment');
 
-$canviewdashboard = has_capability('local/hrdepartment:managedashboard', $context);
+$canviewdashboard = access_manager::can_access_hr_department((int) $USER->id);
 $canselfservice = has_capability('local/hrdepartment:viewownattendance', $context)
     || has_capability('local/hrdepartment:applyownleave', $context)
     || has_capability('local/hrdepartment:viewownpayroll', $context);
-
-if (!$canviewdashboard && !$canselfservice) {
-    // Neither the org-wide dashboard nor any self-service capability is
-    // available to this user, so there is nothing on this page for them.
-    require_capability('local/hrdepartment:managedashboard', $context);
-}
 
 echo $OUTPUT->header();
 
 if ($canviewdashboard) {
     $page = new dashboard_summary();
     echo $renderer->render_dashboard_summary($page);
-} else {
+} else if ($canselfservice) {
     $page = new my_summary((int) $USER->id);
     echo $renderer->render_my_summary($page);
+} else {
+    echo $OUTPUT->notification(get_string('noaccessdashboard', 'local_hrdepartment'), 'info');
 }
 
 echo $OUTPUT->footer();

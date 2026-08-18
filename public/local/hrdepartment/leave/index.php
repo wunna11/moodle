@@ -15,23 +15,14 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Leave Overview / Dashboard: a read-only report on top of the site's
- * existing mod_attendance activity data - a student is "on leave" when a
- * lecturer marks them with the site's configured leave status while
- * taking attendance. This plugin never records leave itself; that action
- * happens in mod_attendance. See local_hrdepartment\student_leave_manager.
- *
- * Users who can view leave for at least one course (HR/admins holding
- * local/hrdepartment:manageleave, or lecturers with an active
- * hrdep_courseassign) see the org-wide/course summary here. Everyone
- * else (a plain student) sees their own leave history instead.
+ * Leave Overview / Dashboard for the student leave request/approval
+ * workflow. See local_hrdepartment\student_leave_manager.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use local_hrdepartment\student_attendance_manager;
 use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
@@ -40,139 +31,152 @@ require_login();
 
 $context = context_system::instance();
 
-$canviewall = has_capability('local/hrdepartment:manageleave', $context);
-$manageablecourses = student_attendance_manager::get_manageable_courses((int) $USER->id, $canviewall);
-$canviewany = $canviewall || !empty($manageablecourses);
+$canmanage = student_leave_manager::can_manage();
+$canview = student_leave_manager::can_view();
 
-if (!$canviewany) {
-    require_capability('local/hrdepartment:viewownleave', $context);
+if (!$canmanage && !$canview) {
+    // Not HR/Admin and not a delegated Approver: a plain student holding
+    // only local/hrdepartment:applyownleave belongs on the self-service
+    // "My leave requests" page instead of this HR-facing org-wide
+    // overview, which would otherwise expose every student's leave data.
+    if (has_capability(student_leave_manager::CAP_APPLYOWN, $context) && student_leave_manager::is_student((int) $USER->id)) {
+        redirect(new moodle_url('/local/hrdepartment/leave/myrequests.php'));
+    }
+
+    // A teacher chosen as the approver on at least one self-service
+    // application holds none of the capabilities above either - route
+    // them to "Leave requests to review" instead of this org-wide
+    // overview.
+    if (student_leave_manager::is_approver((int) $USER->id)) {
+        redirect(new moodle_url('/local/hrdepartment/leave/myapprovals.php'));
+    }
+
+    require_capability(student_leave_manager::CAP_VIEW, $context);
 }
 
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/hrdepartment/leave/index.php'));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('leave', 'local_hrdepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('leave');
-echo $OUTPUT->tabtree($tabs, 'leave');
+echo local_hrdepartment_render_tab_bar('leave');
 
-echo $OUTPUT->heading(get_string('leaveoverview', 'local_hrdepartment'));
+echo html_writer::start_div('local-hrdepartment-leave');
 
-if ($canviewany) {
+echo local_hrdepartment_render_page_hero(
+    get_string('leaveoverview', 'local_hrdepartment'),
+    get_string('leaveoverviewsubtitle', 'local_hrdepartment')
+);
 
-    $courseidsarray = $canviewall ? null : array_keys($manageablecourses);
-
-    echo html_writer::start_div('d-flex flex-wrap mb-3');
-    echo html_writer::link(
-        new moodle_url('/local/hrdepartment/leave/lookup.php'),
-        get_string('leavelookup', 'local_hrdepartment'),
-        ['class' => 'btn btn-outline-secondary mr-2 mb-2']
+echo html_writer::start_div('hrdept-quicklink-grid');
+if ($canmanage) {
+    echo local_hrdepartment_render_quicklink(
+        new moodle_url('/local/hrdepartment/leave/edit.php'),
+        get_string('logleaverequest', 'local_hrdepartment'),
+        'fa-calendar-plus'
     );
-    echo html_writer::link(
-        new moodle_url('/local/hrdepartment/leave/reports.php'),
-        get_string('leavereports', 'local_hrdepartment'),
-        ['class' => 'btn btn-outline-secondary mr-2 mb-2']
-    );
-    echo html_writer::end_div();
-
-    $summary = student_leave_manager::get_dashboard_summary($courseidsarray);
-
-    echo html_writer::start_div('row');
-    $cards = [
-        ['label' => get_string('activeleavetoday', 'local_hrdepartment'), 'value' => $summary->today],
-        ['label' => get_string('leavethismonth', 'local_hrdepartment'), 'value' => $summary->thismonth],
-        ['label' => get_string('totalleaverecords', 'local_hrdepartment'), 'value' => $summary->total],
-    ];
-    foreach ($cards as $card) {
-        echo html_writer::start_div('col-md-4 col-sm-6 mb-3');
-        echo html_writer::div(
-            html_writer::div($card['value'], 'display-6') .
-            html_writer::div($card['label'], 'text-muted small text-uppercase'),
-            'card card-body h-100'
-        );
-        echo html_writer::end_div();
-    }
-    echo html_writer::end_div();
-
-    if (!empty($summary->bycourse)) {
-        echo html_writer::start_div('card mb-3');
-        echo html_writer::div(get_string('bycourseleave', 'local_hrdepartment'), 'card-header');
-        echo html_writer::start_div('card-body');
-        foreach ($summary->bycourse as $row) {
-            echo html_writer::span(
-                $row->shortname . ': ' . format_string($row->fullname) . ' - ' . $row->total,
-                'badge badge-secondary mr-2 mb-1'
-            );
-        }
-        echo html_writer::end_div();
-        echo html_writer::end_div();
-    }
-
-    $recent = student_leave_manager::get_recent_leave_records($courseidsarray);
-
-    echo html_writer::start_div('card mb-3');
-    echo html_writer::div(get_string('recentleaverecords', 'local_hrdepartment'), 'card-header');
-
-    if (empty($recent)) {
-        echo html_writer::div(get_string('norecentleaverecords', 'local_hrdepartment'), 'card-body text-muted');
-    } else {
-        $table = new html_table();
-        $table->head = [
-            get_string('student', 'local_hrdepartment'),
-            get_string('course', 'local_hrdepartment'),
-            get_string('attendancedate', 'local_hrdepartment'),
-            get_string('remarks', 'local_hrdepartment'),
-        ];
-        $table->attributes['class'] = 'generaltable mb-0';
-
-        $dateformat = get_string('strftimedatefullshort', 'langconfig');
-
-        foreach ($recent as $row) {
-            $viewurl = new moodle_url('/local/hrdepartment/leave/view.php', ['id' => $row->logid]);
-            $table->data[] = [
-                html_writer::link($viewurl, $row->fullname),
-                $row->shortname . ': ' . format_string($row->fullname),
-                userdate($row->sessdate, $dateformat),
-                $row->remarks !== null && $row->remarks !== '' ? format_string($row->remarks) : '-',
-            ];
-        }
-
-        echo html_writer::table($table);
-    }
-    echo html_writer::end_div();
-
-} else {
-
-    // Self-service: the logged-in user's own leave-marked attendance
-    // records across every course.
-    $mine = student_leave_manager::get_leave_rows(['studentid' => (int) $USER->id]);
-
-    if (empty($mine)) {
-        echo $OUTPUT->notification(get_string('norecentleaverecords', 'local_hrdepartment'), 'info');
-    } else {
-        $table = new html_table();
-        $table->head = [
-            get_string('course', 'local_hrdepartment'),
-            get_string('attendancedate', 'local_hrdepartment'),
-            get_string('remarks', 'local_hrdepartment'),
-        ];
-        $table->attributes['class'] = 'generaltable local-hrdepartment-my-leave';
-
-        $dateformat = get_string('strftimedatefullshort', 'langconfig');
-
-        foreach ($mine as $row) {
-            $table->data[] = [
-                $row->shortname . ': ' . format_string($row->fullname),
-                userdate($row->sessdate, $dateformat),
-                $row->remarks !== null && $row->remarks !== '' ? format_string($row->remarks) : '-',
-            ];
-        }
-
-        echo html_writer::table($table);
-    }
 }
+echo local_hrdepartment_render_quicklink(
+    new moodle_url('/local/hrdepartment/leave/lookup.php'),
+    get_string('leaverequests', 'local_hrdepartment'),
+    'fa-list-alt'
+);
+if ($canmanage) {
+    echo local_hrdepartment_render_quicklink(
+        new moodle_url('/local/hrdepartment/leave/types.php'),
+        get_string('leavetypes', 'local_hrdepartment'),
+        'fa-tags'
+    );
+    echo local_hrdepartment_render_quicklink(
+        new moodle_url('/local/hrdepartment/leave/balance.php'),
+        get_string('leavebalances', 'local_hrdepartment'),
+        'fa-balance-scale'
+    );
+}
+echo local_hrdepartment_render_quicklink(
+    new moodle_url('/local/hrdepartment/leave/reports.php'),
+    get_string('leavereports', 'local_hrdepartment'),
+    'fa-chart-bar'
+);
+echo html_writer::end_div();
+
+$summary = student_leave_manager::get_dashboard_summary();
+
+echo html_writer::start_div('hrdept-stats-strip');
+echo local_hrdepartment_render_stat_card(
+    (string) $summary->pending,
+    get_string('pendingleaverequests', 'local_hrdepartment'),
+    'hrdept-stat-pending',
+    'fa-hourglass-half'
+);
+echo local_hrdepartment_render_stat_card(
+    (string) $summary->onleavetoday,
+    get_string('onleavetoday', 'local_hrdepartment'),
+    'hrdept-stat-onleave',
+    'fa-user-clock'
+);
+echo local_hrdepartment_render_stat_card(
+    (string) $summary->approvedthismonth,
+    get_string('leaveapprovedthismonth', 'local_hrdepartment'),
+    'hrdept-stat-approved',
+    'fa-calendar-check'
+);
+echo local_hrdepartment_render_stat_card(
+    (string) $summary->total,
+    get_string('totalleaverecords', 'local_hrdepartment'),
+    'hrdept-stat-total',
+    'fa-calendar-alt'
+);
+echo html_writer::end_div();
+
+$recent = student_leave_manager::get_recent_applications();
+
+echo html_writer::start_div('hrdept-summary-card mb-3');
+echo html_writer::div(
+    html_writer::span(
+        html_writer::tag('i', '', ['class' => 'icon fa fa-clock', 'aria-hidden' => 'true']) .
+        get_string('recentleaverecords', 'local_hrdepartment'),
+        'hrdept-summary-card-title'
+    ),
+    'hrdept-summary-card-header'
+);
+
+if (empty($recent)) {
+    echo local_hrdepartment_render_empty_state(
+        get_string('norecentleaverecords', 'local_hrdepartment'),
+        'fa-calendar-check'
+    );
+} else {
+    $dateformat = get_string('strftimedatefullshort', 'langconfig');
+
+    echo html_writer::start_div('hrdept-activity-list');
+    foreach ($recent as $row) {
+        $viewurl = new moodle_url('/local/hrdepartment/leave/view.php', ['id' => $row->id]);
+        $initials = mb_strtoupper(mb_substr($row->firstname, 0, 1) . mb_substr($row->lastname, 0, 1));
+
+        $meta = format_string($row->leavetypename) . ' &middot; '
+            . userdate($row->startdate, $dateformat) . ' &ndash; ' . userdate($row->enddate, $dateformat);
+
+        echo html_writer::link(
+            $viewurl,
+            html_writer::span($initials, 'hrdept-activity-avatar') .
+            html_writer::span(
+                html_writer::span(s($row->fullname), 'hrdept-activity-name') .
+                html_writer::span($meta, 'hrdept-activity-meta'),
+                'hrdept-activity-body'
+            ) .
+            local_hrdepartment_leave_status_badge($row->status) .
+            html_writer::span($row->totaldays . ' ' . get_string('totaldays', 'local_hrdepartment'), 'hrdept-activity-days'),
+            ['class' => 'hrdept-activity-item']
+        );
+    }
+    echo html_writer::end_div();
+}
+echo html_writer::end_div();
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

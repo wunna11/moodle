@@ -78,7 +78,6 @@ class staff_profile implements renderable, templatable {
             'employeecode' => $staff->employeecode,
             'departmentname' => $staff->departmentname ?: '-',
             'designation' => $staff->designation ?: '-',
-            'reportstoname' => $this->get_manager_name($staff->reportsto),
             'employmentstatus' => $employeeactive
                 ? get_string('status_active', 'local_hrdepartment')
                 : get_string('status_suspended', 'local_hrdepartment'),
@@ -93,24 +92,5 @@ class staff_profile implements renderable, templatable {
                 'id' => $staff->id, 'reactivate' => 1,
             ]))->out(false),
         ];
-    }
-
-    /**
-     * Looks up a manager's display name for the "reports to" field.
-     *
-     * @param int|null $employeeid
-     * @return string
-     */
-    protected function get_manager_name(?int $employeeid): string {
-        global $DB;
-
-        if (!$employeeid) {
-            return '-';
-        }
-
-        $sql = "SELECT u.* FROM {hrdep_employee} e JOIN {user} u ON u.id = e.userid WHERE e.id = :id";
-        $manager = $DB->get_record_sql($sql, ['id' => $employeeid]);
-
-        return $manager ? fullname($manager) : '-';
     }
 }

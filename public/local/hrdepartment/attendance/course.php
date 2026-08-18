@@ -23,7 +23,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\student_attendance_manager;
+use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
 
@@ -34,7 +36,7 @@ $courseid = required_param('courseid', PARAM_INT);
 $context = context_system::instance();
 
 if (!student_attendance_manager::can_view_course_attendance($courseid)) {
-    require_capability('local/hrdepartment:manageattendance', $context);
+    access_manager::require_manage('local/hrdepartment:manageattendance');
 }
 
 $course = $DB->get_record('course', ['id' => $courseid], '*', MUST_EXIST);
@@ -44,25 +46,29 @@ $PAGE->set_url(new moodle_url('/local/hrdepartment/attendance/course.php', ['cou
 $PAGE->set_pagelayout('standard');
 $title = $course->shortname . ': ' . format_string($course->fullname);
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('attendance');
-echo $OUTPUT->tabtree($tabs, 'attendance');
+echo local_hrdepartment_render_tab_bar('attendance');
 
-echo html_writer::link(
+echo html_writer::start_div('local-hrdepartment-attendance');
+
+echo local_hrdepartment_render_subheader(
+    $title,
+    get_string('attendancesessionssubtitle', 'local_hrdepartment'),
     new moodle_url('/local/hrdepartment/attendance/index.php'),
-    '&laquo; ' . get_string('backtocourses', 'local_hrdepartment'),
-    ['class' => 'mb-2 d-inline-block']
+    get_string('backtocourses', 'local_hrdepartment')
 );
-
-echo $OUTPUT->heading($title);
 
 $sessions = student_attendance_manager::get_sessions_for_course($courseid);
 
 if (empty($sessions)) {
-    echo $OUTPUT->notification(get_string('nosessionsforcourse', 'local_hrdepartment'), 'info');
+    echo local_hrdepartment_render_empty_state(
+        get_string('nosessionsforcourse', 'local_hrdepartment'),
+        'fa-calendar-times'
+    );
+    echo html_writer::end_div();
     echo $OUTPUT->footer();
     exit;
 }
@@ -97,6 +103,8 @@ foreach ($sessions as $session) {
     ];
 }
 
-echo html_writer::table($table);
+echo local_hrdepartment_render_table_card(html_writer::table($table));
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

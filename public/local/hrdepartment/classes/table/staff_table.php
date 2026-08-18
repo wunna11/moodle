@@ -17,6 +17,13 @@
 /**
  * Sortable, searchable, paginated staff listing.
  *
+ * UNUSED as of the Staff directory redesign: staff/index.php now renders
+ * local_hrdepartment\output\staff_directory (a card grid with a
+ * department + status filter bar, matching the Lecturers and Students
+ * directories) instead of this table_sql class. Left in place rather
+ * than deleted - remove it in a future cleanup pass if nothing else
+ * starts using it.
+ *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

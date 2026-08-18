@@ -172,6 +172,150 @@ function xmldb_local_hrdepartment_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026081500, 'local', 'hrdepartment');
     }
 
+    if ($oldversion < 2026081600) {
+        // 2026081500 was itself reversed: the self-contained student
+        // leave request/approval workflow is restored, this time with
+        // its permission checks scoped to CONTEXT_USER (see db/access.php
+        // - local/hrdepartment:managestudentleave / :viewstudentleave)
+        // instead of the site-wide-only CONTEXT_SYSTEM the 2026081400
+        // build used, so an "Approver" role can be delegated on a single
+        // student's profile as well as assigned globally. Table shapes
+        // are unchanged from 2026081400 - recreated here since 2026081500
+        // dropped them; safe/no-op if a site somehow still has them (e.g.
+        // never actually ran the 2026081500 downgrade in production).
+        $table = new xmldb_table('hrdep_studentleavetype');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $table->add_field('name', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL);
+            $table->add_field('description', XMLDB_TYPE_TEXT, null, null, null);
+            $table->add_field('maxdaysperyear', XMLDB_TYPE_NUMBER, '6, 2', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('requiresapproval', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('active', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1');
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_index('idx_name', XMLDB_INDEX_UNIQUE, ['name']);
+            $table->add_index('idx_active', XMLDB_INDEX_NOTUNIQUE, ['active']);
+            $dbman->create_table($table);
+        }
+
+        $table = new xmldb_table('hrdep_studentleaveapp');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $table->add_field('studentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, null);
+            $table->add_field('leavetypeid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('startdate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('enddate', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('totaldays', XMLDB_TYPE_NUMBER, '6, 2', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('reason', XMLDB_TYPE_TEXT, null, null, null);
+            $table->add_field('status', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'pending');
+            $table->add_field('submittedby', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('reviewedby', XMLDB_TYPE_INTEGER, '10', null, null);
+            $table->add_field('reviewnote', XMLDB_TYPE_TEXT, null, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_index('idx_studentid', XMLDB_INDEX_NOTUNIQUE, ['studentid']);
+            $table->add_index('idx_leavetypeid', XMLDB_INDEX_NOTUNIQUE, ['leavetypeid']);
+            $table->add_index('idx_courseid', XMLDB_INDEX_NOTUNIQUE, ['courseid']);
+            $table->add_index('idx_status', XMLDB_INDEX_NOTUNIQUE, ['status']);
+            $table->add_index('idx_dates', XMLDB_INDEX_NOTUNIQUE, ['startdate', 'enddate']);
+            $dbman->create_table($table);
+        }
+
+        $table = new xmldb_table('hrdep_studentleavebalance');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+            $table->add_field('studentid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('leavetypeid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_field('academicyear', XMLDB_TYPE_CHAR, '9', null, XMLDB_NOTNULL);
+            $table->add_field('allocated', XMLDB_TYPE_NUMBER, '6, 2', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('used', XMLDB_TYPE_NUMBER, '6, 2', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('remaining', XMLDB_TYPE_NUMBER, '6, 2', null, XMLDB_NOTNULL, null, '0');
+            $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+            $table->add_index('idx_student_type_year', XMLDB_INDEX_UNIQUE, ['studentid', 'leavetypeid', 'academicyear']);
+            $dbman->create_table($table);
+        }
+
+        if (!$DB->record_exists('hrdep_studentleavetype', [])) {
+            $now = time();
+            $defaults = [
+                ['name' => 'Medical Leave', 'maxdaysperyear' => 10],
+                ['name' => 'Personal Leave', 'maxdaysperyear' => 5],
+                ['name' => 'Emergency Leave', 'maxdaysperyear' => 5],
+                ['name' => 'Family Leave', 'maxdaysperyear' => 3],
+            ];
+            foreach ($defaults as $default) {
+                $DB->insert_record('hrdep_studentleavetype', (object) [
+                    'name' => $default['name'],
+                    'description' => null,
+                    'maxdaysperyear' => $default['maxdaysperyear'],
+                    'requiresapproval' => 1,
+                    'active' => 1,
+                    'timecreated' => $now,
+                    'timemodified' => $now,
+                ]);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026081600, 'local', 'hrdepartment');
+    }
+
+    if ($oldversion < 2026081700) {
+        // "Reports to" turned out to be a display-only field: it was
+        // never consulted by the student leave approval workflow (that
+        // runs on the delegated CONTEXT_USER "Approver" capability
+        // system instead - see student_leave_manager.php) or by any
+        // access-control/scoping logic, despite what its column comment
+        // and the viewallrecords capability comment implied. It only
+        // populated a dropdown on the lecturer/staff edit forms and an
+        // org-chart-style line on the profile view. Removed per user
+        // request rather than keeping unused UI/schema around.
+        $table = new xmldb_table('hrdep_employee');
+
+        $index = new xmldb_index('idx_reportsto', XMLDB_INDEX_NOTUNIQUE, ['reportsto']);
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
+        $field = new xmldb_field('reportsto', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026081700, 'local', 'hrdepartment');
+    }
+
+    if ($oldversion < 2026081900) {
+        // Task 6 follow-up: students now submit their own leave requests
+        // (leave/apply.php) instead of only HR/staff logging one on their
+        // behalf via leave/edit.php, and choose which of their own course
+        // teachers should review it. Store that choice so the chosen
+        // teacher - who does not necessarily hold local/hrdepartment:
+        // managestudentleave anywhere - can still approve/reject that one
+        // application without an admin first setting up a delegated
+        // "Approver" role assignment on the student's profile (see
+        // student_leave_manager::can_review_application()). Nullable and
+        // optional: HR-logged applications don't set it and keep relying
+        // purely on the existing capability-based approval, unchanged.
+        $table = new xmldb_table('hrdep_studentleaveapp');
+        if ($dbman->table_exists($table)) {
+            $field = new xmldb_field('approverid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'submittedby');
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+
+            $index = new xmldb_index('idx_approverid', XMLDB_INDEX_NOTUNIQUE, ['approverid']);
+            if (!$dbman->index_exists($table, $index)) {
+                $dbman->add_index($table, $index);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026081900, 'local', 'hrdepartment');
+    }
+
     // Future upgrade steps go here, gated by $oldversion checks, e.g.:
     // if ($oldversion < 2026090100) {
     //     ... table/field changes via $dbman ...

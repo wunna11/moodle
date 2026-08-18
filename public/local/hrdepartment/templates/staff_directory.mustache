@@ -1,0 +1,203 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_hrdepartment/staff_directory
+
+    A searchable/filterable, paginated card grid of every staff member.
+    Replaces the old table_sql listing with the same card-grid design
+    used by the Lecturers and Students directories. Simpler than the
+    lecturer card: no academic text and no course-assignment action.
+
+    Example context (json):
+    {
+        "totalstaff": 18,
+        "activestaff": 16,
+        "suspendedstaff": 2,
+        "departmentcount": 4,
+        "search": "",
+        "formaction": "#",
+        "departmentoptions": [
+            { "value": 0, "label": "All departments", "issel": true },
+            { "value": 2, "label": "Registrar's Office", "issel": false }
+        ],
+        "statusoptions": [
+            { "value": "", "label": "All statuses", "issel": true },
+            { "value": "active", "label": "Active", "issel": false },
+            { "value": "suspended", "label": "Suspended", "issel": false }
+        ],
+        "addstaffurl": "#",
+        "hasstaff": true,
+        "resultcount": 18,
+        "stafflist": [
+            {
+                "id": 11,
+                "fullname": "Su Su Hlaing",
+                "email": "su@example.com",
+                "employeecode": "STF-011",
+                "departmentname": "Registrar's Office",
+                "hasdepartment": true,
+                "designation": "Administrative Officer",
+                "hasdesignation": true,
+                "avatarhtml": "<img src=\"#\">",
+                "viewurl": "#",
+                "editurl": "#",
+                "deactivateurl": "#",
+                "reactivateurl": "#",
+                "issuspended": false
+            }
+        ],
+        "haspaging": true,
+        "pagingbarhtml": "<div class=\"paging\">...</div>"
+    }
+}}
+<div class="local-hrdepartment-staff">
+
+    <div class="hrdept-stats-strip">
+        <div class="hrdept-stat-card hrdept-stat-total">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-users" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{totalstaff}}</div>
+                <div class="hrdept-stat-label">{{#str}}totalstaff, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-active">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-check" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{activestaff}}</div>
+                <div class="hrdept-stat-label">{{#str}}status_active, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-suspended">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-slash" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{suspendedstaff}}</div>
+                <div class="hrdept-stat-label">{{#str}}status_suspended, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-departments">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-building" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{departmentcount}}</div>
+                <div class="hrdept-stat-label">{{#str}}departments, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+    </div>
+
+    <form method="get" action="{{formaction}}" class="hrdept-filter-bar">
+        <div class="hrdept-filter-search">
+            <i class="icon fa fa-search" aria-hidden="true"></i>
+            <input
+                type="text"
+                name="search"
+                value="{{search}}"
+                placeholder="{{#str}}searchstaffplaceholder, local_hrdepartment{{/str}}"
+                class="form-control"
+            >
+        </div>
+        <select name="departmentid" class="form-control hrdept-filter-select">
+            {{#departmentoptions}}
+            <option value="{{value}}" {{#issel}}selected{{/issel}}>{{label}}</option>
+            {{/departmentoptions}}
+        </select>
+        <select name="status" class="form-control hrdept-filter-select">
+            {{#statusoptions}}
+            <option value="{{value}}" {{#issel}}selected{{/issel}}>{{label}}</option>
+            {{/statusoptions}}
+        </select>
+        <button type="submit" class="btn btn-primary hrdept-filter-submit">
+            <i class="icon fa fa-filter" aria-hidden="true"></i> {{#str}}filter, local_hrdepartment{{/str}}
+        </button>
+        <a href="{{formaction}}" class="btn btn-link hrdept-filter-reset">{{#str}}resetfilters, local_hrdepartment{{/str}}</a>
+        <a href="{{addstaffurl}}" class="btn btn-success hrdept-filter-add">
+            <i class="icon fa fa-plus" aria-hidden="true"></i> {{#str}}addstaffmember, local_hrdepartment{{/str}}
+        </a>
+    </form>
+
+    <div class="hrdept-result-count text-muted small mb-2">
+        {{resultcount}} {{#str}}staff, local_hrdepartment{{/str}}
+    </div>
+
+    {{#hasstaff}}
+    <div class="hrdept-staff-grid">
+        {{#stafflist}}
+        <div class="hrdept-staff-card {{#issuspended}}hrdept-staff-suspended{{/issuspended}}">
+            <div class="hrdept-staff-card-header">
+                <div class="hrdept-staff-avatar">{{{avatarhtml}}}</div>
+                <div class="hrdept-staff-identity">
+                    <a href="{{viewurl}}" class="hrdept-staff-name" title="{{fullname}}">{{fullname}}</a>
+                    <div class="hrdept-staff-email" title="{{email}}">
+                        <i class="icon fa fa-envelope" aria-hidden="true"></i> {{email}}
+                    </div>
+                    <div class="hrdept-staff-code">
+                        <i class="icon fa fa-id-badge" aria-hidden="true"></i> {{employeecode}}
+                    </div>
+                </div>
+                <span class="hrdept-status-badge {{#issuspended}}hrdept-status-suspended{{/issuspended}}{{^issuspended}}hrdept-status-active{{/issuspended}}">
+                    {{#issuspended}}{{#str}}status_suspended, local_hrdepartment{{/str}}{{/issuspended}}
+                    {{^issuspended}}{{#str}}status_active, local_hrdepartment{{/str}}{{/issuspended}}
+                </span>
+            </div>
+
+            <div class="hrdept-staff-card-body">
+                {{#hasdepartment}}
+                <span class="hrdept-staff-pill hrdept-staff-pill-dept">
+                    <i class="icon fa fa-building" aria-hidden="true"></i> {{departmentname}}
+                </span>
+                {{/hasdepartment}}
+                {{#hasdesignation}}
+                <span class="hrdept-staff-pill hrdept-staff-pill-designation">
+                    <i class="icon fa fa-briefcase" aria-hidden="true"></i> {{designation}}
+                </span>
+                {{/hasdesignation}}
+            </div>
+
+            <div class="hrdept-staff-card-actions">
+                <a href="{{viewurl}}" class="hrdept-action-btn" title="{{#str}}view{{/str}}">
+                    <i class="icon fa fa-eye" aria-hidden="true"></i>
+                </a>
+                <a href="{{editurl}}" class="hrdept-action-btn" title="{{#str}}edit{{/str}}">
+                    <i class="icon fa fa-pencil-alt" aria-hidden="true"></i>
+                </a>
+                {{^issuspended}}
+                <a href="{{deactivateurl}}" class="hrdept-action-btn hrdept-action-btn-danger" title="{{#str}}deactivate, local_hrdepartment{{/str}}">
+                    <i class="icon fa fa-user-slash" aria-hidden="true"></i>
+                </a>
+                {{/issuspended}}
+                {{#issuspended}}
+                <a href="{{reactivateurl}}" class="hrdept-action-btn hrdept-action-btn-success" title="{{#str}}reactivate, local_hrdepartment{{/str}}">
+                    <i class="icon fa fa-user-check" aria-hidden="true"></i>
+                </a>
+                {{/issuspended}}
+            </div>
+        </div>
+        {{/stafflist}}
+    </div>
+    {{/hasstaff}}
+    {{^hasstaff}}
+    <div class="hrdept-empty-state">
+        <i class="icon fa fa-users" aria-hidden="true"></i>
+        <p>{{#str}}nostaffmembersfound, local_hrdepartment{{/str}}</p>
+    </div>
+    {{/hasstaff}}
+
+    {{#haspaging}}
+    <div class="hrdept-paging">
+        {{{pagingbarhtml}}}
+    </div>
+    {{/haspaging}}
+
+</div>

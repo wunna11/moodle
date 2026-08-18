@@ -15,60 +15,47 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Staff listing page.
+ * Staff directory: search/filter every staff member by name, email,
+ * employee code, department, and status, in a card grid. See
+ * local_hrdepartment\staff_manager.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use local_hrdepartment\table\staff_table;
+use local_hrdepartment\access_manager;
+use local_hrdepartment\output\staff_directory;
 
 require_once(__DIR__ . '/../../../config.php');
 
 require_login();
 
 $context = context_system::instance();
-require_capability('local/hrdepartment:managestaff', $context);
+access_manager::require_manage('local/hrdepartment:managestaff');
 
 $search = optional_param('search', '', PARAM_TEXT);
+$departmentid = optional_param('departmentid', 0, PARAM_INT);
+$status = optional_param('status', '', PARAM_ALPHA);
+$page = optional_param('page', 0, PARAM_INT);
 
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/hrdepartment/staff/index.php', ['search' => $search]));
+$PAGE->set_url(new moodle_url('/local/hrdepartment/staff/index.php', [
+    'search' => $search, 'departmentid' => $departmentid, 'status' => $status, 'page' => $page,
+]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('staff', 'local_hrdepartment'));
 $PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
 
+$renderer = $PAGE->get_renderer('local_hrdepartment');
+
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('staff');
-echo $OUTPUT->tabtree($tabs, 'staff');
+echo local_hrdepartment_render_tab_bar('staff');
 
-echo $OUTPUT->heading(get_string('staff', 'local_hrdepartment'));
+echo $OUTPUT->heading(get_string('staffdirectory', 'local_hrdepartment'));
 
-echo html_writer::start_div('d-flex justify-content-between align-items-center mb-3');
-
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'form-inline']);
-echo html_writer::empty_tag('input', [
-    'type' => 'text',
-    'name' => 'search',
-    'value' => $search,
-    'placeholder' => get_string('search'),
-    'class' => 'form-control mr-2',
-]);
-echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('search'), 'class' => 'btn btn-secondary']);
-echo html_writer::end_tag('form');
-
-echo html_writer::link(
-    new moodle_url('/local/hrdepartment/staff/edit.php'),
-    get_string('addstaffmember', 'local_hrdepartment'),
-    ['class' => 'btn btn-primary']
-);
-
-echo html_writer::end_div();
-
-$table = new staff_table('local-hrdepartment-staff', $search);
-$table->define_baseurl($PAGE->url);
-$table->out(20, true);
+$directory = new staff_directory($search, $departmentid, $status, $page, $PAGE->url);
+echo $renderer->render_staff_directory($directory);
 
 echo $OUTPUT->footer();

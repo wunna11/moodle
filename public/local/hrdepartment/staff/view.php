@@ -22,6 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\output\staff_profile;
 use local_hrdepartment\staff_manager;
 
@@ -32,7 +33,7 @@ require_login();
 $id = required_param('id', PARAM_INT);
 
 $context = context_system::instance();
-require_capability('local/hrdepartment:managestaff', $context);
+access_manager::require_manage('local/hrdepartment:managestaff');
 
 $staff = staff_manager::get_staff($id);
 if (!$staff) {
@@ -49,8 +50,7 @@ $renderer = $PAGE->get_renderer('local_hrdepartment');
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('staff');
-echo $OUTPUT->tabtree($tabs, 'staff');
+echo local_hrdepartment_render_tab_bar('staff');
 
 echo $renderer->render_staff_profile(new staff_profile($staff));
 

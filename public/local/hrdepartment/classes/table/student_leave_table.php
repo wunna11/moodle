@@ -15,9 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Sortable, searchable, paginated listing of leave-marked mod_attendance
- * records, for the Student Leave Lookup page. Read-only, like the rest
- * of this section - see local_hrdepartment\student_leave_manager.
+ * Sortable, searchable, paginated listing of student leave applications,
+ * for the Leave requests page.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
@@ -38,61 +37,65 @@ use moodle_url;
  */
 class student_leave_table extends \table_sql {
 
+    /** @var bool whether the viewing user can manage (not just view) applications. */
+    protected $canmanage;
+
     /**
      * Constructor.
      *
      * @param string $uniqueid
      * @param string $search student name/email search
-     * @param int $courseid 0 = any (subject to $courseids restriction)
-     * @param int[]|null $courseids restrict to these course ids, or null for no restriction
+     * @param string $status status filter, '' = any
+     * @param int $leavetypeid 0 = any
+     * @param bool $canmanage whether to show manage actions (edit/review/cancel) vs view-only
      */
-    public function __construct(string $uniqueid, string $search = '', int $courseid = 0, ?array $courseids = null) {
+    public function __construct(string $uniqueid, string $search, string $status, int $leavetypeid, bool $canmanage) {
         parent::__construct($uniqueid);
 
+        $this->canmanage = $canmanage;
+
         $this->define_columns([
-            'fullname', 'coursename', 'sessdate', 'remarks', 'actions',
+            'fullname', 'leavetypename', 'approver', 'dates', 'totaldays', 'status', 'actions',
         ]);
         $this->define_headers([
             get_string('student', 'local_hrdepartment'),
-            get_string('course', 'local_hrdepartment'),
-            get_string('attendancedate', 'local_hrdepartment'),
-            get_string('remarks', 'local_hrdepartment'),
+            get_string('leavetype', 'local_hrdepartment'),
+            get_string('approver', 'local_hrdepartment'),
+            get_string('startdate', 'local_hrdepartment') . ' - ' . get_string('enddate', 'local_hrdepartment'),
+            get_string('totaldays', 'local_hrdepartment'),
+            get_string('status', 'local_hrdepartment'),
             get_string('actions'),
         ]);
 
-        $this->sortable(true, 'sessdate', SORT_DESC);
+        $this->sortable(true, 'timecreated', SORT_DESC);
+        $this->no_sorting('dates');
+        $this->no_sorting('approver');
         $this->no_sorting('actions');
-        $this->no_sorting('coursename');
         $this->collapsible(false);
         $this->set_attribute('class', 'generaltable local-hrdepartment-student-leave-table');
 
         global $DB;
 
-        $fields = "l.id, u.id AS studentid, u.firstname, u.lastname,
-                   a.course AS courseid, c.shortname, c.fullname AS coursefullname,
-                   s.sessdate, l.remarks";
-        $from = "{attendance_log} l
-                 JOIN {attendance_sessions} s ON s.id = l.sessionid
-                 JOIN {attendance} a ON a.id = s.attendanceid
-                 JOIN {course} c ON c.id = a.course
-                 JOIN {attendance_statuses} st ON st.id = l.statusid
-                 JOIN {user} u ON u.id = l.studentid";
+        $fields = "a.id, a.studentid, u.firstname, u.lastname,
+                   a.leavetypeid, lt.name AS leavetypename,
+                   a.approverid, au.firstname AS approverfirstname, au.lastname AS approverlastname,
+                   a.startdate, a.enddate, a.totaldays, a.status, a.timecreated";
+        $from = "{hrdep_studentleaveapp} a
+                 JOIN {user} u ON u.id = a.studentid
+                 JOIN {hrdep_studentleavetype} lt ON lt.id = a.leavetypeid
+            LEFT JOIN {user} au ON au.id = a.approverid";
 
-        $where = 'LOWER(st.description) = LOWER(:leavelabel)';
-        $params = ['leavelabel' => student_leave_manager::get_leave_status_label()];
+        $where = '1 = 1';
+        $params = [];
 
-        if ($courseids !== null) {
-            if (empty($courseids)) {
-                $courseids = [0];
-            }
-            [$insql, $inparams] = $DB->get_in_or_equal($courseids, SQL_PARAMS_NAMED, 'course');
-            $where .= " AND a.course $insql";
-            $params += $inparams;
+        if ($status !== '') {
+            $where .= ' AND a.status = :status';
+            $params['status'] = $status;
         }
 
-        if ($courseid) {
-            $where .= ' AND a.course = :courseid';
-            $params['courseid'] = $courseid;
+        if ($leavetypeid) {
+            $where .= ' AND a.leavetypeid = :leavetypeid';
+            $params['leavetypeid'] = $leavetypeid;
         }
 
         if ($search !== '') {
@@ -110,7 +113,7 @@ class student_leave_table extends \table_sql {
     }
 
     /**
-     * Renders the fullname column as a link to the record detail view.
+     * Renders the fullname column as a link to the application detail.
      *
      * @param \stdClass $row
      * @return string
@@ -121,45 +124,82 @@ class student_leave_table extends \table_sql {
     }
 
     /**
-     * Renders the course column.
+     * Renders the leave type column.
      *
      * @param \stdClass $row
      * @return string
      */
-    public function col_coursename($row): string {
-        return $row->shortname . ': ' . format_string($row->coursefullname);
+    public function col_leavetypename($row): string {
+        return format_string($row->leavetypename);
     }
 
     /**
-     * Renders the session date column.
+     * Renders the approver column: the teacher this student chose to
+     * review their own self-service application (leave/apply.php), or a
+     * dash for HR-logged applications, which don't set one and rely on
+     * the capability-based HR/Admin/delegated-Approver path instead.
      *
      * @param \stdClass $row
      * @return string
      */
-    public function col_sessdate($row): string {
-        return userdate($row->sessdate, get_string('strftimedatefullshort', 'langconfig'));
+    public function col_approver($row): string {
+        if (empty($row->approverid)) {
+            return get_string('noapproverassigned', 'local_hrdepartment');
+        }
+
+        return fullname((object) ['firstname' => $row->approverfirstname, 'lastname' => $row->approverlastname]);
     }
 
     /**
-     * Renders the remarks column, falling back to a dash when unset.
+     * Renders the start-end date range column.
      *
      * @param \stdClass $row
      * @return string
      */
-    public function col_remarks($row): string {
-        return $row->remarks !== null && $row->remarks !== '' ? format_string($row->remarks) : '-';
+    public function col_dates($row): string {
+        $dateformat = get_string('strftimedatefullshort', 'langconfig');
+        return userdate($row->startdate, $dateformat) . ' - ' . userdate($row->enddate, $dateformat);
     }
 
     /**
-     * Renders the row action link (view detail).
+     * Renders the status column as a coloured badge.
+     *
+     * @param \stdClass $row
+     * @return string
+     */
+    public function col_status($row): string {
+        $class = [
+            'pending' => 'badge-warning',
+            'approved' => 'badge-success',
+            'rejected' => 'badge-danger',
+            'cancelled' => 'badge-secondary',
+        ][$row->status] ?? 'badge-secondary';
+
+        return \html_writer::span(get_string('status_' . $row->status, 'local_hrdepartment'), 'badge ' . $class);
+    }
+
+    /**
+     * Renders the row action links (view, plus edit/review/cancel when
+     * the viewing user can manage and the application is still actionable).
      *
      * @param \stdClass $row
      * @return string
      */
     public function col_actions($row): string {
-        return \html_writer::link(
+        $actions = [];
+
+        $actions[] = \html_writer::link(
             new moodle_url('/local/hrdepartment/leave/view.php', ['id' => $row->id]),
             get_string('view')
         );
+
+        if ($this->canmanage && $row->status === 'pending') {
+            $actions[] = \html_writer::link(
+                new moodle_url('/local/hrdepartment/leave/edit.php', ['id' => $row->id]),
+                get_string('edit')
+            );
+        }
+
+        return implode(' | ', $actions);
     }
 }

@@ -83,7 +83,7 @@ class student_attendance_manager {
     public static function can_view_course_attendance(int $courseid): bool {
         global $USER;
 
-        if (has_capability('local/hrdepartment:manageattendance', \context_system::instance())) {
+        if (access_manager::can_manage('local/hrdepartment:manageattendance')) {
             return true;
         }
 

@@ -1,0 +1,99 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_hrdepartment/student_profile
+
+    A single student's profile: header details (avatar, contact, status,
+    last access) plus their full enrolled-course list as a card grid.
+    Linked from the Students directory instead of showing courses inline
+    there, so a student enrolled in many courses doesn't blow out a card
+    in that grid.
+
+    Example context (json):
+    {
+        "id": 42,
+        "fullname": "Aye Aye Mon",
+        "email": "aye@example.com",
+        "location": "Yangon, Myanmar",
+        "haslocation": true,
+        "avatarhtml": "<img src=\"#\">",
+        "profileurl": "#",
+        "issuspended": false,
+        "lastaccess": "12 Aug 2026, 09:14",
+        "coursecount": 2,
+        "hascourses": true,
+        "courses": [
+            { "id": 1, "shortname": "CS101", "fullname": "Intro to Programming", "url": "#" },
+            { "id": 2, "shortname": "MATH201", "fullname": "Calculus II", "url": "#" }
+        ],
+        "backurl": "#"
+    }
+}}
+<div class="local-hrdepartment-student-profile">
+
+    <a href="{{backurl}}" class="hrdept-back-link">
+        <i class="icon fa fa-arrow-left" aria-hidden="true"></i> {{#str}}backtostudents, local_hrdepartment{{/str}}
+    </a>
+
+    <div class="hrdept-profile-hero">
+        <div class="hrdept-profile-avatar">{{{avatarhtml}}}</div>
+        <div class="hrdept-profile-identity">
+            <h2 class="hrdept-profile-name">{{fullname}}</h2>
+            <div class="hrdept-profile-meta">
+                <span class="hrdept-profile-meta-item"><i class="icon fa fa-envelope" aria-hidden="true"></i> {{email}}</span>
+                {{#haslocation}}
+                <span class="hrdept-profile-meta-item"><i class="icon fa fa-map-marker-alt" aria-hidden="true"></i> {{location}}</span>
+                {{/haslocation}}
+                <span class="hrdept-profile-meta-item"><i class="icon fa fa-clock" aria-hidden="true"></i> {{#str}}lastaccess{{/str}}: {{lastaccess}}</span>
+            </div>
+        </div>
+        <div class="hrdept-profile-side">
+            <span class="hrdept-status-badge {{#issuspended}}hrdept-status-suspended{{/issuspended}}{{^issuspended}}hrdept-status-active{{/issuspended}}">
+                {{#issuspended}}{{#str}}status_suspended, local_hrdepartment{{/str}}{{/issuspended}}
+                {{^issuspended}}{{#str}}status_active, local_hrdepartment{{/str}}{{/issuspended}}
+            </span>
+            <a href="{{profileurl}}" class="btn btn-outline-secondary btn-sm hrdept-profile-moodle-link">
+                {{#str}}profile{{/str}}
+            </a>
+        </div>
+    </div>
+
+    <h3 class="hrdept-profile-courses-heading">
+        {{#str}}enrolledcourses, local_hrdepartment{{/str}} ({{coursecount}})
+    </h3>
+
+    {{#hascourses}}
+    <div class="hrdept-profile-course-grid">
+        {{#courses}}
+        <a href="{{url}}" class="hrdept-profile-course-card">
+            <span class="hrdept-profile-course-badge">{{shortname}}</span>
+            <span class="hrdept-profile-course-name">{{fullname}}</span>
+            <span class="hrdept-profile-course-cta">
+                {{#str}}gotocourse, local_hrdepartment{{/str}} <i class="icon fa fa-arrow-right" aria-hidden="true"></i>
+            </span>
+        </a>
+        {{/courses}}
+    </div>
+    {{/hascourses}}
+    {{^hascourses}}
+    <div class="hrdept-empty-state">
+        <i class="icon fa fa-user-slash" aria-hidden="true"></i>
+        <p>{{#str}}nocoursesenrolled, local_hrdepartment{{/str}}</p>
+    </div>
+    {{/hascourses}}
+
+</div>

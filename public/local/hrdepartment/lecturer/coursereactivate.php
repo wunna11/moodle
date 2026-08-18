@@ -26,6 +26,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\course_assignment_manager;
 
 require_once(__DIR__ . '/../../../config.php');
@@ -36,7 +37,7 @@ $id = required_param('id', PARAM_INT);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
 $context = context_system::instance();
-require_capability('local/hrdepartment:managelecturers', $context);
+access_manager::require_manage('local/hrdepartment:managelecturers');
 
 $assignment = $DB->get_record('hrdep_courseassign', ['id' => $id]);
 if (!$assignment) {
@@ -74,8 +75,7 @@ if ($confirm && confirm_sesskey()) {
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('lecturers');
-echo $OUTPUT->tabtree($tabs, 'lecturers');
+echo local_hrdepartment_render_tab_bar('lecturers');
 
 echo $OUTPUT->confirm(
     get_string('confirmreactivateassignment', 'local_hrdepartment'),

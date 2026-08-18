@@ -1,0 +1,2804 @@
+/**
+ * Styles for the HR Department local plugin.
+ *
+ * Moodle automatically picks up a plugin's root-level styles.css into the
+ * compiled theme CSS (no explicit $PAGE->requires->css() call needed) -
+ * after changing this file, purge caches (Site administration >
+ * Development > Purge caches) to see the update.
+ *
+ * Currently scoped to the Students directory (local-hrdepartment-students,
+ * students/index.php) and its Dashboard preview card.
+ */
+
+/* ---- Students directory: stat strip ---- */
+
+.local-hrdepartment-students .hrdept-stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-students .hrdept-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: 0.75rem;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.local-hrdepartment-students .hrdept-stat-icon {
+    font-size: 1.5rem;
+    opacity: 0.85;
+    width: 1.75rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-students .hrdept-stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.local-hrdepartment-students .hrdept-stat-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.92;
+}
+
+.local-hrdepartment-students .hrdept-stat-total {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+}
+
+.local-hrdepartment-students .hrdept-stat-enrolments {
+    background: linear-gradient(135deg, #1cc88a, #17a673);
+}
+
+.local-hrdepartment-students .hrdept-stat-courses {
+    background: linear-gradient(135deg, #36b9cc, #258391);
+}
+
+.local-hrdepartment-students .hrdept-stat-active {
+    background: linear-gradient(135deg, #f6a609, #f39c12);
+}
+
+/* ---- Students directory: filter bar ---- */
+
+.local-hrdepartment-students .hrdept-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.local-hrdepartment-students .hrdept-filter-search {
+    position: relative;
+    flex: 1 1 240px;
+}
+
+.local-hrdepartment-students .hrdept-filter-search .icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    margin: 0;
+}
+
+.local-hrdepartment-students .hrdept-filter-search input {
+    padding-left: 2.2rem;
+    border-radius: 2rem;
+}
+
+.local-hrdepartment-students .hrdept-filter-select {
+    max-width: 220px;
+    border-radius: 2rem;
+}
+
+.local-hrdepartment-students .hrdept-filter-submit {
+    border-radius: 2rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-students .hrdept-filter-reset {
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-students .hrdept-result-count {
+    padding: 0 0.25rem;
+}
+
+/* ---- Students directory: student card grid ---- */
+
+.local-hrdepartment-students .hrdept-student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.1rem;
+}
+
+.local-hrdepartment-students .hrdept-student-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1.1rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.local-hrdepartment-students .hrdept-student-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+.local-hrdepartment-students .hrdept-student-card.hrdept-student-suspended {
+    opacity: 0.65;
+}
+
+.local-hrdepartment-students .hrdept-student-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.local-hrdepartment-students .hrdept-student-avatar img {
+    border-radius: 50%;
+    border: 2px solid #eef1f6;
+}
+
+.local-hrdepartment-students .hrdept-student-identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.local-hrdepartment-students .hrdept-student-name {
+    display: block;
+    font-weight: 600;
+    font-size: 1.02rem;
+    color: #2c3e50;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-students .hrdept-student-name:hover {
+    color: #4e73df;
+    text-decoration: underline;
+}
+
+.local-hrdepartment-students .hrdept-student-email,
+.local-hrdepartment-students .hrdept-student-location {
+    font-size: 0.8rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-students .hrdept-status-badge {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.55rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-students .hrdept-status-active {
+    background: #e3faf0;
+    color: #159c69;
+}
+
+.local-hrdepartment-students .hrdept-status-suspended {
+    background: #fdeceb;
+    color: #e74a3b;
+}
+
+/* "View courses" button - replaces an earlier inline chip-list design.
+   A student enrolled in many courses would otherwise blow a card's
+   height out inconsistently across the grid, so the card only ever
+   shows a compact, fixed-height button that links to a full profile
+   page (see student_profile.mustache) rather than listing courses here. */
+.local-hrdepartment-students .hrdept-view-courses-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.6rem;
+    background: #f8f9fc;
+    text-decoration: none;
+    transition: background 0.15s ease;
+}
+
+a.hrdept-view-courses-btn:hover {
+    background: #eef1fb;
+    text-decoration: none;
+}
+
+.local-hrdepartment-students .hrdept-view-courses-icon {
+    color: #4e5fbf;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-students .hrdept-view-courses-text {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.local-hrdepartment-students .hrdept-view-courses-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.local-hrdepartment-students .hrdept-view-courses-count {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4e5fbf;
+    background: #e3e7fb;
+    padding: 0.05rem 0.5rem;
+    border-radius: 1rem;
+}
+
+.local-hrdepartment-students .hrdept-view-courses-arrow {
+    color: #adb5bd;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
+    transform: translateX(3px);
+    color: #4e5fbf;
+}
+
+.local-hrdepartment-students .hrdept-view-courses-empty {
+    background: transparent;
+    padding-left: 0;
+}
+
+/* ---- Students directory: empty state + paging ---- */
+
+.local-hrdepartment-students .hrdept-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #adb5bd;
+}
+
+.local-hrdepartment-students .hrdept-empty-state i {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.local-hrdepartment-students .hrdept-paging {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+/* ---- Responsive: stack the filter bar on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-students .hrdept-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .local-hrdepartment-students .hrdept-filter-select {
+        max-width: none;
+    }
+}
+
+/* ==========================================================================
+   Student profile page (students/view.php) - full detail + enrolled
+   courses for a single student, linked from a Students directory card.
+   ========================================================================== */
+
+.local-hrdepartment-student-profile .hrdept-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-decoration: none;
+    margin-bottom: 1rem;
+}
+
+.local-hrdepartment-student-profile .hrdept-back-link:hover {
+    color: #4e73df;
+    text-decoration: underline;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-hero {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    border-radius: 1rem;
+    padding: 1.75rem 2rem;
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(78, 115, 223, 0.25);
+    margin-bottom: 1.75rem;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-avatar img {
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-identity {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-name {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.65rem;
+    margin-left: auto;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-side .hrdept-status-badge {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-side .hrdept-status-active {
+    background: rgba(28, 200, 138, 0.25);
+    color: #d3f9e9;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-side .hrdept-status-suspended {
+    background: rgba(231, 74, 59, 0.25);
+    color: #ffd9d5;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-moodle-link {
+    border-radius: 2rem;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-moodle-link:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-color: #fff;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-courses-heading {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-course-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1.1rem;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-course-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.09);
+    border-color: #c7d2f7;
+    text-decoration: none;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-course-badge {
+    align-self: flex-start;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #4e5fbf;
+    background: #e3e7fb;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-course-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2c3e50;
+    line-height: 1.35;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-course-cta {
+    margin-top: auto;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #4e73df;
+}
+
+.local-hrdepartment-student-profile .hrdept-profile-course-card:hover .hrdept-profile-course-cta {
+    color: #2c4fd6;
+}
+
+.local-hrdepartment-student-profile .hrdept-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #adb5bd;
+}
+
+.local-hrdepartment-student-profile .hrdept-empty-state i {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* ---- Responsive: stack the hero header on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-student-profile .hrdept-profile-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .local-hrdepartment-student-profile .hrdept-profile-side {
+        align-items: flex-start;
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* ==========================================================================
+   Lecturers directory (lecturer/index.php) - search/filter/department/
+   status card grid, replacing the old table_sql listing. Structurally the
+   same pattern as the Students directory above (stat strip, filter bar,
+   card grid, empty state, paging) but scoped separately since lecturer
+   cards carry different fields (employee code, department, designation,
+   academic details, management actions) instead of a course count link.
+   ========================================================================== */
+
+.local-hrdepartment-lecturers .hrdept-stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: 0.75rem;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-icon {
+    font-size: 1.5rem;
+    opacity: 0.85;
+    width: 1.75rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.92;
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-total {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-active {
+    background: linear-gradient(135deg, #1cc88a, #17a673);
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-suspended {
+    background: linear-gradient(135deg, #e74a3b, #c0392b);
+}
+
+.local-hrdepartment-lecturers .hrdept-stat-departments {
+    background: linear-gradient(135deg, #36b9cc, #258391);
+}
+
+/* ---- Lecturers directory: filter bar ---- */
+
+.local-hrdepartment-lecturers .hrdept-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.local-hrdepartment-lecturers .hrdept-filter-search {
+    position: relative;
+    flex: 1 1 240px;
+}
+
+.local-hrdepartment-lecturers .hrdept-filter-search .icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    margin: 0;
+}
+
+.local-hrdepartment-lecturers .hrdept-filter-search input {
+    padding-left: 2.2rem;
+    border-radius: 2rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-filter-select {
+    max-width: 220px;
+    border-radius: 2rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-filter-submit {
+    border-radius: 2rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-lecturers .hrdept-filter-reset {
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-lecturers .hrdept-filter-add {
+    border-radius: 2rem;
+    padding-left: 1.1rem;
+    padding-right: 1.25rem;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.local-hrdepartment-lecturers .hrdept-result-count {
+    padding: 0 0.25rem;
+}
+
+/* ---- Lecturers directory: card grid ---- */
+
+.local-hrdepartment-lecturers .hrdept-lecturer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.1rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-card {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1.1rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-card.hrdept-lecturer-suspended {
+    opacity: 0.65;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-avatar img {
+    border-radius: 50%;
+    border: 2px solid #eef1f6;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-name {
+    display: block;
+    font-weight: 600;
+    font-size: 1.02rem;
+    color: #2c3e50;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-name:hover {
+    color: #4e73df;
+    text-decoration: underline;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-email,
+.local-hrdepartment-lecturers .hrdept-lecturer-code {
+    font-size: 0.8rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-lecturers .hrdept-status-badge {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.55rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-lecturers .hrdept-status-active {
+    background: #e3faf0;
+    color: #159c69;
+}
+
+.local-hrdepartment-lecturers .hrdept-status-suspended {
+    background: #fdeceb;
+    color: #e74a3b;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-card-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.9rem;
+    flex: 1;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 1rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-pill-dept {
+    background: #e3e7fb;
+    color: #4e5fbf;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-pill-designation {
+    background: #fdf0dc;
+    color: #b5730a;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-academic {
+    flex-basis: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 0.78rem;
+    color: #8a94a6;
+    margin-top: 0.2rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-lecturer-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    border-top: 1px solid #f1f2f6;
+    padding-top: 0.75rem;
+}
+
+.local-hrdepartment-lecturers .hrdept-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 0.55rem;
+    background: #f8f9fc;
+    color: #4e5fbf;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.local-hrdepartment-lecturers .hrdept-action-btn:hover {
+    background: #e3e7fb;
+    color: #2c4fd6;
+    text-decoration: none;
+}
+
+.local-hrdepartment-lecturers .hrdept-action-btn-danger {
+    color: #e74a3b;
+}
+
+.local-hrdepartment-lecturers .hrdept-action-btn-danger:hover {
+    background: #fdeceb;
+    color: #c0392b;
+}
+
+.local-hrdepartment-lecturers .hrdept-action-btn-success {
+    color: #159c69;
+}
+
+.local-hrdepartment-lecturers .hrdept-action-btn-success:hover {
+    background: #e3faf0;
+    color: #12805a;
+}
+
+/* ---- Lecturers directory: empty state + paging ---- */
+
+.local-hrdepartment-lecturers .hrdept-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #adb5bd;
+}
+
+.local-hrdepartment-lecturers .hrdept-empty-state i {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.local-hrdepartment-lecturers .hrdept-paging {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+/* ---- Responsive: stack the filter bar on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-lecturers .hrdept-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .local-hrdepartment-lecturers .hrdept-filter-select {
+        max-width: none;
+    }
+
+    .local-hrdepartment-lecturers .hrdept-filter-add {
+        margin-left: 0;
+    }
+}
+
+/* ==========================================================================
+   Lecturer add/edit form (lecturer/edit.php) - a gradient hero header plus
+   a card wrapper around the standard Moodle mform output. The form fields
+   themselves are still rendered by moodleform/mform (formslib), so the
+   selectors below target Boost's standard mform markup (fieldset/legend,
+   .fitem row, .form-control) rather than a custom template.
+   ========================================================================== */
+
+.local-hrdepartment-lecturer-form .hrdept-form-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    border-radius: 1rem;
+    padding: 1.5rem 1.75rem;
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(78, 115, 223, 0.22);
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-hero-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-hero-title {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-hero-subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1.5rem 1.75rem 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card fieldset {
+    border: none;
+    border-bottom: 1px solid #eef0f4;
+    padding: 0 0 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card fieldset:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card legend {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    padding: 0 0 0.85rem;
+    width: auto;
+    float: none;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .fitem {
+    margin-bottom: 0.9rem;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .col-form-label label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #495057;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .form-control,
+.local-hrdepartment-lecturer-form .hrdept-form-card select,
+.local-hrdepartment-lecturer-form .hrdept-form-card textarea {
+    border-radius: 0.55rem;
+    border-color: #dfe3ea;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .form-control:focus,
+.local-hrdepartment-lecturer-form .hrdept-form-card select:focus,
+.local-hrdepartment-lecturer-form .hrdept-form-card textarea:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.15rem rgba(78, 115, 223, 0.15);
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .form-control-static {
+    padding-top: 0.4rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .form-group:last-child {
+    padding-bottom: 1.5rem;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .btn-primary {
+    border-radius: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.local-hrdepartment-lecturer-form .hrdept-form-card .btn-secondary {
+    border-radius: 2rem;
+}
+
+/* ---- Responsive: stack the form hero on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-lecturer-form .hrdept-form-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+
+/* ==========================================================================
+   Staff directory (staff/index.php) - search/filter/department/status card
+   grid, replacing the old table_sql listing. Same structural pattern as
+   the Lecturers directory above, scoped separately since the two pages
+   are independent (and the staff card is simpler - no academic text, no
+   course-assignment action).
+   ========================================================================== */
+
+.local-hrdepartment-staff .hrdept-stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-staff .hrdept-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: 0.75rem;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.local-hrdepartment-staff .hrdept-stat-icon {
+    font-size: 1.5rem;
+    opacity: 0.85;
+    width: 1.75rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-staff .hrdept-stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.local-hrdepartment-staff .hrdept-stat-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.92;
+}
+
+.local-hrdepartment-staff .hrdept-stat-total {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+}
+
+.local-hrdepartment-staff .hrdept-stat-active {
+    background: linear-gradient(135deg, #1cc88a, #17a673);
+}
+
+.local-hrdepartment-staff .hrdept-stat-suspended {
+    background: linear-gradient(135deg, #e74a3b, #c0392b);
+}
+
+.local-hrdepartment-staff .hrdept-stat-departments {
+    background: linear-gradient(135deg, #36b9cc, #258391);
+}
+
+/* ---- Staff directory: filter bar ---- */
+
+.local-hrdepartment-staff .hrdept-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.local-hrdepartment-staff .hrdept-filter-search {
+    position: relative;
+    flex: 1 1 240px;
+}
+
+.local-hrdepartment-staff .hrdept-filter-search .icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #adb5bd;
+    margin: 0;
+}
+
+.local-hrdepartment-staff .hrdept-filter-search input {
+    padding-left: 2.2rem;
+    border-radius: 2rem;
+}
+
+.local-hrdepartment-staff .hrdept-filter-select {
+    max-width: 220px;
+    border-radius: 2rem;
+}
+
+.local-hrdepartment-staff .hrdept-filter-submit {
+    border-radius: 2rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-staff .hrdept-filter-reset {
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-staff .hrdept-filter-add {
+    border-radius: 2rem;
+    padding-left: 1.1rem;
+    padding-right: 1.25rem;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.local-hrdepartment-staff .hrdept-result-count {
+    padding: 0 0.25rem;
+}
+
+/* ---- Staff directory: card grid ---- */
+
+.local-hrdepartment-staff .hrdept-staff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.1rem;
+}
+
+.local-hrdepartment-staff .hrdept-staff-card {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1.1rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.local-hrdepartment-staff .hrdept-staff-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+}
+
+.local-hrdepartment-staff .hrdept-staff-card.hrdept-staff-suspended {
+    opacity: 0.65;
+}
+
+.local-hrdepartment-staff .hrdept-staff-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.local-hrdepartment-staff .hrdept-staff-avatar img {
+    border-radius: 50%;
+    border: 2px solid #eef1f6;
+}
+
+.local-hrdepartment-staff .hrdept-staff-identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.local-hrdepartment-staff .hrdept-staff-name {
+    display: block;
+    font-weight: 600;
+    font-size: 1.02rem;
+    color: #2c3e50;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-staff .hrdept-staff-name:hover {
+    color: #4e73df;
+    text-decoration: underline;
+}
+
+.local-hrdepartment-staff .hrdept-staff-email,
+.local-hrdepartment-staff .hrdept-staff-code {
+    font-size: 0.8rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-staff .hrdept-status-badge {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.55rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-staff .hrdept-status-active {
+    background: #e3faf0;
+    color: #159c69;
+}
+
+.local-hrdepartment-staff .hrdept-status-suspended {
+    background: #fdeceb;
+    color: #e74a3b;
+}
+
+.local-hrdepartment-staff .hrdept-staff-card-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.9rem;
+    flex: 1;
+}
+
+.local-hrdepartment-staff .hrdept-staff-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 1rem;
+}
+
+.local-hrdepartment-staff .hrdept-staff-pill-dept {
+    background: #e3e7fb;
+    color: #4e5fbf;
+}
+
+.local-hrdepartment-staff .hrdept-staff-pill-designation {
+    background: #fdf0dc;
+    color: #b5730a;
+}
+
+.local-hrdepartment-staff .hrdept-staff-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    border-top: 1px solid #f1f2f6;
+    padding-top: 0.75rem;
+}
+
+.local-hrdepartment-staff .hrdept-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 0.55rem;
+    background: #f8f9fc;
+    color: #4e5fbf;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.local-hrdepartment-staff .hrdept-action-btn:hover {
+    background: #e3e7fb;
+    color: #2c4fd6;
+    text-decoration: none;
+}
+
+.local-hrdepartment-staff .hrdept-action-btn-danger {
+    color: #e74a3b;
+}
+
+.local-hrdepartment-staff .hrdept-action-btn-danger:hover {
+    background: #fdeceb;
+    color: #c0392b;
+}
+
+.local-hrdepartment-staff .hrdept-action-btn-success {
+    color: #159c69;
+}
+
+.local-hrdepartment-staff .hrdept-action-btn-success:hover {
+    background: #e3faf0;
+    color: #12805a;
+}
+
+/* ---- Staff directory: empty state + paging ---- */
+
+.local-hrdepartment-staff .hrdept-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #adb5bd;
+}
+
+.local-hrdepartment-staff .hrdept-empty-state i {
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.local-hrdepartment-staff .hrdept-paging {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+/* ---- Responsive: stack the filter bar on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-staff .hrdept-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .local-hrdepartment-staff .hrdept-filter-select {
+        max-width: none;
+    }
+
+    .local-hrdepartment-staff .hrdept-filter-add {
+        margin-left: 0;
+    }
+}
+
+/* ==========================================================================
+   Staff add/edit form (staff/edit.php) - a gradient hero header plus a
+   card wrapper around the standard Moodle mform output, same treatment as
+   the Lecturer add/edit form above (see that block's comment for why the
+   selectors target Boost's standard mform markup).
+   ========================================================================== */
+
+.local-hrdepartment-staff-form .hrdept-form-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    border-radius: 1rem;
+    padding: 1.5rem 1.75rem;
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(78, 115, 223, 0.22);
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-hero-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-hero-title {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-hero-subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1.5rem 1.75rem 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card fieldset {
+    border: none;
+    border-bottom: 1px solid #eef0f4;
+    padding: 0 0 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card fieldset:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card legend {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    padding: 0 0 0.85rem;
+    width: auto;
+    float: none;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .fitem {
+    margin-bottom: 0.9rem;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .col-form-label label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #495057;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .form-control,
+.local-hrdepartment-staff-form .hrdept-form-card select,
+.local-hrdepartment-staff-form .hrdept-form-card textarea {
+    border-radius: 0.55rem;
+    border-color: #dfe3ea;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .form-control:focus,
+.local-hrdepartment-staff-form .hrdept-form-card select:focus,
+.local-hrdepartment-staff-form .hrdept-form-card textarea:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.15rem rgba(78, 115, 223, 0.15);
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .form-control-static {
+    padding-top: 0.4rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .form-group:last-child {
+    padding-bottom: 1.5rem;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .btn-primary {
+    border-radius: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.local-hrdepartment-staff-form .hrdept-form-card .btn-secondary {
+    border-radius: 2rem;
+}
+
+/* ---- Responsive: stack the form hero on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-staff-form .hrdept-form-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+
+/* ==========================================================================
+   HR Department dashboard (index.php) - shared by the two landing-page
+   variants: the org-wide summary (local-hrdepartment-dashboard, shown to
+   local/hrdepartment:managedashboard) and the personal "My HR" snapshot
+   (local-hrdepartment-my-summary, shown to self-service-only users). Both
+   share the hero banner, the "hrdept-summary-card"/"hrdept-pill" building
+   blocks below, and the same gradient/rounded-card visual language used
+   by the directory pages above.
+   ========================================================================== */
+
+.local-hrdepartment-dashboard .hrdept-dashboard-hero,
+.local-hrdepartment-my-summary .hrdept-dashboard-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    border-radius: 1rem;
+    padding: 1.75rem 2rem;
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(78, 115, 223, 0.25);
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-dashboard-hero-title,
+.local-hrdepartment-my-summary .hrdept-dashboard-hero-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.local-hrdepartment-dashboard .hrdept-dashboard-hero-subtitle,
+.local-hrdepartment-my-summary .hrdept-dashboard-hero-subtitle {
+    margin: 0;
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.local-hrdepartment-dashboard .hrdept-dashboard-hero-date,
+.local-hrdepartment-my-summary .hrdept-dashboard-hero-date {
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.5rem 1.1rem;
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, 0.16);
+    white-space: nowrap;
+}
+
+/* ---- Quick access tile row (org-wide dashboard only) ---- */
+
+.local-hrdepartment-dashboard .hrdept-quicklink-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-quicklink {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1rem 0.5rem;
+    text-decoration: none;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.local-hrdepartment-dashboard .hrdept-quicklink:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.09);
+    border-color: #c7d2f7;
+    text-decoration: none;
+}
+
+.local-hrdepartment-dashboard .hrdept-quicklink-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    background: #e3e7fb;
+    color: #4e5fbf;
+    font-size: 1.1rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-quicklink-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* ---- Stat strip (org-wide dashboard only) ---- */
+
+.local-hrdepartment-dashboard .hrdept-stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.15rem 1.3rem;
+    border-radius: 0.85rem;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+    color: #fff;
+    text-decoration: none;
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-icon {
+    font-size: 1.5rem;
+    opacity: 0.9;
+    width: 1.9rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.92;
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-sub {
+    font-size: 0.72rem;
+    opacity: 0.85;
+    margin-top: 0.15rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-lecturers {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-staff {
+    background: linear-gradient(135deg, #1cc88a, #17a673);
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-students {
+    background: linear-gradient(135deg, #36b9cc, #258391);
+}
+
+.local-hrdepartment-dashboard .hrdept-stat-leave {
+    background: linear-gradient(135deg, #f6a609, #f39c12);
+}
+
+/* ---- Shared: white summary cards + pills (both dashboard variants) ---- */
+
+.local-hrdepartment-dashboard .hrdept-summary-card,
+.local-hrdepartment-my-summary .hrdept-summary-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.local-hrdepartment-dashboard .hrdept-summary-card-header,
+.local-hrdepartment-my-summary .hrdept-summary-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f2f6;
+}
+
+.local-hrdepartment-dashboard .hrdept-summary-card-title,
+.local-hrdepartment-my-summary .hrdept-summary-card-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-summary-card-title i,
+.local-hrdepartment-my-summary .hrdept-summary-card-title i {
+    color: #4e5fbf;
+}
+
+.local-hrdepartment-dashboard .hrdept-summary-card-action,
+.local-hrdepartment-my-summary .hrdept-summary-card-action {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4e5fbf;
+    background: #e3e7fb;
+    padding: 0.3rem 0.85rem;
+    border-radius: 2rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-dashboard .hrdept-summary-card-action:hover,
+.local-hrdepartment-my-summary .hrdept-summary-card-action:hover {
+    background: #c7d2f7;
+    color: #2c4fd6;
+    text-decoration: none;
+}
+
+.local-hrdepartment-dashboard .hrdept-summary-card-body,
+.local-hrdepartment-my-summary .hrdept-summary-card-body {
+    padding: 1.25rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-pill,
+.local-hrdepartment-my-summary .hrdept-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-dashboard .hrdept-pill-pending,
+.local-hrdepartment-my-summary .hrdept-pill-pending {
+    background: #fdf0dc;
+    color: #b5730a;
+}
+
+.local-hrdepartment-dashboard .hrdept-pill-processed,
+.local-hrdepartment-my-summary .hrdept-pill-processed {
+    background: #e3e7fb;
+    color: #4e5fbf;
+}
+
+.local-hrdepartment-dashboard .hrdept-pill-paid,
+.local-hrdepartment-my-summary .hrdept-pill-paid {
+    background: #e3faf0;
+    color: #159c69;
+}
+
+.local-hrdepartment-my-summary .hrdept-pill-neutral {
+    background: #f1f2f6;
+    color: #495057;
+}
+
+/* ---- Payroll card (both dashboard variants) ---- */
+
+.local-hrdepartment-dashboard .hrdept-payroll-net,
+.local-hrdepartment-my-summary .hrdept-payroll-net {
+    margin-bottom: 1.1rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-payroll-net-value,
+.local-hrdepartment-my-summary .hrdept-payroll-net-value {
+    display: block;
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+.local-hrdepartment-dashboard .hrdept-payroll-net-label,
+.local-hrdepartment-my-summary .hrdept-payroll-net-label {
+    display: block;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8a94a6;
+}
+
+.local-hrdepartment-my-summary .hrdept-payroll-net-compact {
+    margin-bottom: 0.65rem;
+}
+
+.local-hrdepartment-my-summary .hrdept-payroll-net-compact .hrdept-payroll-net-value {
+    font-size: 1.5rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-payroll-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.1rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid #f1f2f6;
+}
+
+.local-hrdepartment-dashboard .hrdept-payroll-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-payroll-meta-label {
+    font-size: 0.72rem;
+    color: #8a94a6;
+}
+
+.local-hrdepartment-dashboard .hrdept-payroll-meta-value {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.local-hrdepartment-dashboard .hrdept-payroll-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* ---- Attendance card: stacked segment bar + legend (org-wide only) ---- */
+
+.local-hrdepartment-dashboard .hrdept-attendance-total {
+    margin-bottom: 1rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-attendance-total-value {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-right: 0.4rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-attendance-total-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8a94a6;
+}
+
+.local-hrdepartment-dashboard .hrdept-attendance-bar {
+    display: flex;
+    width: 100%;
+    height: 0.6rem;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #f1f2f6;
+    margin-bottom: 0.9rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-bar-segment {
+    height: 100%;
+    transition: width 0.2s ease;
+}
+
+.local-hrdepartment-dashboard .hrdept-bar-present {
+    background: #1cc88a;
+}
+
+.local-hrdepartment-dashboard .hrdept-bar-absent {
+    background: #e74a3b;
+}
+
+.local-hrdepartment-dashboard .hrdept-bar-leave {
+    background: #4e73df;
+}
+
+.local-hrdepartment-dashboard .hrdept-bar-halfday {
+    background: #f6a609;
+}
+
+.local-hrdepartment-dashboard .hrdept-attendance-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.1rem;
+    margin-bottom: 0.85rem;
+}
+
+.local-hrdepartment-dashboard .hrdept-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #495057;
+}
+
+.local-hrdepartment-dashboard .hrdept-legend-dot {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+}
+
+.local-hrdepartment-dashboard .hrdept-attendance-note {
+    font-size: 0.8rem;
+    color: #8a94a6;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f1f2f6;
+}
+
+/* ---- Recent pending leave activity list (org-wide dashboard only) ---- */
+
+.local-hrdepartment-dashboard .hrdept-activity-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1.25rem;
+    text-decoration: none;
+    border-bottom: 1px solid #f1f2f6;
+    transition: background 0.15s ease;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-item:last-child {
+    border-bottom: none;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-item:hover {
+    background: #f8f9fc;
+    text-decoration: none;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: #2c3e50;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-meta {
+    font-size: 0.78rem;
+    color: #8a94a6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-dashboard .hrdept-activity-days {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #4e5fbf;
+    background: #e3e7fb;
+    padding: 0.25rem 0.65rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---- Empty state (both dashboard variants) ---- */
+
+.local-hrdepartment-dashboard .hrdept-empty-state,
+.local-hrdepartment-my-summary .hrdept-empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #adb5bd;
+}
+
+.local-hrdepartment-dashboard .hrdept-empty-state i,
+.local-hrdepartment-my-summary .hrdept-empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* ---- "My HR" self-service snapshot: employee code / designation pills ---- */
+
+.local-hrdepartment-my-summary .hrdept-my-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ---- Responsive: stack the hero on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-dashboard .hrdept-dashboard-hero,
+    .local-hrdepartment-my-summary .hrdept-dashboard-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+
+/* ==========================================================================
+   Attendance Tracking (attendance/*.php) & Leave Management (leave/*.php)
+   pages - reuses the same gradient hero / stat-card / summary-card / pill /
+   activity-list / quicklink / empty-state visual language as the Dashboard
+   block above and the same filter-bar/table/form-hero patterns as the
+   directory and add/edit-form blocks further up this file, so these read
+   as part of the same product rather than a bolt-on report. Every page
+   under attendance/ and leave/ wraps its body in a
+   `local-hrdepartment-attendance` or `local-hrdepartment-leave` container.
+   ========================================================================== */
+
+/* ---- Page hero (landing pages: attendance/index.php, leave/index.php) ---- */
+
+.local-hrdepartment-attendance .hrdept-page-hero,
+.local-hrdepartment-leave .hrdept-page-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    border-radius: 1rem;
+    padding: 1.75rem 2rem;
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(78, 115, 223, 0.25);
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-attendance .hrdept-page-hero-title,
+.local-hrdepartment-leave .hrdept-page-hero-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.local-hrdepartment-attendance .hrdept-page-hero-subtitle,
+.local-hrdepartment-leave .hrdept-page-hero-subtitle {
+    margin: 0;
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.85);
+    max-width: 46rem;
+}
+
+.local-hrdepartment-attendance .hrdept-page-hero-actions,
+.local-hrdepartment-leave .hrdept-page-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.local-hrdepartment-attendance .hrdept-page-hero-btn,
+.local-hrdepartment-leave .hrdept-page-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 2rem;
+    padding: 0.5rem 1.1rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.local-hrdepartment-attendance .hrdept-page-hero-btn:hover,
+.local-hrdepartment-leave .hrdept-page-hero-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: #fff;
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ---- Quick-action tile row (leave/index.php) ---- */
+
+.local-hrdepartment-attendance .hrdept-quicklink-grid,
+.local-hrdepartment-leave .hrdept-quicklink-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-attendance .hrdept-quicklink,
+.local-hrdepartment-leave .hrdept-quicklink {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1rem 0.5rem;
+    text-decoration: none;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.local-hrdepartment-attendance .hrdept-quicklink:hover,
+.local-hrdepartment-leave .hrdept-quicklink:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.09);
+    border-color: #c7d2f7;
+    text-decoration: none;
+}
+
+.local-hrdepartment-attendance .hrdept-quicklink-icon,
+.local-hrdepartment-leave .hrdept-quicklink-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    background: #e3e7fb;
+    color: #4e5fbf;
+    font-size: 1.1rem;
+}
+
+.local-hrdepartment-attendance .hrdept-quicklink-label,
+.local-hrdepartment-leave .hrdept-quicklink-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* ---- Stat strip (gradient count cards) ---- */
+
+.local-hrdepartment-attendance .hrdept-stats-strip,
+.local-hrdepartment-leave .hrdept-stats-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-attendance .hrdept-stat-card,
+.local-hrdepartment-leave .hrdept-stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: 0.85rem;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.local-hrdepartment-attendance .hrdept-stat-icon,
+.local-hrdepartment-leave .hrdept-stat-icon {
+    font-size: 1.5rem;
+    opacity: 0.9;
+    width: 1.9rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-attendance .hrdept-stat-value,
+.local-hrdepartment-leave .hrdept-stat-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.local-hrdepartment-attendance .hrdept-stat-label,
+.local-hrdepartment-leave .hrdept-stat-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    opacity: 0.92;
+}
+
+/* Leave overview stat colours. */
+.local-hrdepartment-leave .hrdept-stat-pending {
+    background: linear-gradient(135deg, #f6a609, #f39c12);
+}
+
+.local-hrdepartment-leave .hrdept-stat-onleave {
+    background: linear-gradient(135deg, #36b9cc, #258391);
+}
+
+.local-hrdepartment-leave .hrdept-stat-approved {
+    background: linear-gradient(135deg, #1cc88a, #17a673);
+}
+
+.local-hrdepartment-leave .hrdept-stat-total {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+}
+
+/* Attendance summary stat colours - cycled by position, since a status's
+   meaning (present/absent/late/leave/...) is whatever the site's
+   mod_attendance activity defines, not a fixed enum this plugin controls. */
+.local-hrdepartment-attendance .hrdept-stat-c1 {
+    background: linear-gradient(135deg, #1cc88a, #17a673);
+}
+
+.local-hrdepartment-attendance .hrdept-stat-c2 {
+    background: linear-gradient(135deg, #e74a3b, #c0392b);
+}
+
+.local-hrdepartment-attendance .hrdept-stat-c3 {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+}
+
+.local-hrdepartment-attendance .hrdept-stat-c4 {
+    background: linear-gradient(135deg, #f6a609, #f39c12);
+}
+
+.local-hrdepartment-attendance .hrdept-stat-c5 {
+    background: linear-gradient(135deg, #36b9cc, #258391);
+}
+
+/* ---- Summary card (recent activity lists) ---- */
+
+.local-hrdepartment-attendance .hrdept-summary-card,
+.local-hrdepartment-leave .hrdept-summary-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.local-hrdepartment-attendance .hrdept-summary-card-header,
+.local-hrdepartment-leave .hrdept-summary-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f2f6;
+}
+
+.local-hrdepartment-attendance .hrdept-summary-card-title,
+.local-hrdepartment-leave .hrdept-summary-card-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    color: #2c3e50;
+    font-size: 0.95rem;
+}
+
+.local-hrdepartment-attendance .hrdept-summary-card-title i,
+.local-hrdepartment-leave .hrdept-summary-card-title i {
+    color: #4e5fbf;
+}
+
+.local-hrdepartment-attendance .hrdept-summary-card-action,
+.local-hrdepartment-leave .hrdept-summary-card-action {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4e5fbf;
+    background: #e3e7fb;
+    padding: 0.3rem 0.85rem;
+    border-radius: 2rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-attendance .hrdept-summary-card-action:hover,
+.local-hrdepartment-leave .hrdept-summary-card-action:hover {
+    background: #c7d2f7;
+    color: #2c4fd6;
+    text-decoration: none;
+}
+
+.local-hrdepartment-attendance .hrdept-summary-card-body,
+.local-hrdepartment-leave .hrdept-summary-card-body {
+    padding: 1.25rem;
+}
+
+/* ---- Activity list (recent leave records) ---- */
+
+.local-hrdepartment-leave .hrdept-activity-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.local-hrdepartment-leave .hrdept-activity-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1.25rem;
+    text-decoration: none;
+    border-bottom: 1px solid #f1f2f6;
+    transition: background 0.15s ease;
+}
+
+.local-hrdepartment-leave .hrdept-activity-item:last-child {
+    border-bottom: none;
+}
+
+.local-hrdepartment-leave .hrdept-activity-item:hover {
+    background: #f8f9fc;
+    text-decoration: none;
+}
+
+.local-hrdepartment-leave .hrdept-activity-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    color: #fff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-leave .hrdept-activity-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.local-hrdepartment-leave .hrdept-activity-name {
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: #2c3e50;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-leave .hrdept-activity-meta {
+    font-size: 0.78rem;
+    color: #8a94a6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.local-hrdepartment-leave .hrdept-activity-days {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #4e5fbf;
+    background: #e3e7fb;
+    padding: 0.25rem 0.65rem;
+    border-radius: 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---- Subheader (white card page header for sub-pages) ---- */
+
+.local-hrdepartment-attendance .hrdept-subheader,
+.local-hrdepartment-leave .hrdept-subheader {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.local-hrdepartment-attendance .hrdept-subheader-title,
+.local-hrdepartment-leave .hrdept-subheader-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.local-hrdepartment-attendance .hrdept-subheader-subtitle,
+.local-hrdepartment-leave .hrdept-subheader-subtitle {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #8a94a6;
+}
+
+/* ---- Back link ---- */
+
+.local-hrdepartment-attendance .hrdept-back-link,
+.local-hrdepartment-leave .hrdept-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-decoration: none;
+    margin-bottom: 0.85rem;
+}
+
+.local-hrdepartment-attendance .hrdept-back-link:hover,
+.local-hrdepartment-leave .hrdept-back-link:hover {
+    color: #4e73df;
+    text-decoration: underline;
+}
+
+/* ---- Table card (wraps html_table / table_sql output) ---- */
+
+.local-hrdepartment-attendance .hrdept-table-card,
+.local-hrdepartment-leave .hrdept-table-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    padding: 0.25rem 1.25rem;
+    overflow-x: auto;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table,
+.local-hrdepartment-leave .hrdept-table-card table {
+    margin-bottom: 0;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.generaltable th,
+.local-hrdepartment-leave .hrdept-table-card table.generaltable th {
+    border-top: none;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8a94a6;
+    font-weight: 700;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.generaltable td,
+.local-hrdepartment-leave .hrdept-table-card table.generaltable td {
+    vertical-align: middle;
+    border-color: #f1f2f6;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.generaltable tbody tr:hover,
+.local-hrdepartment-leave .hrdept-table-card table.generaltable tbody tr:hover {
+    background: #f8f9fc;
+}
+
+/* ---- Status badges (leave applications) - soft-pastel Bootstrap badges ---- */
+
+.local-hrdepartment-leave .badge {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 0.3rem 0.7rem;
+    border-radius: 1rem;
+}
+
+.local-hrdepartment-leave .badge-warning {
+    background: #fdf0dc;
+    color: #b5730a;
+}
+
+.local-hrdepartment-leave .badge-success {
+    background: #e3faf0;
+    color: #159c69;
+}
+
+.local-hrdepartment-leave .badge-danger {
+    background: #fdeceb;
+    color: #e74a3b;
+}
+
+.local-hrdepartment-leave .badge-secondary {
+    background: #f1f2f6;
+    color: #495057;
+}
+
+/* ---- Filter bar (search/status/type/date filters) ---- */
+
+.local-hrdepartment-attendance .hrdept-filter-bar,
+.local-hrdepartment-leave .hrdept-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.local-hrdepartment-attendance .hrdept-filter-bar input,
+.local-hrdepartment-attendance .hrdept-filter-bar select,
+.local-hrdepartment-leave .hrdept-filter-bar input,
+.local-hrdepartment-leave .hrdept-filter-bar select {
+    border-radius: 2rem;
+}
+
+.local-hrdepartment-attendance .hrdept-filter-bar input[type="submit"],
+.local-hrdepartment-leave .hrdept-filter-bar input[type="submit"] {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    white-space: nowrap;
+}
+
+/* ---- Buttons inside these sections read as pills, matching forms elsewhere ---- */
+
+.local-hrdepartment-attendance .btn,
+.local-hrdepartment-leave .btn {
+    border-radius: 2rem;
+}
+
+/* ---- Empty state ---- */
+
+.local-hrdepartment-attendance .hrdept-empty-state,
+.local-hrdepartment-leave .hrdept-empty-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #adb5bd;
+}
+
+.local-hrdepartment-attendance .hrdept-empty-state i,
+.local-hrdepartment-leave .hrdept-empty-state i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* ---- Leave request detail hero + fact grid (leave/view.php) ---- */
+
+.local-hrdepartment-leave .hrdept-detail-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.1rem;
+    border-radius: 1rem;
+    padding: 1.5rem 1.75rem;
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+    margin-bottom: 1.25rem;
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-pending {
+    background: linear-gradient(135deg, #f6a609, #f39c12);
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-approved {
+    background: linear-gradient(135deg, #1cc88a, #17a673);
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-rejected {
+    background: linear-gradient(135deg, #e74a3b, #c0392b);
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-cancelled {
+    background: linear-gradient(135deg, #8a94a6, #5b6470);
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.4rem;
+    height: 3.4rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 1.05rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-text {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-subtitle {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.local-hrdepartment-leave .hrdept-detail-hero-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.45rem 1.1rem;
+    border-radius: 2rem;
+    background: rgba(255, 255, 255, 0.22);
+    white-space: nowrap;
+}
+
+.local-hrdepartment-leave .hrdept-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+
+.local-hrdepartment-leave .hrdept-detail-row {
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid #f1f2f6;
+    border-right: 1px solid #f1f2f6;
+}
+
+.local-hrdepartment-leave .hrdept-detail-label {
+    display: block;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #8a94a6;
+    margin-bottom: 0.25rem;
+}
+
+.local-hrdepartment-leave .hrdept-detail-value {
+    display: block;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #2c3e50;
+    word-break: break-word;
+}
+
+.local-hrdepartment-leave .hrdept-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+/* ---- Leave forms (apply.php, edit.php, balance_edit.php, types_edit.php) -
+   same gradient hero + card wrapper as the Lecturer/Staff add/edit forms
+   above; see that block's comment for why the selectors target Boost's
+   standard mform markup rather than a custom template. ---- */
+
+.local-hrdepartment-leave-form .hrdept-form-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    border-radius: 1rem;
+    padding: 1.5rem 1.75rem;
+    color: #fff;
+    box-shadow: 0 10px 28px rgba(78, 115, 223, 0.22);
+    margin-bottom: 1.5rem;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-hero-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-hero-title {
+    margin: 0 0 0.2rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-hero-subtitle {
+    margin: 0;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    padding: 1.5rem 1.75rem 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card fieldset {
+    border: none;
+    border-bottom: 1px solid #eef0f4;
+    padding: 0 0 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card fieldset:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card legend {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2c3e50;
+    padding: 0 0 0.85rem;
+    width: auto;
+    float: none;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .fitem {
+    margin-bottom: 0.9rem;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .col-form-label label {
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: #495057;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .form-control,
+.local-hrdepartment-leave-form .hrdept-form-card select,
+.local-hrdepartment-leave-form .hrdept-form-card textarea {
+    border-radius: 0.55rem;
+    border-color: #dfe3ea;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .form-control:focus,
+.local-hrdepartment-leave-form .hrdept-form-card select:focus,
+.local-hrdepartment-leave-form .hrdept-form-card textarea:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.15rem rgba(78, 115, 223, 0.15);
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .form-control-static {
+    padding-top: 0.4rem;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .form-group:last-child {
+    padding-bottom: 1.5rem;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .btn-primary {
+    border-radius: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+.local-hrdepartment-leave-form .hrdept-form-card .btn-secondary {
+    border-radius: 2rem;
+}
+
+/* ---- Responsive: stack heroes/subheaders on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .local-hrdepartment-attendance .hrdept-page-hero,
+    .local-hrdepartment-leave .hrdept-page-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .local-hrdepartment-attendance .hrdept-filter-bar,
+    .local-hrdepartment-leave .hrdept-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .local-hrdepartment-leave .hrdept-detail-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .local-hrdepartment-leave-form .hrdept-form-hero {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+}
+
+/* ==========================================================================
+   Section tab bar (Dashboard | Lecturers | Staff | Students | Attendance |
+   Leave | Payroll) - shown at the top of every HR Department page via
+   local_hrdepartment_render_tab_bar() (lib.php), which wraps Moodle's
+   standard core/tabtree output (a plain `<ul class="nav nav-tabs">`) in
+   this `.hrdept-tab-bar` container. Reskinned as a rounded pill/segmented
+   control instead of Boost's default underlined tabs, matching the
+   gradient/pill visual language used everywhere else in this plugin.
+   Deliberately NOT scoped under `.local-hrdepartment-*` like the blocks
+   above, since it needs to look right on the Lecturers/Staff/Students
+   pages too (which don't wrap their body in one of those containers) -
+   the `.hrdept-tab-bar` class itself, only ever emitted by this plugin's
+   own helper, is what keeps this scoped and safe to ship in a stylesheet
+   Moodle loads site-wide.
+   ========================================================================== */
+
+.hrdept-tab-bar {
+    margin-bottom: 1.5rem;
+}
+
+.hrdept-tab-bar .nav.nav-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 999px;
+    padding: 0.35rem;
+    margin-bottom: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-item {
+    margin: 0;
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.1rem;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #5a6472;
+    background: transparent;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-link .icon {
+    font-size: 0.85rem;
+    opacity: 0.75;
+    margin: 0;
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-link:hover {
+    background: #f1f2f6;
+    color: #2c3e50;
+    text-decoration: none;
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, #4e73df, #6f42c1);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(78, 115, 223, 0.35);
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-link.active:hover {
+    color: #fff;
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-link.active .icon {
+    opacity: 1;
+}
+
+.hrdept-tab-bar .nav.nav-tabs .nav-link.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+/* ---- Responsive: horizontal scroll instead of wrap on small screens ---- */
+
+@media (max-width: 575.98px) {
+    .hrdept-tab-bar .nav.nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        border-radius: 0.85rem;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .hrdept-tab-bar .nav.nav-tabs::-webkit-scrollbar {
+        display: none;
+    }
+}

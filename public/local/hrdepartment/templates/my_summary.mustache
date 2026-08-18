@@ -18,11 +18,15 @@
     @template local_hrdepartment/my_summary
 
     Personal "My HR" snapshot shown to self-service users who don't hold
-    the org-wide dashboard capability: this month's attendance, leave
-    balances, pending leave applications, and the latest payslip.
+    the org-wide dashboard capability: a welcome hero, this month's
+    attendance, leave balances, pending leave applications, and the
+    latest payslip.
 
     Example context (json):
     {
+        "herogreeting": "Welcome back, Jane Lecturer",
+        "herosubtitle": "Here is your personal HR snapshot.",
+        "herodate": "Monday, 17 August 2026",
         "hasprofile": true,
         "employeecode": "EMP-0042",
         "designation": "Lecturer",
@@ -36,27 +40,44 @@
         ],
         "pendingleave": 1,
         "haslatestpayroll": true,
-        "latestpayroll": {"period": "2026-07", "netsalary": "1,950.00", "currency": "USD", "paymentstatus": "Paid"}
+        "latestpayroll": {"period": "2026-07", "netsalary": "1,950.00", "currency": "USD", "paymentstatus": "Paid", "paymentstatusclass": "hrdept-pill-paid"}
     }
 }}
 <div class="local-hrdepartment-my-summary">
+
+    <div class="hrdept-dashboard-hero">
+        <div class="hrdept-dashboard-hero-text">
+            <h2 class="hrdept-dashboard-hero-title">{{herogreeting}}</h2>
+            <p class="hrdept-dashboard-hero-subtitle">{{herosubtitle}}</p>
+        </div>
+        <div class="hrdept-dashboard-hero-date">{{herodate}}</div>
+    </div>
+
     {{^hasprofile}}
-    <div class="alert alert-info">
-        {{#str}}noemployeerecord, local_hrdepartment{{/str}}
+    <div class="hrdept-summary-card">
+        <div class="hrdept-empty-state">
+            <i class="icon fa fa-user-slash" aria-hidden="true"></i>
+            {{#str}}noemployeerecord, local_hrdepartment{{/str}}
+        </div>
     </div>
     {{/hasprofile}}
 
     {{#hasprofile}}
-    <div class="mb-3 text-muted">
-        {{#str}}employeecode, local_hrdepartment{{/str}}: <strong>{{employeecode}}</strong>
-        {{#designation}} &middot; {{designation}}{{/designation}}
+    <div class="hrdept-my-meta">
+        <span class="hrdept-pill hrdept-pill-neutral">{{#str}}employeecode, local_hrdepartment{{/str}}: {{employeecode}}</span>
+        {{#designation}}<span class="hrdept-pill hrdept-pill-neutral">{{designation}}</span>{{/designation}}
     </div>
 
     <div class="row">
         <div class="col-lg-4 mb-3">
-            <div class="card h-100">
-                <div class="card-header">{{#str}}myattendancethismonth, local_hrdepartment{{/str}}</div>
-                <div class="card-body">
+            <div class="hrdept-summary-card h-100">
+                <div class="hrdept-summary-card-header">
+                    <span class="hrdept-summary-card-title">
+                        <i class="icon fa fa-clipboard-check" aria-hidden="true"></i>
+                        {{#str}}myattendancethismonth, local_hrdepartment{{/str}}
+                    </span>
+                </div>
+                <div class="hrdept-summary-card-body">
                     <table class="table table-sm mb-0">
                         <tbody>
                             <tr>
@@ -82,10 +103,13 @@
         </div>
 
         <div class="col-lg-4 mb-3">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>{{#str}}myleavebalance, local_hrdepartment{{/str}}</span>
-                    <span class="badge badge-secondary">{{#str}}pendingleave, local_hrdepartment{{/str}}: {{pendingleave}}</span>
+            <div class="hrdept-summary-card h-100">
+                <div class="hrdept-summary-card-header">
+                    <span class="hrdept-summary-card-title">
+                        <i class="icon fa fa-calendar-alt" aria-hidden="true"></i>
+                        {{#str}}myleavebalance, local_hrdepartment{{/str}}
+                    </span>
+                    <span class="hrdept-pill hrdept-pill-pending">{{#str}}pendingleave, local_hrdepartment{{/str}}: {{pendingleave}}</span>
                 </div>
                 {{#hasleavebalances}}
                 <table class="table table-sm mb-0">
@@ -110,32 +134,26 @@
                 </table>
                 {{/hasleavebalances}}
                 {{^hasleavebalances}}
-                <div class="card-body text-muted">{{#str}}noleavebalance, local_hrdepartment{{/str}}</div>
+                <div class="hrdept-summary-card-body text-muted">{{#str}}noleavebalance, local_hrdepartment{{/str}}</div>
                 {{/hasleavebalances}}
             </div>
         </div>
 
         <div class="col-lg-4 mb-3">
-            <div class="card h-100">
-                <div class="card-header">{{#str}}mylatestpayslip, local_hrdepartment{{/str}}</div>
-                <div class="card-body">
+            <div class="hrdept-summary-card h-100">
+                <div class="hrdept-summary-card-header">
+                    <span class="hrdept-summary-card-title">
+                        <i class="icon fa fa-money-bill-wave" aria-hidden="true"></i>
+                        {{#str}}mylatestpayslip, local_hrdepartment{{/str}}
+                    </span>
+                </div>
+                <div class="hrdept-summary-card-body">
                     {{#haslatestpayroll}}
-                    <table class="table table-sm mb-0">
-                        <tbody>
-                            <tr>
-                                <th scope="row">{{#str}}payrollperiod, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{latestpayroll.period}}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">{{#str}}payrollnet, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{latestpayroll.currency}} {{latestpayroll.netsalary}}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">{{#str}}paymentstatus, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{latestpayroll.paymentstatus}}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="hrdept-payroll-net hrdept-payroll-net-compact">
+                        <span class="hrdept-payroll-net-value">{{latestpayroll.currency}} {{latestpayroll.netsalary}}</span>
+                        <span class="hrdept-payroll-net-label">{{latestpayroll.period}}</span>
+                    </div>
+                    <span class="hrdept-pill {{latestpayroll.paymentstatusclass}}">{{latestpayroll.paymentstatus}}</span>
                     {{/haslatestpayroll}}
                     {{^haslatestpayroll}}
                     <div class="text-muted">{{#str}}nopayrollrecord, local_hrdepartment{{/str}}</div>
@@ -145,4 +163,5 @@
         </div>
     </div>
     {{/hasprofile}}
+
 </div>

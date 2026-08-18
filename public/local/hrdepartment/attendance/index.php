@@ -31,7 +31,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\student_attendance_manager;
+use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
 
@@ -39,7 +41,7 @@ require_login();
 
 $context = context_system::instance();
 
-$canviewall = has_capability('local/hrdepartment:manageattendance', $context);
+$canviewall = access_manager::can_manage('local/hrdepartment:manageattendance');
 $manageablecourses = student_attendance_manager::get_manageable_courses((int) $USER->id, $canviewall);
 $canviewany = $canviewall || !empty($manageablecourses);
 
@@ -54,22 +56,29 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/hrdepartment/attendance/index.php'));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('attendance', 'local_hrdepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('attendance');
-echo $OUTPUT->tabtree($tabs, 'attendance');
+echo local_hrdepartment_render_tab_bar('attendance');
 
-echo $OUTPUT->heading(get_string('attendance', 'local_hrdepartment'));
+echo html_writer::start_div('local-hrdepartment-attendance');
 
 if ($canviewany) {
+
+    echo local_hrdepartment_render_page_hero(
+        get_string('attendance', 'local_hrdepartment'),
+        get_string('attendanceoverviewsubtitle', 'local_hrdepartment')
+    );
 
     $courseidsarray = $canviewall ? null : array_keys($manageablecourses);
     $courses = student_attendance_manager::get_courses_with_attendance($courseidsarray);
 
     if (empty($courses)) {
-        echo $OUTPUT->notification(get_string('nocoursesattendance', 'local_hrdepartment'), 'info');
+        echo local_hrdepartment_render_empty_state(
+            get_string('nocoursesattendance', 'local_hrdepartment'),
+            'fa-clipboard-check'
+        );
     } else {
         $table = new html_table();
         $table->head = [
@@ -92,24 +101,34 @@ if ($canviewany) {
             ];
         }
 
-        echo html_writer::table($table);
+        echo local_hrdepartment_render_table_card(html_writer::table($table));
     }
 
 } else {
 
     // Self-service: the logged-in user's own attendance across every
     // course they have attendance records in.
+    echo local_hrdepartment_render_page_hero(
+        get_string('myattendance', 'local_hrdepartment'),
+        get_string('myattendancesubtitle', 'local_hrdepartment')
+    );
+
     $summary = student_attendance_manager::get_student_status_summary((int) $USER->id);
 
     if (empty($summary)) {
-        echo $OUTPUT->notification(get_string('noattendancerecords', 'local_hrdepartment'), 'info');
+        echo local_hrdepartment_render_empty_state(
+            get_string('noattendancerecords', 'local_hrdepartment'),
+            'fa-clipboard-check'
+        );
     } else {
-        echo html_writer::start_div('local-hrdepartment-attendance-summary d-flex flex-wrap mb-3');
-        foreach ($summary as $row) {
-            echo html_writer::div(
-                html_writer::div($row->total, 'h4 mb-0') .
-                html_writer::div(s($row->description) . ' (' . s($row->acronym) . ')', 'text-muted small'),
-                'card p-3 mr-2 mb-2 text-center'
+        $colors = ['hrdept-stat-c1', 'hrdept-stat-c2', 'hrdept-stat-c3', 'hrdept-stat-c4', 'hrdept-stat-c5'];
+        echo html_writer::start_div('hrdept-stats-strip');
+        foreach (array_values($summary) as $i => $row) {
+            echo local_hrdepartment_render_stat_card(
+                (string) $row->total,
+                s($row->description) . ' (' . s($row->acronym) . ')',
+                $colors[$i % count($colors)],
+                'fa-clipboard-check'
             );
         }
         echo html_writer::end_div();
@@ -136,8 +155,10 @@ if ($canviewany) {
             ];
         }
 
-        echo html_writer::table($table);
+        echo local_hrdepartment_render_table_card(html_writer::table($table));
     }
 }
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

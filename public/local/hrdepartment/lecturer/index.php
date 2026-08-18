@@ -15,60 +15,47 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Lecturer listing page.
+ * Lecturers directory: search/filter every lecturer by name, email,
+ * employee code, department, and status, in a card grid. See
+ * local_hrdepartment\lecturer_manager.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use local_hrdepartment\table\lecturers_table;
+use local_hrdepartment\access_manager;
+use local_hrdepartment\output\lecturers_directory;
 
 require_once(__DIR__ . '/../../../config.php');
 
 require_login();
 
 $context = context_system::instance();
-require_capability('local/hrdepartment:managelecturers', $context);
+access_manager::require_manage('local/hrdepartment:managelecturers');
 
 $search = optional_param('search', '', PARAM_TEXT);
+$departmentid = optional_param('departmentid', 0, PARAM_INT);
+$status = optional_param('status', '', PARAM_ALPHA);
+$page = optional_param('page', 0, PARAM_INT);
 
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/hrdepartment/lecturer/index.php', ['search' => $search]));
+$PAGE->set_url(new moodle_url('/local/hrdepartment/lecturer/index.php', [
+    'search' => $search, 'departmentid' => $departmentid, 'status' => $status, 'page' => $page,
+]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('lecturers', 'local_hrdepartment'));
 $PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
 
+$renderer = $PAGE->get_renderer('local_hrdepartment');
+
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('lecturers');
-echo $OUTPUT->tabtree($tabs, 'lecturers');
+echo local_hrdepartment_render_tab_bar('lecturers');
 
-echo $OUTPUT->heading(get_string('lecturers', 'local_hrdepartment'));
+echo $OUTPUT->heading(get_string('lecturersdirectory', 'local_hrdepartment'));
 
-echo html_writer::start_div('d-flex justify-content-between align-items-center mb-3');
-
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'form-inline']);
-echo html_writer::empty_tag('input', [
-    'type' => 'text',
-    'name' => 'search',
-    'value' => $search,
-    'placeholder' => get_string('search'),
-    'class' => 'form-control mr-2',
-]);
-echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('search'), 'class' => 'btn btn-secondary']);
-echo html_writer::end_tag('form');
-
-echo html_writer::link(
-    new moodle_url('/local/hrdepartment/lecturer/edit.php'),
-    get_string('addlecturer', 'local_hrdepartment'),
-    ['class' => 'btn btn-primary']
-);
-
-echo html_writer::end_div();
-
-$table = new lecturers_table('local-hrdepartment-lecturers', $search);
-$table->define_baseurl($PAGE->url);
-$table->out(20, true);
+$directory = new lecturers_directory($search, $departmentid, $status, $page, $PAGE->url);
+echo $renderer->render_lecturers_directory($directory);
 
 echo $OUTPUT->footer();

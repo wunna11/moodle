@@ -17,12 +17,16 @@
 {{!
     @template local_hrdepartment/dashboard
 
-    Organisation-wide HR summary: employee counts, payroll totals for the
-    current period, leave stats, today's attendance, and a quick-glance
-    list of pending leave requests.
+    Organisation-wide HR summary: a welcome hero, a quick-access tile row,
+    gradient stat cards (lecturers/staff/students/pending leave), a payroll
+    summary card, a today's-attendance card with a stacked segment bar, and
+    a quick-glance activity list of pending leave requests.
 
     Example context (json):
     {
+        "herogreeting": "Welcome back, Jane Admin",
+        "herosubtitle": "Here's what's happening across your organisation today.",
+        "herodate": "Monday, 17 August 2026",
         "lecturercount": 24,
         "staffcount": 41,
         "totalemployees": 65,
@@ -44,10 +48,15 @@
         "attendanceleave": 3,
         "attendancehalfday": 1,
         "attendancetotalmarked": 61,
+        "attendancepresentpct": 90,
+        "attendanceabsentpct": 3,
+        "attendanceleavepct": 5,
+        "attendancehalfdaypct": 2,
         "hasrecentleave": true,
         "recentleave": [
             {
                 "fullname": "Jane Doe",
+                "initials": "JD",
                 "leavetypename": "Annual Leave",
                 "startdate": "12 Aug 2026",
                 "enddate": "14 Aug 2026",
@@ -55,8 +64,12 @@
                 "url": "#"
             }
         ],
+        "showstudents": true,
+        "totalstudentscount": 128,
+        "activestudentscount": 121,
         "lecturersurl": "#",
         "staffurl": "#",
+        "studentsurl": "#",
         "attendanceurl": "#",
         "leaveurl": "#",
         "payrollurl": "#"
@@ -64,155 +77,177 @@
 }}
 <div class="local-hrdepartment-dashboard">
 
-    <div class="row">
-        <div class="col-md-3 col-sm-6 mb-3">
-            <a href="{{lecturersurl}}" class="card h-100 text-decoration-none">
-                <div class="card-body">
-                    <div class="text-muted small text-uppercase">{{#str}}lecturers, local_hrdepartment{{/str}}</div>
-                    <div class="display-6">{{lecturercount}}</div>
-                </div>
-            </a>
+    <div class="hrdept-dashboard-hero">
+        <div class="hrdept-dashboard-hero-text">
+            <h2 class="hrdept-dashboard-hero-title">{{herogreeting}}</h2>
+            <p class="hrdept-dashboard-hero-subtitle">{{herosubtitle}}</p>
         </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <a href="{{staffurl}}" class="card h-100 text-decoration-none">
-                <div class="card-body">
-                    <div class="text-muted small text-uppercase">{{#str}}staff, local_hrdepartment{{/str}}</div>
-                    <div class="display-6">{{staffcount}}</div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="text-muted small text-uppercase">{{#str}}totalemployees, local_hrdepartment{{/str}}</div>
-                    <div class="display-6">{{totalemployees}}</div>
-                    <div class="text-muted small">{{#str}}inactiveemployeescount, local_hrdepartment{{/str}}: {{inactiveemployees}}</div>
-                </div>
+        <div class="hrdept-dashboard-hero-date">{{herodate}}</div>
+    </div>
+
+    <div class="hrdept-quicklink-grid">
+        <a class="hrdept-quicklink" href="{{lecturersurl}}">
+            <span class="hrdept-quicklink-icon"><i class="icon fa fa-chalkboard-teacher" aria-hidden="true"></i></span>
+            <span class="hrdept-quicklink-label">{{#str}}lecturers, local_hrdepartment{{/str}}</span>
+        </a>
+        <a class="hrdept-quicklink" href="{{staffurl}}">
+            <span class="hrdept-quicklink-icon"><i class="icon fa fa-user-tie" aria-hidden="true"></i></span>
+            <span class="hrdept-quicklink-label">{{#str}}staff, local_hrdepartment{{/str}}</span>
+        </a>
+        {{#showstudents}}
+        <a class="hrdept-quicklink" href="{{studentsurl}}">
+            <span class="hrdept-quicklink-icon"><i class="icon fa fa-user-graduate" aria-hidden="true"></i></span>
+            <span class="hrdept-quicklink-label">{{#str}}students, local_hrdepartment{{/str}}</span>
+        </a>
+        {{/showstudents}}
+        <a class="hrdept-quicklink" href="{{attendanceurl}}">
+            <span class="hrdept-quicklink-icon"><i class="icon fa fa-clipboard-check" aria-hidden="true"></i></span>
+            <span class="hrdept-quicklink-label">{{#str}}attendance, local_hrdepartment{{/str}}</span>
+        </a>
+        <a class="hrdept-quicklink" href="{{leaveurl}}">
+            <span class="hrdept-quicklink-icon"><i class="icon fa fa-calendar-alt" aria-hidden="true"></i></span>
+            <span class="hrdept-quicklink-label">{{#str}}leave, local_hrdepartment{{/str}}</span>
+        </a>
+        <a class="hrdept-quicklink" href="{{payrollurl}}">
+            <span class="hrdept-quicklink-icon"><i class="icon fa fa-money-bill-wave" aria-hidden="true"></i></span>
+            <span class="hrdept-quicklink-label">{{#str}}payroll, local_hrdepartment{{/str}}</span>
+        </a>
+    </div>
+
+    <div class="hrdept-stats-strip">
+        <a href="{{lecturersurl}}" class="hrdept-stat-card hrdept-stat-lecturers">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-chalkboard-teacher" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{lecturercount}}</div>
+                <div class="hrdept-stat-label">{{#str}}lecturers, local_hrdepartment{{/str}}</div>
             </div>
-        </div>
-        <div class="col-md-3 col-sm-6 mb-3">
-            <a href="{{leaveurl}}" class="card h-100 text-decoration-none">
-                <div class="card-body">
-                    <div class="text-muted small text-uppercase">{{#str}}leavepending, local_hrdepartment{{/str}}</div>
-                    <div class="display-6">{{leavepending}}</div>
-                    <div class="text-muted small">{{#str}}onleavetoday, local_hrdepartment{{/str}}: {{onleavetoday}}</div>
-                </div>
-            </a>
-        </div>
+        </a>
+        <a href="{{staffurl}}" class="hrdept-stat-card hrdept-stat-staff">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-tie" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{staffcount}}</div>
+                <div class="hrdept-stat-label">{{#str}}staff, local_hrdepartment{{/str}}</div>
+                <div class="hrdept-stat-sub">{{#str}}inactiveemployeescount, local_hrdepartment{{/str}}: {{inactiveemployees}}</div>
+            </div>
+        </a>
+        {{#showstudents}}
+        <a href="{{studentsurl}}" class="hrdept-stat-card hrdept-stat-students">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-graduate" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{totalstudentscount}}</div>
+                <div class="hrdept-stat-label">{{#str}}students, local_hrdepartment{{/str}}</div>
+                <div class="hrdept-stat-sub">{{#str}}status_active, local_hrdepartment{{/str}}: {{activestudentscount}}</div>
+            </div>
+        </a>
+        {{/showstudents}}
+        <a href="{{leaveurl}}" class="hrdept-stat-card hrdept-stat-leave">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-calendar-times" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{leavepending}}</div>
+                <div class="hrdept-stat-label">{{#str}}leavepending, local_hrdepartment{{/str}}</div>
+                <div class="hrdept-stat-sub">{{#str}}onleavetoday, local_hrdepartment{{/str}}: {{onleavetoday}}</div>
+            </div>
+        </a>
     </div>
 
     <div class="row">
         <div class="col-lg-6 mb-3">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>{{#str}}payrollsummary, local_hrdepartment{{/str}} &mdash; {{payrollperiod}}</span>
-                    <a href="{{payrollurl}}" class="btn btn-sm btn-outline-secondary">{{#str}}viewpayroll, local_hrdepartment{{/str}}</a>
+            <div class="hrdept-summary-card h-100">
+                <div class="hrdept-summary-card-header">
+                    <span class="hrdept-summary-card-title">
+                        <i class="icon fa fa-money-bill-wave" aria-hidden="true"></i>
+                        {{#str}}payrollsummary, local_hrdepartment{{/str}} &mdash; {{payrollperiod}}
+                    </span>
+                    <a href="{{payrollurl}}" class="hrdept-summary-card-action">{{#str}}viewpayroll, local_hrdepartment{{/str}}</a>
                 </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-3">
-                        <tbody>
-                            <tr>
-                                <th scope="row">{{#str}}payrollbase, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{currency}} {{payrollbase}}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">{{#str}}payrollallowances, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{currency}} {{payrollallowances}}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">{{#str}}payrolldeductions, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{currency}} {{payrolldeductions}}</td>
-                            </tr>
-                            <tr class="font-weight-bold">
-                                <th scope="row">{{#str}}payrollnet, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{currency}} {{payrollnet}}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <span class="badge badge-secondary mr-1">{{#str}}status_pending, local_hrdepartment{{/str}}: {{payrollpending}}</span>
-                    <span class="badge badge-info mr-1">{{#str}}status_processed, local_hrdepartment{{/str}}: {{payrollprocessed}}</span>
-                    <span class="badge badge-success">{{#str}}status_paid, local_hrdepartment{{/str}}: {{payrollpaid}}</span>
+                <div class="hrdept-summary-card-body">
+                    <div class="hrdept-payroll-net">
+                        <span class="hrdept-payroll-net-value">{{currency}} {{payrollnet}}</span>
+                        <span class="hrdept-payroll-net-label">{{#str}}payrollnet, local_hrdepartment{{/str}}</span>
+                    </div>
+                    <div class="hrdept-payroll-meta">
+                        <div class="hrdept-payroll-meta-item">
+                            <span class="hrdept-payroll-meta-label">{{#str}}payrollbase, local_hrdepartment{{/str}}</span>
+                            <span class="hrdept-payroll-meta-value">{{currency}} {{payrollbase}}</span>
+                        </div>
+                        <div class="hrdept-payroll-meta-item">
+                            <span class="hrdept-payroll-meta-label">{{#str}}payrollallowances, local_hrdepartment{{/str}}</span>
+                            <span class="hrdept-payroll-meta-value">{{currency}} {{payrollallowances}}</span>
+                        </div>
+                        <div class="hrdept-payroll-meta-item">
+                            <span class="hrdept-payroll-meta-label">{{#str}}payrolldeductions, local_hrdepartment{{/str}}</span>
+                            <span class="hrdept-payroll-meta-value">{{currency}} {{payrolldeductions}}</span>
+                        </div>
+                    </div>
+                    <div class="hrdept-payroll-badges">
+                        <span class="hrdept-pill hrdept-pill-pending">{{#str}}status_pending, local_hrdepartment{{/str}}: {{payrollpending}}</span>
+                        <span class="hrdept-pill hrdept-pill-processed">{{#str}}status_processed, local_hrdepartment{{/str}}: {{payrollprocessed}}</span>
+                        <span class="hrdept-pill hrdept-pill-paid">{{#str}}status_paid, local_hrdepartment{{/str}}: {{payrollpaid}}</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6 mb-3">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>{{#str}}attendancetoday, local_hrdepartment{{/str}}</span>
-                    <a href="{{attendanceurl}}" class="btn btn-sm btn-outline-secondary">{{#str}}viewattendance, local_hrdepartment{{/str}}</a>
+            <div class="hrdept-summary-card h-100">
+                <div class="hrdept-summary-card-header">
+                    <span class="hrdept-summary-card-title">
+                        <i class="icon fa fa-clipboard-check" aria-hidden="true"></i>
+                        {{#str}}attendancetoday, local_hrdepartment{{/str}}
+                    </span>
+                    <a href="{{attendanceurl}}" class="hrdept-summary-card-action">{{#str}}viewattendance, local_hrdepartment{{/str}}</a>
                 </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-3">
-                        <tbody>
-                            <tr>
-                                <th scope="row">{{#str}}attendance_present, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{attendancepresent}}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">{{#str}}attendance_absent, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{attendanceabsent}}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">{{#str}}attendance_leave, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{attendanceleave}}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row">{{#str}}attendance_halfday, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{attendancehalfday}}</td>
-                            </tr>
-                            <tr class="font-weight-bold">
-                                <th scope="row">{{#str}}totalmarked, local_hrdepartment{{/str}}</th>
-                                <td class="text-right">{{attendancetotalmarked}}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="text-muted small">{{#str}}leaveapprovedthismonth, local_hrdepartment{{/str}}: {{leaveapprovedthismonth}}</div>
+                <div class="hrdept-summary-card-body">
+                    <div class="hrdept-attendance-total">
+                        <span class="hrdept-attendance-total-value">{{attendancetotalmarked}}</span>
+                        <span class="hrdept-attendance-total-label">{{#str}}totalmarked, local_hrdepartment{{/str}}</span>
+                    </div>
+                    <div class="hrdept-attendance-bar">
+                        <span class="hrdept-bar-segment hrdept-bar-present" style="width: {{attendancepresentpct}}%"></span>
+                        <span class="hrdept-bar-segment hrdept-bar-absent" style="width: {{attendanceabsentpct}}%"></span>
+                        <span class="hrdept-bar-segment hrdept-bar-leave" style="width: {{attendanceleavepct}}%"></span>
+                        <span class="hrdept-bar-segment hrdept-bar-halfday" style="width: {{attendancehalfdaypct}}%"></span>
+                    </div>
+                    <div class="hrdept-attendance-legend">
+                        <span class="hrdept-legend-item"><span class="hrdept-legend-dot hrdept-bar-present"></span>{{#str}}attendance_present, local_hrdepartment{{/str}}: {{attendancepresent}}</span>
+                        <span class="hrdept-legend-item"><span class="hrdept-legend-dot hrdept-bar-absent"></span>{{#str}}attendance_absent, local_hrdepartment{{/str}}: {{attendanceabsent}}</span>
+                        <span class="hrdept-legend-item"><span class="hrdept-legend-dot hrdept-bar-leave"></span>{{#str}}attendance_leave, local_hrdepartment{{/str}}: {{attendanceleave}}</span>
+                        <span class="hrdept-legend-item"><span class="hrdept-legend-dot hrdept-bar-halfday"></span>{{#str}}attendance_halfday, local_hrdepartment{{/str}}: {{attendancehalfday}}</span>
+                    </div>
+                    <div class="hrdept-attendance-note">{{#str}}leaveapprovedthismonth, local_hrdepartment{{/str}}: {{leaveapprovedthismonth}}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>{{#str}}pendingleaverequests, local_hrdepartment{{/str}}</span>
-                    <a href="{{leaveurl}}" class="btn btn-sm btn-outline-secondary">{{#str}}viewleave, local_hrdepartment{{/str}}</a>
-                </div>
-                {{#hasrecentleave}}
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead>
-                            <tr>
-                                <th>{{#str}}employee, local_hrdepartment{{/str}}</th>
-                                <th>{{#str}}leavetype, local_hrdepartment{{/str}}</th>
-                                <th>{{#str}}startdate, local_hrdepartment{{/str}}</th>
-                                <th>{{#str}}enddate, local_hrdepartment{{/str}}</th>
-                                <th class="text-right">{{#str}}totaldays, local_hrdepartment{{/str}}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{#recentleave}}
-                            <tr>
-                                <td><a href="{{url}}">{{fullname}}</a></td>
-                                <td>{{leavetypename}}</td>
-                                <td>{{startdate}}</td>
-                                <td>{{enddate}}</td>
-                                <td class="text-right">{{totaldays}}</td>
-                            </tr>
-                            {{/recentleave}}
-                        </tbody>
-                    </table>
-                </div>
-                {{/hasrecentleave}}
-                {{^hasrecentleave}}
-                <div class="card-body text-muted">
-                    {{#str}}nopendingleave, local_hrdepartment{{/str}}
-                </div>
-                {{/hasrecentleave}}
-            </div>
+    <div class="hrdept-summary-card mb-3">
+        <div class="hrdept-summary-card-header">
+            <span class="hrdept-summary-card-title">
+                <i class="icon fa fa-hourglass-half" aria-hidden="true"></i>
+                {{#str}}pendingleaverequests, local_hrdepartment{{/str}}
+            </span>
+            <a href="{{leaveurl}}" class="hrdept-summary-card-action">{{#str}}viewleave, local_hrdepartment{{/str}}</a>
         </div>
+        {{#hasrecentleave}}
+        <div class="hrdept-activity-list">
+            {{#recentleave}}
+            <a href="{{url}}" class="hrdept-activity-item">
+                <span class="hrdept-activity-avatar">{{initials}}</span>
+                <span class="hrdept-activity-body">
+                    <span class="hrdept-activity-name">{{fullname}}</span>
+                    <span class="hrdept-activity-meta">{{leavetypename}} &middot; {{startdate}} &ndash; {{enddate}}</span>
+                </span>
+                <span class="hrdept-activity-days">{{totaldays}} {{#str}}totaldays, local_hrdepartment{{/str}}</span>
+            </a>
+            {{/recentleave}}
+        </div>
+        {{/hasrecentleave}}
+        {{^hasrecentleave}}
+        <div class="hrdept-empty-state">
+            <i class="icon fa fa-calendar-check" aria-hidden="true"></i>
+            {{#str}}nopendingleave, local_hrdepartment{{/str}}
+        </div>
+        {{/hasrecentleave}}
     </div>
 
 </div>

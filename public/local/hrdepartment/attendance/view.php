@@ -28,7 +28,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\access_manager;
 use local_hrdepartment\student_attendance_manager;
+use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
 
@@ -40,13 +42,13 @@ $courseid = optional_param('courseid', 0, PARAM_INT);
 $context = context_system::instance();
 
 $isviewingself = ((int) $USER->id === $studentid) && has_capability('local/hrdepartment:viewownattendance', $context);
-$canviewall = has_capability('local/hrdepartment:manageattendance', $context);
+$canviewall = access_manager::can_manage('local/hrdepartment:manageattendance');
 $canviewcourse = $courseid && student_attendance_manager::can_view_course_attendance($courseid);
 
 if (!$isviewingself && !$canviewall && !$canviewcourse) {
     // None of the three access paths apply - fall through to the normal
     // "you don't have this capability" exception.
-    require_capability('local/hrdepartment:manageattendance', $context);
+    access_manager::require_manage('local/hrdepartment:manageattendance');
 }
 
 $student = $DB->get_record('user', ['id' => $studentid, 'deleted' => 0], '*', MUST_EXIST);
@@ -58,29 +60,39 @@ $PAGE->set_url(new moodle_url('/local/hrdepartment/attendance/view.php', [
 ]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(fullname($student));
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('attendance');
-echo $OUTPUT->tabtree($tabs, 'attendance');
+echo local_hrdepartment_render_tab_bar('attendance');
 
-echo $OUTPUT->heading(get_string('attendancehistoryfor', 'local_hrdepartment', fullname($student)));
+echo html_writer::start_div('local-hrdepartment-attendance');
+
+echo local_hrdepartment_render_subheader(
+    get_string('attendancehistoryfor', 'local_hrdepartment', fullname($student)),
+    get_string('attendancehistorysubtitle', 'local_hrdepartment')
+);
 
 $summary = student_attendance_manager::get_student_status_summary($studentid, $courseid ?: null);
 
 if (empty($summary)) {
-    echo $OUTPUT->notification(get_string('noattendancerecords', 'local_hrdepartment'), 'info');
+    echo local_hrdepartment_render_empty_state(
+        get_string('noattendancerecords', 'local_hrdepartment'),
+        'fa-clipboard-check'
+    );
+    echo html_writer::end_div();
     echo $OUTPUT->footer();
     exit;
 }
 
-echo html_writer::start_div('local-hrdepartment-attendance-summary d-flex flex-wrap mb-3');
-foreach ($summary as $row) {
-    echo html_writer::div(
-        html_writer::div($row->total, 'h4 mb-0') .
-        html_writer::div(s($row->description) . ' (' . s($row->acronym) . ')', 'text-muted small'),
-        'card p-3 mr-2 mb-2 text-center'
+$colors = ['hrdept-stat-c1', 'hrdept-stat-c2', 'hrdept-stat-c3', 'hrdept-stat-c4', 'hrdept-stat-c5'];
+echo html_writer::start_div('hrdept-stats-strip');
+foreach (array_values($summary) as $i => $row) {
+    echo local_hrdepartment_render_stat_card(
+        (string) $row->total,
+        s($row->description) . ' (' . s($row->acronym) . ')',
+        $colors[$i % count($colors)],
+        'fa-clipboard-check'
     );
 }
 echo html_writer::end_div();
@@ -111,6 +123,8 @@ foreach ($records as $record) {
     ];
 }
 
-echo html_writer::table($table);
+echo local_hrdepartment_render_table_card(html_writer::table($table));
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

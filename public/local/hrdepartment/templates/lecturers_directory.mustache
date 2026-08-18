@@ -1,0 +1,216 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_hrdepartment/lecturers_directory
+
+    A searchable/filterable, paginated card grid of every lecturer.
+    Replaces the old table_sql listing with the same card-grid design
+    used by the Students directory.
+
+    Example context (json):
+    {
+        "totallecturers": 24,
+        "activelecturers": 21,
+        "suspendedlecturers": 3,
+        "departmentcount": 5,
+        "search": "",
+        "formaction": "#",
+        "departmentoptions": [
+            { "value": 0, "label": "All departments", "issel": true },
+            { "value": 3, "label": "Computer Science", "issel": false }
+        ],
+        "statusoptions": [
+            { "value": "", "label": "All statuses", "issel": true },
+            { "value": "active", "label": "Active", "issel": false },
+            { "value": "suspended", "label": "Suspended", "issel": false }
+        ],
+        "addlecturerurl": "#",
+        "haslecturers": true,
+        "resultcount": 24,
+        "lecturers": [
+            {
+                "id": 7,
+                "fullname": "Dr. Aye Aye Mon",
+                "email": "aye@example.com",
+                "employeecode": "LEC-007",
+                "departmentname": "Computer Science",
+                "hasdepartment": true,
+                "designation": "Senior Lecturer",
+                "hasdesignation": true,
+                "qualification": "PhD Computer Science",
+                "specialization": "Machine Learning",
+                "hasacademic": true,
+                "avatarhtml": "<img src=\"#\">",
+                "viewurl": "#",
+                "editurl": "#",
+                "assignurl": "#",
+                "deactivateurl": "#",
+                "reactivateurl": "#",
+                "issuspended": false
+            }
+        ],
+        "haspaging": true,
+        "pagingbarhtml": "<div class=\"paging\">...</div>"
+    }
+}}
+<div class="local-hrdepartment-lecturers">
+
+    <div class="hrdept-stats-strip">
+        <div class="hrdept-stat-card hrdept-stat-total">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-chalkboard-teacher" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{totallecturers}}</div>
+                <div class="hrdept-stat-label">{{#str}}totallecturers, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-active">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-check" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{activelecturers}}</div>
+                <div class="hrdept-stat-label">{{#str}}status_active, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-suspended">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-user-slash" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{suspendedlecturers}}</div>
+                <div class="hrdept-stat-label">{{#str}}status_suspended, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+        <div class="hrdept-stat-card hrdept-stat-departments">
+            <div class="hrdept-stat-icon"><i class="icon fa fa-building" aria-hidden="true"></i></div>
+            <div>
+                <div class="hrdept-stat-value">{{departmentcount}}</div>
+                <div class="hrdept-stat-label">{{#str}}departments, local_hrdepartment{{/str}}</div>
+            </div>
+        </div>
+    </div>
+
+    <form method="get" action="{{formaction}}" class="hrdept-filter-bar">
+        <div class="hrdept-filter-search">
+            <i class="icon fa fa-search" aria-hidden="true"></i>
+            <input
+                type="text"
+                name="search"
+                value="{{search}}"
+                placeholder="{{#str}}searchlecturerplaceholder, local_hrdepartment{{/str}}"
+                class="form-control"
+            >
+        </div>
+        <select name="departmentid" class="form-control hrdept-filter-select">
+            {{#departmentoptions}}
+            <option value="{{value}}" {{#issel}}selected{{/issel}}>{{label}}</option>
+            {{/departmentoptions}}
+        </select>
+        <select name="status" class="form-control hrdept-filter-select">
+            {{#statusoptions}}
+            <option value="{{value}}" {{#issel}}selected{{/issel}}>{{label}}</option>
+            {{/statusoptions}}
+        </select>
+        <button type="submit" class="btn btn-primary hrdept-filter-submit">
+            <i class="icon fa fa-filter" aria-hidden="true"></i> {{#str}}filter, local_hrdepartment{{/str}}
+        </button>
+        <a href="{{formaction}}" class="btn btn-link hrdept-filter-reset">{{#str}}resetfilters, local_hrdepartment{{/str}}</a>
+        <a href="{{addlecturerurl}}" class="btn btn-success hrdept-filter-add">
+            <i class="icon fa fa-plus" aria-hidden="true"></i> {{#str}}addlecturer, local_hrdepartment{{/str}}
+        </a>
+    </form>
+
+    <div class="hrdept-result-count text-muted small mb-2">
+        {{resultcount}} {{#str}}lecturers, local_hrdepartment{{/str}}
+    </div>
+
+    {{#haslecturers}}
+    <div class="hrdept-lecturer-grid">
+        {{#lecturers}}
+        <div class="hrdept-lecturer-card {{#issuspended}}hrdept-lecturer-suspended{{/issuspended}}">
+            <div class="hrdept-lecturer-card-header">
+                <div class="hrdept-lecturer-avatar">{{{avatarhtml}}}</div>
+                <div class="hrdept-lecturer-identity">
+                    <a href="{{viewurl}}" class="hrdept-lecturer-name" title="{{fullname}}">{{fullname}}</a>
+                    <div class="hrdept-lecturer-email" title="{{email}}">
+                        <i class="icon fa fa-envelope" aria-hidden="true"></i> {{email}}
+                    </div>
+                    <div class="hrdept-lecturer-code">
+                        <i class="icon fa fa-id-badge" aria-hidden="true"></i> {{employeecode}}
+                    </div>
+                </div>
+                <span class="hrdept-status-badge {{#issuspended}}hrdept-status-suspended{{/issuspended}}{{^issuspended}}hrdept-status-active{{/issuspended}}">
+                    {{#issuspended}}{{#str}}status_suspended, local_hrdepartment{{/str}}{{/issuspended}}
+                    {{^issuspended}}{{#str}}status_active, local_hrdepartment{{/str}}{{/issuspended}}
+                </span>
+            </div>
+
+            <div class="hrdept-lecturer-card-body">
+                {{#hasdepartment}}
+                <span class="hrdept-lecturer-pill hrdept-lecturer-pill-dept">
+                    <i class="icon fa fa-building" aria-hidden="true"></i> {{departmentname}}
+                </span>
+                {{/hasdepartment}}
+                {{#hasdesignation}}
+                <span class="hrdept-lecturer-pill hrdept-lecturer-pill-designation">
+                    <i class="icon fa fa-graduation-cap" aria-hidden="true"></i> {{designation}}
+                </span>
+                {{/hasdesignation}}
+
+                {{#hasacademic}}
+                <div class="hrdept-lecturer-academic">
+                    {{#qualification}}<span>{{qualification}}</span>{{/qualification}}
+                    {{#specialization}}<span>{{specialization}}</span>{{/specialization}}
+                </div>
+                {{/hasacademic}}
+            </div>
+
+            <div class="hrdept-lecturer-card-actions">
+                <a href="{{viewurl}}" class="hrdept-action-btn" title="{{#str}}view{{/str}}">
+                    <i class="icon fa fa-eye" aria-hidden="true"></i>
+                </a>
+                <a href="{{editurl}}" class="hrdept-action-btn" title="{{#str}}edit{{/str}}">
+                    <i class="icon fa fa-pencil-alt" aria-hidden="true"></i>
+                </a>
+                <a href="{{assignurl}}" class="hrdept-action-btn" title="{{#str}}assigncourse, local_hrdepartment{{/str}}">
+                    <i class="icon fa fa-book" aria-hidden="true"></i>
+                </a>
+                {{^issuspended}}
+                <a href="{{deactivateurl}}" class="hrdept-action-btn hrdept-action-btn-danger" title="{{#str}}deactivate, local_hrdepartment{{/str}}">
+                    <i class="icon fa fa-user-slash" aria-hidden="true"></i>
+                </a>
+                {{/issuspended}}
+                {{#issuspended}}
+                <a href="{{reactivateurl}}" class="hrdept-action-btn hrdept-action-btn-success" title="{{#str}}reactivate, local_hrdepartment{{/str}}">
+                    <i class="icon fa fa-user-check" aria-hidden="true"></i>
+                </a>
+                {{/issuspended}}
+            </div>
+        </div>
+        {{/lecturers}}
+    </div>
+    {{/haslecturers}}
+    {{^haslecturers}}
+    <div class="hrdept-empty-state">
+        <i class="icon fa fa-chalkboard-teacher" aria-hidden="true"></i>
+        <p>{{#str}}nolecturersfound, local_hrdepartment{{/str}}</p>
+    </div>
+    {{/haslecturers}}
+
+    {{#haspaging}}
+    <div class="hrdept-paging">
+        {{{pagingbarhtml}}}
+    </div>
+    {{/haspaging}}
+
+</div>

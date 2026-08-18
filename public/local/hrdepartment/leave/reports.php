@@ -15,18 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Reports & Export: a filtered report of leave-marked mod_attendance
- * records with a CSV export, built from the same query as the Student
- * Leave Lookup table so they always agree. Read-only - see
- * local_hrdepartment\student_leave_manager.
+ * Reports & Export: a filtered report of student leave applications with
+ * a CSV export, built from the same query as the Leave requests table so
+ * they always agree. See local_hrdepartment\student_leave_manager.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-use local_hrdepartment\course_assignment_manager;
-use local_hrdepartment\student_attendance_manager;
 use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
@@ -34,17 +31,15 @@ require_once(__DIR__ . '/../../../config.php');
 require_login();
 
 $context = context_system::instance();
-$canviewall = has_capability('local/hrdepartment:manageleave', $context);
-$manageablecourses = student_attendance_manager::get_manageable_courses((int) $USER->id, $canviewall);
 
-if (!$canviewall && empty($manageablecourses)) {
-    require_capability('local/hrdepartment:manageleave', $context);
+$canmanage = student_leave_manager::can_manage();
+if (!$canmanage) {
+    require_capability(student_leave_manager::CAP_VIEW, $context);
 }
 
-$courseidsrestriction = $canviewall ? null : array_keys($manageablecourses);
-
-$courseid = optional_param('courseid', 0, PARAM_INT);
 $search = optional_param('search', '', PARAM_TEXT);
+$status = optional_param('status', '', PARAM_ALPHA);
+$leavetypeid = optional_param('leavetypeid', 0, PARAM_INT);
 $datefromraw = optional_param('datefrom', '', PARAM_TEXT);
 $datetoraw = optional_param('dateto', '', PARAM_TEXT);
 $datefrom = $datefromraw !== '' ? strtotime($datefromraw . ' 00:00:00') : 0;
@@ -52,14 +47,14 @@ $dateto = $datetoraw !== '' ? strtotime($datetoraw . ' 23:59:59') : 0;
 $export = optional_param('export', '', PARAM_ALPHA);
 
 $filters = [
-    'courseids' => $courseidsrestriction,
-    'courseid' => $courseid,
     'search' => $search,
+    'status' => $status,
+    'leavetypeid' => $leavetypeid,
     'datefrom' => $datefrom,
     'dateto' => $dateto,
 ];
 
-$rows = student_leave_manager::get_leave_rows($filters);
+$rows = student_leave_manager::get_application_rows($filters);
 
 if ($export === 'csv') {
     header('Content-Type: text/csv; charset=utf-8');
@@ -68,18 +63,22 @@ if ($export === 'csv') {
     $out = fopen('php://output', 'w');
     fputcsv($out, [
         get_string('student', 'local_hrdepartment'),
-        get_string('course', 'local_hrdepartment'),
-        get_string('attendancedate', 'local_hrdepartment'),
-        get_string('remarks', 'local_hrdepartment'),
+        get_string('leavetype', 'local_hrdepartment'),
+        get_string('startdate', 'local_hrdepartment'),
+        get_string('enddate', 'local_hrdepartment'),
+        get_string('totaldays', 'local_hrdepartment'),
+        get_string('status', 'local_hrdepartment'),
     ]);
 
     $dateformat = get_string('strftimedatefullshort', 'langconfig');
     foreach ($rows as $row) {
         fputcsv($out, [
             $row->fullname,
-            $row->shortname . ': ' . $row->fullname,
-            userdate($row->sessdate, $dateformat),
-            $row->remarks,
+            $row->leavetypename,
+            userdate($row->startdate, $dateformat),
+            userdate($row->enddate, $dateformat),
+            $row->totaldays,
+            get_string('status_' . $row->status, 'local_hrdepartment'),
         ]);
     }
     fclose($out);
@@ -88,29 +87,42 @@ if ($export === 'csv') {
 
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/hrdepartment/leave/reports.php', [
-    'courseid' => $courseid, 'search' => $search, 'datefrom' => $datefromraw, 'dateto' => $datetoraw,
+    'search' => $search, 'status' => $status, 'leavetypeid' => $leavetypeid,
+    'datefrom' => $datefromraw, 'dateto' => $datetoraw,
 ]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('leavereports', 'local_hrdepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_hrdepartment'));
+$PAGE->set_heading(student_leave_manager::get_page_heading());
 
 echo $OUTPUT->header();
 
-$tabs = local_hrdepartment_get_tabs('leave');
-echo $OUTPUT->tabtree($tabs, 'leave');
+echo local_hrdepartment_render_tab_bar('leave');
 
-echo $OUTPUT->heading(get_string('leavereports', 'local_hrdepartment'));
+echo html_writer::start_div('local-hrdepartment-leave');
 
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'form-inline mb-3']);
+echo local_hrdepartment_render_page_hero(
+    get_string('leavereports', 'local_hrdepartment'),
+    get_string('leavereportssubtitle', 'local_hrdepartment')
+);
+
+echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'hrdept-filter-bar']);
 
 echo html_writer::empty_tag('input', [
     'type' => 'text', 'name' => 'search', 'value' => $search,
     'placeholder' => get_string('searchstudentplaceholder', 'local_hrdepartment'), 'class' => 'form-control mr-2 mb-2',
 ]);
 
-$courseoptions = [0 => get_string('allcourses', 'local_hrdepartment')];
-$courseoptions += $canviewall ? course_assignment_manager::get_course_options() : $manageablecourses;
-echo html_writer::select($courseoptions, 'courseid', $courseid, null, ['class' => 'form-control mr-2 mb-2']);
+$statusoptions = [
+    '' => get_string('allstatuses', 'local_hrdepartment'),
+    'pending' => get_string('status_pending', 'local_hrdepartment'),
+    'approved' => get_string('status_approved', 'local_hrdepartment'),
+    'rejected' => get_string('status_rejected', 'local_hrdepartment'),
+    'cancelled' => get_string('status_cancelled', 'local_hrdepartment'),
+];
+echo html_writer::select($statusoptions, 'status', $status, null, ['class' => 'form-control mr-2 mb-2']);
+
+$leavetypeoptions = [0 => get_string('allleavetypes', 'local_hrdepartment')] + student_leave_manager::get_leave_type_options();
+echo html_writer::select($leavetypeoptions, 'leavetypeid', $leavetypeid, null, ['class' => 'form-control mr-2 mb-2']);
 
 echo html_writer::tag('label', get_string('datefrom', 'local_hrdepartment'), ['class' => 'mr-1']);
 echo html_writer::empty_tag('input', [
@@ -129,30 +141,39 @@ echo html_writer::link($exporturl, get_string('exportcsv', 'local_hrdepartment')
 echo html_writer::end_tag('form');
 
 if (empty($rows)) {
-    echo $OUTPUT->notification(get_string('noleaverecordsfound', 'local_hrdepartment'), 'info');
+    echo local_hrdepartment_render_empty_state(
+        get_string('noleaverecordsfound', 'local_hrdepartment'),
+        'fa-chart-bar'
+    );
 } else {
     $table = new html_table();
     $table->head = [
         get_string('student', 'local_hrdepartment'),
-        get_string('course', 'local_hrdepartment'),
-        get_string('attendancedate', 'local_hrdepartment'),
-        get_string('remarks', 'local_hrdepartment'),
+        get_string('leavetype', 'local_hrdepartment'),
+        get_string('startdate', 'local_hrdepartment'),
+        get_string('enddate', 'local_hrdepartment'),
+        get_string('totaldays', 'local_hrdepartment'),
+        get_string('status', 'local_hrdepartment'),
     ];
     $table->attributes['class'] = 'generaltable';
 
     $dateformat = get_string('strftimedatefullshort', 'langconfig');
 
     foreach ($rows as $row) {
-        $viewurl = new moodle_url('/local/hrdepartment/leave/view.php', ['id' => $row->logid]);
+        $viewurl = new moodle_url('/local/hrdepartment/leave/view.php', ['id' => $row->id]);
         $table->data[] = [
             html_writer::link($viewurl, $row->fullname),
-            $row->shortname . ': ' . format_string($row->fullname),
-            userdate($row->sessdate, $dateformat),
-            $row->remarks !== null && $row->remarks !== '' ? format_string($row->remarks) : '-',
+            format_string($row->leavetypename),
+            userdate($row->startdate, $dateformat),
+            userdate($row->enddate, $dateformat),
+            $row->totaldays,
+            local_hrdepartment_leave_status_badge($row->status),
         ];
     }
 
-    echo html_writer::table($table);
+    echo local_hrdepartment_render_table_card(html_writer::table($table));
 }
+
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();

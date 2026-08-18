@@ -76,4 +76,49 @@ class renderer extends plugin_renderer_base {
         $data = $page->export_for_template($this);
         return $this->render_from_template('local_hrdepartment/staff_profile', $data);
     }
+
+    /**
+     * Renders the Students directory (search/filter, card grid, paging).
+     *
+     * @param students_directory $page
+     * @return string
+     */
+    public function render_students_directory(students_directory $page): string {
+        $data = $page->export_for_template($this);
+        return $this->render_from_template('local_hrdepartment/students_directory', $data);
+    }
+
+    /**
+     * Renders the Lecturers directory (search/filter, card grid, paging).
+     *
+     * @param lecturers_directory $page
+     * @return string
+     */
+    public function render_lecturers_directory(lecturers_directory $page): string {
+        $data = $page->export_for_template($this);
+        return $this->render_from_template('local_hrdepartment/lecturers_directory', $data);
+    }
+
+    /**
+     * Renders the Staff directory (search/filter, card grid, paging).
+     *
+     * @param staff_directory $page
+     * @return string
+     */
+    public function render_staff_directory(staff_directory $page): string {
+        $data = $page->export_for_template($this);
+        return $this->render_from_template('local_hrdepartment/staff_directory', $data);
+    }
+
+    /**
+     * Renders a single student's profile page (details + full enrolled
+     * course list).
+     *
+     * @param student_profile $page
+     * @return string
+     */
+    public function render_student_profile(student_profile $page): string {
+        $data = $page->export_for_template($this);
+        return $this->render_from_template('local_hrdepartment/student_profile', $data);
+    }
 }
