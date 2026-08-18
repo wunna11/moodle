@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/financedepartment/db" VERSION="20260818" COMMENT="XMLDB file for Moodle local/financedepartment"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+    <TABLES>
+        <TABLE NAME="financedep_employee" COMMENT="Finance staff record linked to a Moodle user account. Presence of an active row here is this plugin's own 'is this user finance staff' rule (see classes/access_manager.php), independent of local_hrdepartment.">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="employeecode" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="designation" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|inactive"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_userid" UNIQUE="true" FIELDS="userid"/>
+                <INDEX NAME="idx_employeecode" UNIQUE="true" FIELDS="employeecode"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_feestructure" COMMENT="Fee structure: an MMK amount defined per course category and academic year (not per individual course)">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="categoryid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_course_categories.id"/>
+                <FIELD NAME="academicyear" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Free-text label, e.g. 2026-2027"/>
+                <FIELD NAME="amount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|inactive"/>
+                <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_category_year" UNIQUE="false" FIELDS="categoryid, academicyear"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_feerecord" COMMENT="A fee structure manually assigned to one student, with running totals (scholarship/discount/paid/balance) and status">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="feestructureid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_feestructure.id"/>
+                <FIELD NAME="totalamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK, snapshot of the fee structure amount at assignment time"/>
+                <FIELD NAME="scholarshipamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK, sum of approved scholarship deductions"/>
+                <FIELD NAME="discountamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK, sum of approved/applied discounts"/>
+                <FIELD NAME="paidamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK, sum of active payments minus refunds"/>
+                <FIELD NAME="balance" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK, auto-calculated: totalamount - scholarshipamount - discountamount - paidamount"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="unpaid" SEQUENCE="false" COMMENT="unpaid|partiallypaid|fullypaid|overdue|cancelled"/>
+                <FIELD NAME="assignedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_studentid" UNIQUE="false" FIELDS="studentid"/>
+                <INDEX NAME="idx_feestructureid" UNIQUE="false" FIELDS="feestructureid"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_feepayment" COMMENT="A manual MMK payment (or refund/reversal) recorded against a student's fee record, optionally tied to one installment">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="feerecordid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_feerecord.id"/>
+                <FIELD NAME="installmentschedid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to financedep_installmentsched.id, optional"/>
+                <FIELD NAME="paymenttype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="payment" SEQUENCE="false" COMMENT="payment|refund"/>
+                <FIELD NAME="amount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" SEQUENCE="false" COMMENT="MMK"/>
+                <FIELD NAME="paymentdate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="paymentmethod" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="e.g. cash, bank transfer"/>
+                <FIELD NAME="receiptnumber" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|void"/>
+                <FIELD NAME="voidreason" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="voidedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="voidedat" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="recordedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_feerecordid" UNIQUE="false" FIELDS="feerecordid"/>
+                <INDEX NAME="idx_installmentschedid" UNIQUE="false" FIELDS="installmentschedid"/>
+                <INDEX NAME="idx_receiptnumber" UNIQUE="true" FIELDS="receiptnumber"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_scholarship" COMMENT="Configurable scholarship types (merit, need-based, sibling, staff-ward, ...)">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="type" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="merit|needbased|sibling|staffward|other"/>
+                <FIELD NAME="amounttype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="fixed" SEQUENCE="false" COMMENT="fixed|percentage"/>
+                <FIELD NAME="amountvalue" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK amount, or percentage 0-100 depending on amounttype"/>
+                <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|inactive"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_type" UNIQUE="false" FIELDS="type"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_scholarshipreq" COMMENT="A scholarship request/nomination for a student against one fee record, and its approval workflow state">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="feerecordid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_feerecord.id"/>
+                <FIELD NAME="scholarshipid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_scholarship.id"/>
+                <FIELD NAME="requestedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, computed suggestion, may be overridden on approval"/>
+                <FIELD NAME="approvedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, final amount once approved"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|approved|rejected"/>
+                <FIELD NAME="justification" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="requestedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="reviewedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="reviewnote" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="reviewedat" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_studentid" UNIQUE="false" FIELDS="studentid"/>
+                <INDEX NAME="idx_feerecordid" UNIQUE="false" FIELDS="feerecordid"/>
+                <INDEX NAME="idx_scholarshipid" UNIQUE="false" FIELDS="scholarshipid"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_discount" COMMENT="Configurable discount types/rules (early-payment, promotional, hardship). Rule-based types can auto-apply; hardship is always manual">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="type" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="earlypayment|promotional|hardship"/>
+                <FIELD NAME="amounttype" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="fixed" SEQUENCE="false" COMMENT="fixed|percentage"/>
+                <FIELD NAME="amountvalue" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK amount, or percentage 0-100 depending on amounttype"/>
+                <FIELD NAME="isautomatic" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = rule-based auto-apply, 0 = manual/hardship request required"/>
+                <FIELD NAME="rulejson" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Encoded rule parameters for automatic discounts (e.g. days-before-due-date threshold)"/>
+                <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|inactive"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_type" UNIQUE="false" FIELDS="type"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+                <INDEX NAME="idx_isautomatic" UNIQUE="false" FIELDS="isautomatic"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_discountreq" COMMENT="The applied/requested discount ledger for a fee record: both auto-applied rule-based discounts and manual/hardship requests with their approval workflow state">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="feerecordid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_feerecord.id"/>
+                <FIELD NAME="discountid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_discount.id"/>
+                <FIELD NAME="requestedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, computed suggestion, may be overridden on approval"/>
+                <FIELD NAME="approvedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, final amount once approved/applied"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|approved|rejected. Auto-applied rule-based discounts are inserted directly as approved"/>
+                <FIELD NAME="justification" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="requestedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id, null for a system-applied automatic discount"/>
+                <FIELD NAME="reviewedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="reviewnote" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="reviewedat" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_studentid" UNIQUE="false" FIELDS="studentid"/>
+                <INDEX NAME="idx_feerecordid" UNIQUE="false" FIELDS="feerecordid"/>
+                <INDEX NAME="idx_discountid" UNIQUE="false" FIELDS="discountid"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_installmentplan" COMMENT="An installment plan (number of installments) for one student's fee record. One plan per fee record">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="feerecordid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_feerecord.id"/>
+                <FIELD NAME="numberofinstallments" TYPE="int" LENGTH="4" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="active" SEQUENCE="false" COMMENT="active|cancelled"/>
+                <FIELD NAME="createdby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_feerecordid" UNIQUE="true" FIELDS="feerecordid"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_installmentsched" COMMENT="One due installment line within an installment plan, with its own due date, amount and paid status">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="installmentplanid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_installmentplan.id"/>
+                <FIELD NAME="installmentnumber" TYPE="int" LENGTH="4" NOTNULL="true" SEQUENCE="false" COMMENT="1-based order within the plan"/>
+                <FIELD NAME="amount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK"/>
+                <FIELD NAME="duedate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="paidamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="MMK, sum of payments tied to this installment"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|partiallypaid|paid|overdue"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_installmentplanid" UNIQUE="false" FIELDS="installmentplanid"/>
+                <INDEX NAME="idx_plan_number" UNIQUE="true" FIELDS="installmentplanid, installmentnumber"/>
+                <INDEX NAME="idx_duedate" UNIQUE="false" FIELDS="duedate"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="financedep_auditlog" COMMENT="Full audit trail of every financial change: who, what, when, and why. Covers fee structure edits, fee record status changes, payment edits/voids/refunds, and scholarship/discount approvals (Steps 7.2, 7.8, 7.12)">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="entitytype" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="e.g. feestructure|feerecord|feepayment|scholarshiprequest|discountrequest|installmentplan"/>
+                <FIELD NAME="entityid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="id of the row in the relevant financedep_* table"/>
+                <FIELD NAME="action" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="e.g. create|edit|cancel|void|refund|approve|reject"/>
+                <FIELD NAME="olddata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON snapshot before the change"/>
+                <FIELD NAME="newdata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON snapshot after the change"/>
+                <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id, who performed the action"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_entity" UNIQUE="false" FIELDS="entitytype, entityid"/>
+                <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
+                <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+            </INDEXES>
+        </TABLE>
+    </TABLES>
+</XMLDB>
