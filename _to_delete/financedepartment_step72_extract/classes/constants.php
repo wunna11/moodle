@@ -39,13 +39,14 @@ namespace local_financedepartment;
 class constants {
 
     // -----------------------------------------------------------------
-    // NOTE: this plugin no longer has its own finance-employee status
-    // constants. "Is finance staff" is now decided by an hrdep_employee
-    // row in local_hrdepartment whose department is named "Finance" -
-    // see classes/access_manager.php. That plugin's own
-    // \local_hrdepartment\constants::EMPLOYMENT_STATUS_* /
-    // EMPLOYEE_TYPE_STAFF are the relevant enums now, not anything here.
+    // Finance employee status (financedep_employee.status).
     // -----------------------------------------------------------------
+
+    /** @var string Finance employee status: active. */
+    const EMPLOYEE_STATUS_ACTIVE = 'active';
+
+    /** @var string Finance employee status: inactive. */
+    const EMPLOYEE_STATUS_INACTIVE = 'inactive';
 
     // -----------------------------------------------------------------
     // Fee structure status (financedep_feestructure.status).

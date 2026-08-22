@@ -25,15 +25,7 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026082201;
+$plugin->version   = 2026081801;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.3.0';
-
-// 2026-08-22: this plugin now reuses local_hrdepartment's staff/department
-// model instead of maintaining its own financedep_employee table - see
-// classes/access_manager.php's docblock and [[financedepartment-schema]]
-// project memory. Requires HR's departmentid support on hrdep_employee.
-$plugin->dependencies = [
-    'local_hrdepartment' => 2026081908,
-];
+$plugin->release   = '0.2.0';

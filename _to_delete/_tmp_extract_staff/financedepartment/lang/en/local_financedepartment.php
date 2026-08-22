@@ -51,6 +51,8 @@ $string['financedepartment:viewallrecords'] = 'View all fee records';
 $string['financedepartment:viewallrecords_help'] = 'View any student\'s fee statement, regardless of who assigned or manages it.';
 $string['financedepartment:viewownfeerecord'] = 'View own fee record';
 $string['financedepartment:viewownfeerecord_help'] = 'View the student\'s own fee record, statement and payment history (read-only).';
+$string['financedepartment:managestaff'] = 'Manage finance staff';
+$string['financedepartment:managestaff_help'] = 'Add, edit and deactivate Finance Department staff records - not one of the numbered Task 7 steps, but needed so finance staff can be created through the UI at all.';
 
 // -----------------------------------------------------------------
 // Dashboard (index.php).
@@ -113,3 +115,26 @@ $string['auditaction_void'] = 'Voided';
 $string['auditaction_refund'] = 'Refunded';
 $string['auditaction_approve'] = 'Approved';
 $string['auditaction_reject'] = 'Rejected';
+
+// -----------------------------------------------------------------
+// Finance staff (pages/staff/*.php) - prerequisite, see
+// classes/employee_manager.php docblock.
+// -----------------------------------------------------------------
+$string['financestaff'] = 'Finance staff';
+$string['financestaffdesc'] = 'Moodle users who count as Finance Department staff, per this plugin\'s access rules.';
+$string['addfinancestaff'] = 'Add finance staff';
+$string['addfinancestaffdesc'] = 'Link a Moodle user as a Finance Department staff member.';
+$string['editfinancestaff'] = 'Edit finance staff';
+$string['editfinancestaffdesc'] = 'The linked Moodle user cannot be changed once created.';
+$string['financestaffcreated'] = 'Finance staff member created.';
+$string['financestaffdeactivated'] = 'Finance staff member deactivated.';
+$string['financestaffreactivated'] = 'Finance staff member reactivated.';
+$string['confirmdeactivatefinancestaff'] = 'Deactivate {$a} as Finance Department staff? They will lose finance access, but their history (as usermodified on past records) is unaffected.';
+$string['confirmreactivatefinancestaff'] = 'Reactivate {$a} as Finance Department staff?';
+$string['errorfinancestaffnotfound'] = 'Finance staff member not found.';
+$string['linkedmoodleuser'] = 'Linked Moodle user';
+$string['employeecode'] = 'Employee code';
+$string['designation'] = 'Designation';
+$string['errorcodeinuse'] = 'This employee code is already in use.';
+$string['erroruseralreadylinked'] = 'This Moodle user is already linked to a finance staff record.';
+$string['nofinancestaff'] = 'No finance staff match these filters yet.';

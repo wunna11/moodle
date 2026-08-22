@@ -26,9 +26,8 @@
  * has_capability()/require_capability() - but always through
  * local_financedepartment\access_manager::can_manage()/require_manage(),
  * never called directly. That wrapper additionally grants full access to
- * anyone satisfying access_manager::can_access_finance_department() (a
- * Finance-department hrdep_employee record from local_hrdepartment, or a
- * site administrator), which
+ * anyone satisfying access_manager::can_access_finance_department() (an
+ * active financedep_employee record, or a site administrator), which
  * can't be expressed as a capability since it depends on this plugin's
  * own data, not a role assignment. A role that already grants one of
  * these capabilities keeps working unchanged; the employee-based rule is
@@ -43,6 +42,19 @@
 defined('MOODLE_INTERNAL') || die;
 
 $capabilities = [
+
+    // Finance staff (financedep_employee): not one of the doc's numbered
+    // Task 7 steps - added as a small prerequisite so finance staff
+    // records (this plugin's own "who is finance staff" rule, see
+    // classes/access_manager.php) can be created through the UI at all,
+    // rather than only via direct DB access or a site administrator.
+    'local/financedepartment:managestaff' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
 
     // Fee structures (Step 7.2): create/edit/deactivate, per category + academic year.
     'local/financedepartment:managefeestructures' => [

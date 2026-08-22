@@ -33,40 +33,30 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Implements the "who is Finance staff" rule for this plugin:
  *
- *   (hrdep_employee Staff record whose department is "Finance")
+ *   (an active financedep_employee record for the user)
  *   OR  (Moodle site administrator)
  *
  * => full access to every Finance Department management feature (fee
  *    structures, fee record assignment, scholarship/discount approval,
  *    installment plans, payment recording, finance dashboard/reports).
  *
- * CHANGED 2026-08-22: this plugin no longer has its own staff table.
- * It originally shipped with a plugin-local `financedep_employee` table
- * (see [[financedepartment-schema]] project memory for the full history
- * of that table and the short-lived pages/staff/* UI built on top of
- * it) - deliberately NOT reusing local_hrdepartment's hrdep_employee at
- * the time, so this plugin had no dependency on local_hrdepartment
- * being installed. The user explicitly asked to reverse that decision
- * and connect the two plugins instead, once it became clear staff
- * creation was being duplicated across both plugins for no real reason.
- * This class now mirrors local_hrdepartment\access_manager's own rule
- * exactly (same query shape, same "type=staff + department name" check)
- * with `FINANCE_DEPARTMENT_NAME` in place of HR's `HR_DEPARTMENT_NAME` -
- * so local/financedepartment:* now REQUIRES local_hrdepartment to be
- * installed (see version.php's $plugin->dependencies) and finance staff
- * are created exclusively through local_hrdepartment's own
- * staff/edit.php, picking "Finance" as their department.
+ * This is intentionally a plugin-local financedep_employee table, not a
+ * reuse of local_hrdepartment's hrdep_employee - local_financedepartment
+ * has no dependency on local_hrdepartment being installed. If HR and
+ * Finance staff records ever need to be unified, that is a deliberate
+ * follow-up, not an assumption baked in here.
  *
- * "Is finance staff" is decided by an hrdep_employee row (type =
- * \local_hrdepartment\constants::EMPLOYEE_TYPE_STAFF) whose department
- * is named "Finance" (case-insensitive), not a Moodle role assignment -
- * this mirrors the pattern local_hrdepartment\access_manager uses for
- * its own "who counts as HR" rule.
+ * "Is finance staff" is decided by the presence of an active (status =
+ * constants::EMPLOYEE_STATUS_ACTIVE) financedep_employee row for the
+ * user, not a Moodle role assignment - this mirrors the pattern used by
+ * local_hrdepartment\access_manager (see that plugin's class docblock)
+ * of resolving "who counts as staff" from this plugin's own data instead
+ * of a role that may or may not exist on the site.
  *
  * This can't be expressed as a plain Moodle capability, because a
- * capability has no way to condition on a custom field's value (the
- * employee's department) - so it lives here as a runtime check instead,
- * exactly like local_hrdepartment's version. Two entry points:
+ * capability has no way to condition on "does a financedep_employee row
+ * exist for this user" - so it lives here as a runtime check instead.
+ * Two entry points:
  *
  * - can_access_finance_department(): the rule on its own. Use this for
  *   simple "is this user Finance staff at all" checks (e.g. dashboard
@@ -74,8 +64,8 @@ defined('MOODLE_INTERNAL') || die();
  * - can_manage($capability): the rule OR'd with the plugin's normal
  *   per-action capability (see db/access.php), so a role that already
  *   grants one of those capabilities keeps working exactly as before,
- *   and a Finance-department hrdep_employee (or a site admin)
- *   additionally gets in without needing any role assigned at all.
+ *   and an active finance employee (or a site admin) additionally gets
+ *   in without needing any role assigned at all.
  *
  * Every one of this plugin's capability definitions in db/access.php is
  * still fully defined, for its display name/description in the Define
@@ -87,17 +77,13 @@ defined('MOODLE_INTERNAL') || die();
  */
 class access_manager {
 
-    /** @var string hrdep_department.name value that grants access to a Staff-type employee. */
-    const FINANCE_DEPARTMENT_NAME = 'Finance';
-
     /**
      * Whether $userid may access the Finance Department feature's
      * management side (fee structures, fee records, scholarships,
      * discounts, installments, payments, dashboard/reports).
      *
-     * True for a Moodle site administrator, or for a user who has a
-     * local_hrdepartment Staff record whose department is named
-     * "Finance".
+     * True for a Moodle site administrator, or for a user who has an
+     * active financedep_employee record.
      *
      * @param int $userid defaults to $USER.
      * @return bool
@@ -110,7 +96,7 @@ class access_manager {
             return true;
         }
 
-        return self::is_staff_in_finance_department($userid);
+        return self::is_active_finance_employee($userid);
     }
 
     /**
@@ -119,8 +105,8 @@ class access_manager {
      * for any of this plugin's local/financedepartment:* capabilities.
      * Grants access if the user holds $capability the normal Moodle way
      * (so a role-based setup keeps working unchanged), OR satisfies
-     * can_access_finance_department() (a Finance-department hrdep_employee,
-     * or a site admin) even without that capability assigned via any role.
+     * can_access_finance_department() (an active finance employee, or a
+     * site admin) even without that capability assigned via any role.
      *
      * @param string $capability e.g. 'local/financedepartment:managefeestructures'
      * @param int $userid defaults to $USER.
@@ -156,28 +142,17 @@ class access_manager {
     }
 
     /**
-     * Whether $userid has an hrdep_employee record of type "staff" whose
-     * department is named "Finance" (case-insensitive). Identical query
-     * shape to local_hrdepartment\access_manager::is_staff_in_hr_department(),
-     * just checking FINANCE_DEPARTMENT_NAME instead of HR_DEPARTMENT_NAME.
+     * Whether $userid has an active (status = active) financedep_employee record.
      *
      * @param int $userid
      * @return bool
      */
-    protected static function is_staff_in_finance_department(int $userid): bool {
+    protected static function is_active_finance_employee(int $userid): bool {
         global $DB;
 
-        $sql = "SELECT 1
-                  FROM {hrdep_employee} e
-                  JOIN {hrdep_department} d ON d.id = e.departmentid
-                 WHERE e.userid = :userid
-                   AND e.type = :type
-                   AND " . $DB->sql_equal('d.name', ':deptname', false);
-
-        return $DB->record_exists_sql($sql, [
+        return $DB->record_exists('financedep_employee', [
             'userid' => $userid,
-            'type' => \local_hrdepartment\constants::EMPLOYEE_TYPE_STAFF,
-            'deptname' => self::FINANCE_DEPARTMENT_NAME,
+            'status' => constants::EMPLOYEE_STATUS_ACTIVE,
         ]);
     }
 }
