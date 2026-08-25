@@ -480,63 +480,6 @@ class feerecord_manager {
     }
 
     /**
-     * Maximum number of fee records loaded into
-     * scholarshiprequest_form's feerecordid autocomplete. See that
-     * form's docblock for why the list isn't scoped to one student -
-     * this plain moodleform has no JS to re-populate the select once a
-     * student is chosen, so every non-cancelled fee record is offered
-     * (labelled with the student's own name) and validation() checks
-     * the chosen pairing actually matches. Same scale caveat as
-     * feerecord_form's own 500-student cap: fine for a small/medium
-     * site, would need to become an ajax-backed selector past that.
-     *
-     * @var int
-     */
-    const MAX_REQUEST_FEERECORD_OPTIONS = 500;
-
-    /**
-     * Returns feerecordid => "Student - Category - Year (Balance: X MMK)"
-     * options for every non-cancelled fee record system-wide, for
-     * scholarshiprequest_form's feerecordid field. Deliberately doesn't
-     * call local_financedepartment_format_money() (a lib.php function) -
-     * see get_feestructure_options()'s docblock above for why manager
-     * classes never call it.
-     *
-     * @return array
-     */
-    public static function get_active_options(): array {
-        global $DB;
-
-        $sql = "SELECT r.id, r.balance, u.firstname, u.lastname, u.email,
-                       f.academicyear, cc.name AS categoryname
-                  FROM {financedep_feerecord} r
-                  JOIN {user} u ON u.id = r.studentid
-                  JOIN {financedep_feestructure} f ON f.id = r.feestructureid
-                  JOIN {course_categories} cc ON cc.id = f.categoryid
-                 WHERE r.status != :cancelled
-              ORDER BY u.firstname ASC, u.lastname ASC, f.academicyear DESC";
-
-        $records = $DB->get_records_sql(
-            $sql,
-            ['cancelled' => constants::FEE_STATUS_CANCELLED],
-            0,
-            self::MAX_REQUEST_FEERECORD_OPTIONS
-        );
-
-        $options = [];
-        foreach ($records as $record) {
-            $balance = (float) $record->balance;
-            $decimals = (abs($balance - round($balance)) > 0.001) ? 2 : 0;
-            $options[$record->id] = fullname($record) . ' - ' . format_string($record->categoryname)
-                . ' - ' . s($record->academicyear)
-                . ' (' . get_string('balance', 'local_financedepartment') . ': '
-                . number_format($balance, $decimals) . ' MMK)';
-        }
-
-        return $options;
-    }
-
-    /**
      * Builds the [old, new] audited-field diff between two fee record
      * records, only including fields that actually changed.
      *

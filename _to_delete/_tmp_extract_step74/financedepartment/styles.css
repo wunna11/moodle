@@ -1,0 +1,219 @@
+/* Finance Department (local_financedepartment) - shared page styling.
+ * Loaded automatically by Moodle's theme build for every plugin's
+ * styles.css - no explicit include needed. Every findept-* class below
+ * is only ever emitted by this plugin's own lib.php helpers (see
+ * local_financedepartment_render_*()), so it's safe for these rules to
+ * stay unscoped by a wrapping .local-financedepartment-* container.
+ *
+ * Deliberately a light, standard-Bootstrap-first stylesheet rather than
+ * a bespoke gradient design system - see [[financedepartment-schema]]
+ * project memory for why this plugin didn't replicate local_hrdepartment's
+ * multi-iteration visual redesign for Step 7.2. Can be extended the same
+ * way HR's was if a fuller visual pass is wanted later.
+ */
+
+/* Tab bar. */
+.findept-tab-bar {
+    margin-bottom: 1.25rem;
+}
+
+.findept-tab-bar .nav-tabs {
+    border-bottom: 2px solid #e3e6ec;
+}
+
+.findept-tab-bar .nav-link.active {
+    font-weight: 600;
+    border-bottom: 2px solid #2f6fed;
+    color: #2f6fed;
+}
+
+/* Page hero. */
+.findept-page-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: linear-gradient(135deg, #2f6fed 0%, #6f42c1 100%);
+    color: #fff;
+    border-radius: 0.75rem;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.findept-page-hero-title {
+    margin: 0;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.findept-page-hero-subtitle {
+    margin: 0.25rem 0 0;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.findept-page-hero-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.findept-page-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.findept-page-hero-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* Back link. */
+.findept-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.75rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+.findept-back-link:hover {
+    color: #2f6fed;
+    text-decoration: none;
+}
+
+/* Filter bar. */
+.findept-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.findept-filter-select,
+.findept-filter-text {
+    border: 1px solid #ced4da;
+    border-radius: 0.4rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.findept-filter-reset {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Table card. */
+.findept-table-card {
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 0.5rem 1rem 1rem;
+    overflow-x: auto;
+}
+
+.findept-table-card table.generaltable {
+    margin-bottom: 0;
+}
+
+/* Empty state. */
+.findept-empty-state {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #f8f9fb;
+    border: 1px dashed #d7dbe3;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    color: #6c757d;
+    justify-content: center;
+}
+
+/* Form hero / card. */
+.findept-form-card {
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    max-width: 720px;
+}
+
+/* Detail card (view page). */
+.findept-detail-card {
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    max-width: 720px;
+}
+
+.findept-detail-list {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    row-gap: 0.6rem;
+    column-gap: 1rem;
+    margin: 0;
+}
+
+.findept-detail-list dt {
+    font-weight: 600;
+    color: #495057;
+}
+
+.findept-detail-list dd {
+    margin: 0;
+}
+
+.findept-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem;
+}
+
+/* Quicklink grid (index.php). */
+.findept-quicklink-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.findept-quicklink {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    color: #212529;
+    font-weight: 600;
+}
+
+.findept-quicklink:hover {
+    border-color: #2f6fed;
+    color: #2f6fed;
+    text-decoration: none;
+}
+
+.findept-quicklink-icon {
+    font-size: 1.5rem;
+    color: #2f6fed;
+}

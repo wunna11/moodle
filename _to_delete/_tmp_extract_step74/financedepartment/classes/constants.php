@@ -102,18 +102,6 @@ class constants {
     /** @var string Request status: rejected by finance. */
     const REQUEST_STATUS_REJECTED = 'rejected';
 
-    /**
-     * @var string Request status: soft-deleted (added 2026-08-24 for
-     * scholarship requests' delete feature). The row is kept for audit
-     * history and no longer shown in the normal list, but is not
-     * physically removed. Deliberately NOT included in
-     * request_statuses() below - that method's docblock describes the
-     * shared pending/approved/rejected lifecycle used by both
-     * scholarship and (future) discount requests, and delete is a
-     * scholarship-request-only feature for now.
-     */
-    const REQUEST_STATUS_DELETED = 'deleted';
-
     // -----------------------------------------------------------------
     // NOTE: this plugin no longer classifies scholarships by type
     // (merit/needbased/sibling/staffward/other - the original Step 7.4
@@ -238,9 +226,6 @@ class constants {
 
     /** @var string Audit action: a request was rejected. */
     const AUDIT_ACTION_REJECT = 'reject';
-
-    /** @var string Audit action: a request was soft-deleted. */
-    const AUDIT_ACTION_DELETE = 'delete';
 
     /**
      * Returns the list of valid fee record statuses.

@@ -222,7 +222,6 @@ function local_financedepartment_scholarshiprequest_status_badge(string $status)
         \local_financedepartment\constants::REQUEST_STATUS_PENDING => 'warning',
         \local_financedepartment\constants::REQUEST_STATUS_APPROVED => 'success',
         \local_financedepartment\constants::REQUEST_STATUS_REJECTED => 'danger',
-        \local_financedepartment\constants::REQUEST_STATUS_DELETED => 'dark',
     ];
     $variant = $variants[$status] ?? 'secondary';
 
@@ -328,51 +327,4 @@ function local_financedepartment_render_quicklink(moodle_url $url, string $label
         html_writer::span($label, 'findept-quicklink-label'),
         ['class' => 'findept-quicklink']
     );
-}
-
-/**
- * Serves a scholarship request's optional supporting-document
- * attachment (added 2026-08-24, classes/form/scholarshiprequest_form.php's
- * 'attachment' filemanager element, saved via
- * file_save_draft_area_files() in pages/scholarshiprequests/submit.php
- * into this component's own 'scholarshiprequest' file area, itemid =
- * the financedep_scholarshipreq.id it belongs to).
- *
- * These are finance/HR-sensitive documents (income certificates and
- * similar), so access is gated the same way the request itself is -
- * managescholarships (submitted it) or approvescholarships (reviewing
- * it) - never a plain "logged in" check.
- *
- * @param stdClass $course
- * @param stdClass|null $cm
- * @param context $context
- * @param string $filearea
- * @param array $args
- * @param bool $forcedownload
- * @param array $options
- * @return bool false to let Moodle send a 404, never actually returned on the success path (send_stored_file() exits)
- */
-function local_financedepartment_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
-    require_login();
-
-    if ($context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'scholarshiprequest') {
-        return false;
-    }
-
-    if (!\local_financedepartment\access_manager::can_manage('local/financedepartment:managescholarships')
-            && !\local_financedepartment\access_manager::can_manage('local/financedepartment:approvescholarships')) {
-        return false;
-    }
-
-    $itemid = (int) array_shift($args);
-    $filename = array_pop($args);
-    $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
-
-    $fs = get_file_storage();
-    $file = $fs->get_file($context->id, 'local_financedepartment', 'scholarshiprequest', $itemid, $filepath, $filename);
-    if (!$file || $file->is_directory()) {
-        return false;
-    }
-
-    send_stored_file($file, 0, 0, $forcedownload, $options);
 }

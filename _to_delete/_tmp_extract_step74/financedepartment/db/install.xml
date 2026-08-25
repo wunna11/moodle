@@ -119,7 +119,7 @@
                 <FIELD NAME="scholarshipid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_scholarship.id"/>
                 <FIELD NAME="requestedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, computed suggestion, may be overridden on approval"/>
                 <FIELD NAME="approvedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, final amount once approved"/>
-                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|approved|rejected|deleted (deleted = soft-deleted, added 2026-08-24, kept for audit history)"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending|approved|rejected"/>
                 <FIELD NAME="justification" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
                 <FIELD NAME="requestedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
                 <FIELD NAME="reviewedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
