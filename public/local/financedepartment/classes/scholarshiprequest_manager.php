@@ -261,6 +261,14 @@ class scholarshiprequest_manager {
      * Step 7.4's "auto-deduct the approved scholarship amount from the
      * student's fee record" requirement.
      *
+     * Refuses (silent no-op) if $reviewedby is the same user who
+     * submitted the request - the self-approval fix requested by the
+     * user 2026-09-06 (see [[financedepartment-schema]] project
+     * memory's former KNOWN GAP note). This check is defense-in-depth:
+     * the primary, user-facing gate is in pages/scholarshiprequests/review.php,
+     * which checks this BEFORE rendering the review form so the user
+     * gets a clear error message rather than a silent no-op here.
+     *
      * @param int $id
      * @param float $approvedamount MMK, may differ from the original requestedamount
      * @param string $reviewnote
@@ -272,6 +280,9 @@ class scholarshiprequest_manager {
 
         $before = $DB->get_record('financedep_scholarshipreq', ['id' => $id], '*', MUST_EXIST);
         if ($before->status !== constants::REQUEST_STATUS_PENDING) {
+            return;
+        }
+        if ((int) $before->requestedby === $reviewedby) {
             return;
         }
 
@@ -304,6 +315,11 @@ class scholarshiprequest_manager {
      * Rejects a pending scholarship request. Never touches the fee
      * record - nothing was deducted, so there's nothing to reverse.
      *
+     * Refuses (silent no-op) if $reviewedby is the same user who
+     * submitted the request - see approve()'s docblock for the full
+     * explanation; the primary user-facing gate is in
+     * pages/scholarshiprequests/review.php.
+     *
      * @param int $id
      * @param string $reviewnote
      * @param int $reviewedby
@@ -314,6 +330,9 @@ class scholarshiprequest_manager {
 
         $before = $DB->get_record('financedep_scholarshipreq', ['id' => $id], '*', MUST_EXIST);
         if ($before->status !== constants::REQUEST_STATUS_PENDING) {
+            return;
+        }
+        if ((int) $before->requestedby === $reviewedby) {
             return;
         }
 

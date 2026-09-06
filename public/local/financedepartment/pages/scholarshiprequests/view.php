@@ -71,7 +71,13 @@ echo local_financedepartment_render_back_link(
 );
 
 $actions = [];
-if ($canapprove && $request->status === constants::REQUEST_STATUS_PENDING) {
+// Self-approval fix (2026-09-06): approve/reject are hidden here when
+// the viewer is the same person who submitted the request - see
+// scholarshiprequest_manager::approve()'s docblock and review.php's
+// matching server-side check (which is the actual enforcement point;
+// this is just so the buttons don't appear only to error out).
+$isownrequest = (int) $request->requestedby === (int) $USER->id;
+if ($canapprove && $request->status === constants::REQUEST_STATUS_PENDING && !$isownrequest) {
     $actions[] = [
         'url' => new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $id, 'decision' => 'approve']),
         'label' => get_string('approve', 'local_financedepartment'),
@@ -100,6 +106,13 @@ echo local_financedepartment_render_page_hero(
     get_string('scholarshiprequestdetails', 'local_financedepartment'),
     $actions
 );
+
+if ($canapprove && $isownrequest && $request->status === constants::REQUEST_STATUS_PENDING) {
+    echo $OUTPUT->notification(
+        get_string('errorcannotreviewownrequest', 'local_financedepartment'),
+        \core\output\notification::NOTIFY_INFO
+    );
+}
 
 // Details card.
 echo html_writer::start_div('findept-detail-card');

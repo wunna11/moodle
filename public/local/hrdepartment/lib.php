@@ -69,10 +69,10 @@ function local_hrdepartment_extend_navigation(global_navigation $nav) {
 }
 
 /**
- * Builds the shared section tab bar (Dashboard | Lecturers | Staff |
- * Students | Attendance | Leave | Payroll) shown at the top of every HR
- * Department page, filtered to the sections the current user has access
- * to. A plain student or teacher (see
+ * Builds the shared section tab bar (Dashboard | Departments | Lecturers
+ * | Staff | Students | Attendance | Leave | Payroll) shown at the top of
+ * every HR Department page, filtered to the sections the current user
+ * has access to. A plain student or teacher (see
  * student_leave_manager::is_leave_attendance_only_role()) only ever
  * gets Attendance and Leave.
  *
@@ -97,6 +97,19 @@ function local_hrdepartment_get_tabs(string $selected): array {
             new moodle_url('/local/hrdepartment/index.php'),
             get_string('dashboard', 'local_hrdepartment'),
             'fa-tachometer-alt'
+        );
+    }
+
+    // Department directory: deliberately gated on
+    // access_manager::can_manage_departments(), NOT can_manage() - see
+    // that method's docblock. Being HR staff is not enough on its own;
+    // this is why the check is separate from every other tab below.
+    if (!$restricted && access_manager::can_manage_departments()) {
+        $tabs[] = local_hrdepartment_make_tab(
+            'departments',
+            new moodle_url('/local/hrdepartment/departments/index.php'),
+            get_string('departments', 'local_hrdepartment'),
+            'fa-sitemap'
         );
     }
 

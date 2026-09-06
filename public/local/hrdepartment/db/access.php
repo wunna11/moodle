@@ -38,6 +38,10 @@
  * the new rule is an additional way in, not a replacement for role
  * assignment.
  *
+ * ONE EXCEPTION, added 2026-09-06: local/hrdepartment:managedepartments
+ * (below) is DELIBERATELY NOT covered by that blanket grant - see its
+ * own comment and access_manager::can_manage_departments()'s docblock.
+ *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -70,6 +74,36 @@ $capabilities = [
         ],
     ],
     'local/hrdepartment:managestaff' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+
+    // Department directory (departments/*.php): create/rename/delete the
+    // hrdep_department rows that hrdep_employee.departmentid, and every
+    // "who is X department" access rule (this plugin's own
+    // access_manager::HR_DEPARTMENT_NAME = "HR", and
+    // local_financedepartment\access_manager's equivalent
+    // FINANCE_DEPARTMENT_NAME = "Finance"), key off of by exact name
+    // match. Renaming or deleting the wrong row silently strips access
+    // from every staff member of that department, with no error shown
+    // anywhere - see classes/department_manager.php's PROTECTED_NAMES
+    // guard.
+    //
+    // Because of that blast radius, this is DELIBERATELY the one
+    // manage* capability in this file NOT covered by
+    // access_manager::can_manage()'s blanket "Staff+HR department"
+    // grant (see that method's docblock) - an HR staff member does NOT
+    // automatically get this, even though they get every other manage*
+    // capability here. Only an actual site administrator, or a user
+    // holding this capability the normal Moodle way (default archetype
+    // grant: 'manager', a distinct Moodle role from being HR staff via
+    // hrdep_employee), may manage departments. Gated via the separate
+    // access_manager::can_manage_departments()/require_manage_departments()
+    // - never route this one through can_manage()/require_manage().
+    'local/hrdepartment:managedepartments' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [

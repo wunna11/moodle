@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026082403;
+$plugin->version   = 2026090601;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.5.2';
+$plugin->release   = '0.5.3';
 
 // 2026-08-22: this plugin now reuses local_hrdepartment's staff/department
 // model instead of maintaining its own financedep_employee table - see

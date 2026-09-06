@@ -229,6 +229,7 @@ $string['errorfeerecordcancelled'] = 'This fee record has been cancelled and can
 $string['errorscholarshipnoteligible'] = 'This scholarship\'s category does not match the selected fee record\'s category.';
 $string['errorscholarshippending'] = 'A pending or already-approved request already exists for this fee record and scholarship.';
 $string['errorrequestalreadyreviewed'] = 'This request has already been reviewed.';
+$string['errorcannotreviewownrequest'] = 'You cannot approve or reject a scholarship request you submitted yourself. Ask another finance staff member to review it.';
 $string['scholarshiprequestdetails'] = 'Scholarship request details';
 $string['scholarshiprequesthistory'] = 'History';
 $string['approvedamount'] = 'Approved amount';

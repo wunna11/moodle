@@ -58,6 +58,17 @@ if ($request->status !== constants::REQUEST_STATUS_PENDING) {
     redirect($returnurl, get_string('errorrequestalreadyreviewed', 'local_financedepartment'), null, \core\output\notification::NOTIFY_WARNING);
 }
 
+// Self-approval fix (2026-09-06, requested by the user): the same
+// finance-staff user who submitted a request must not be able to
+// approve/reject it themselves - see scholarshiprequest_manager::approve()'s
+// docblock. This is the primary, user-facing gate (the manager methods
+// also refuse silently as defense-in-depth, but checking here means the
+// user sees a clear message instead of an approve/reject that silently
+// did nothing).
+if ((int) $request->requestedby === (int) $USER->id) {
+    redirect($returnurl, get_string('errorcannotreviewownrequest', 'local_financedepartment'), null, \core\output\notification::NOTIFY_WARNING);
+}
+
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $id, 'decision' => $decision]));
 $PAGE->set_pagelayout('standard');

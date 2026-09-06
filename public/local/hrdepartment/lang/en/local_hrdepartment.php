@@ -31,6 +31,7 @@ $string['pluginname'] = 'HR Department';
 $string['hrdepartment:managedashboard'] = 'View HR dashboard summary metrics';
 $string['hrdepartment:managelecturers'] = 'Manage lecturer profiles and course assignments';
 $string['hrdepartment:managestaff'] = 'Manage staff profiles';
+$string['hrdepartment:managedepartments'] = 'Create, rename, and delete organisational departments';
 $string['hrdepartment:managestudents'] = 'View the students directory and their course enrolments';
 $string['hrdepartment:manageattendance'] = 'View student attendance reports for any course (sourced from the Attendance activity)';
 $string['hrdepartment:viewownattendance'] = 'View own attendance history';
@@ -159,6 +160,29 @@ $string['searchlecturerplaceholder'] = 'Search by name, email or employee code';
 $string['nolecturersfound'] = 'No lecturers match your filters.';
 $string['addlecturerdesc'] = 'Link a Moodle account and fill in their employment and academic details.';
 $string['editlecturerdesc'] = "Update this lecturer's employment and academic details.";
+
+// Department management strings (departments/*.php - added 2026-09-06).
+// See local_hrdepartment\department_manager and
+// access_manager::can_manage_departments()'s docblock for why this
+// section is gated more strictly than every other one in this plugin.
+$string['adddepartment'] = 'Add department';
+$string['editdepartment'] = 'Edit department';
+$string['adddepartmentsubtitle'] = 'Create a new organisational department.';
+$string['editdepartmentsubtitle'] = "Update this department's details.";
+$string['departmentsdirectorysubtitle'] = 'Departments that staff and lecturers can be assigned to.';
+$string['departmentname'] = 'Department name';
+$string['departmentcode'] = 'Department code';
+$string['departmentnameprotected'] = 'This name is used by the system for access control and cannot be changed here.';
+$string['employeecount'] = 'Staff/lecturers';
+$string['nodepartments'] = 'No departments have been created yet.';
+$string['departmentsaved'] = 'Department saved.';
+$string['departmentdeleted'] = 'Department deleted.';
+$string['confirmdeletedepartment'] = 'Delete the department "{$a}"? This cannot be undone.';
+$string['errordepartmentnotfound'] = 'Department not found.';
+$string['errordepartmentnameinuse'] = 'A department with this name already exists.';
+$string['errordepartmentcodeinuse'] = 'A department with this code already exists.';
+$string['errordepartmentinuse'] = 'This department still has staff or lecturers assigned to it (or has sub-departments); reassign them before deleting it.';
+$string['errordepartmentprotected'] = 'This department name is used by the system to control access to HR/Finance features and cannot be deleted.';
 
 // Course assignment strings.
 $string['course'] = 'Course';

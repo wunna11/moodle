@@ -94,7 +94,7 @@ class scholarshiprequest_table extends \core_table\sql_table {
         $this->set_attribute('class', 'generaltable local-financedepartment-scholarshiprequest-table');
 
         $fields = 'q.id, q.studentid, q.feerecordid, q.scholarshipid, q.requestedamount, q.approvedamount,
-                   q.status, q.timecreated,
+                   q.status, q.timecreated, q.requestedby,
                    u.firstname, u.lastname, u.email,
                    s.name AS scholarshipname,
                    cc.name AS categoryname, fs.academicyear';
@@ -220,6 +220,8 @@ class scholarshiprequest_table extends \core_table\sql_table {
      * @return string
      */
     public function col_actions($row): string {
+        global $USER;
+
         $actions = [
             \html_writer::link(
                 new moodle_url('/local/financedepartment/pages/scholarshiprequests/view.php', ['id' => $row->id]),
@@ -227,7 +229,15 @@ class scholarshiprequest_table extends \core_table\sql_table {
             ),
         ];
 
-        if ($this->canapprove && $row->status === \local_financedepartment\constants::REQUEST_STATUS_PENDING) {
+        // Self-approval fix (2026-09-06): never show approve/reject to
+        // the same user who submitted the request - see
+        // scholarshiprequest_manager::approve()'s docblock and
+        // review.php's matching server-side check (the actual
+        // enforcement point; this just keeps the buttons from
+        // appearing only to error out).
+        $isownrequest = (int) $row->requestedby === (int) $USER->id;
+
+        if ($this->canapprove && $row->status === \local_financedepartment\constants::REQUEST_STATUS_PENDING && !$isownrequest) {
             $actions[] = \html_writer::link(
                 new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $row->id, 'decision' => 'approve']),
                 get_string('approve', 'local_financedepartment')

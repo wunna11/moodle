@@ -83,6 +83,11 @@ defined('MOODLE_INTERNAL') || die();
  * the Define roles UI and for backwards compatibility with any role
  * that already grants it - has_capability() on those capabilities is no
  * longer called directly from any page; go through can_manage() instead.
+ *
+ * ONE EXCEPTION, added 2026-09-06: local/hrdepartment:managedepartments
+ * is gated by can_manage_departments()/require_manage_departments()
+ * below, NOT can_manage()/require_manage() - see that method's own
+ * docblock for why.
  */
 class access_manager {
 
@@ -122,6 +127,10 @@ class access_manager {
      * Staff+HR rule, or a site admin) even without that capability
      * assigned via any role.
      *
+     * Do NOT use this for local/hrdepartment:managedepartments - see
+     * can_manage_departments() below, which is deliberately NOT OR'd
+     * with can_access_hr_department().
+     *
      * @param string $capability e.g. 'local/hrdepartment:managestaff'
      * @param int $userid defaults to $USER.
      * @return bool
@@ -152,6 +161,61 @@ class access_manager {
     public static function require_manage(string $capability, int $userid = 0): void {
         if (!self::can_manage($capability, $userid)) {
             throw new \required_capability_exception(\context_system::instance(), $capability, 'nopermissions', '');
+        }
+    }
+
+    /**
+     * Whether $userid may manage departments (create/rename/delete
+     * hrdep_department rows via departments/*.php).
+     *
+     * Deliberately NOT routed through can_manage()/can_access_hr_department():
+     * every hrdep_employee Staff record in the HR department currently
+     * gets a blanket grant to every OTHER manage* capability in this
+     * plugin via that rule, but department rows are exactly what that
+     * rule (and local_financedepartment's equivalent Finance rule) key
+     * off of by exact name match - handing every HR staff member the
+     * ability to rename or delete the "HR" or "Finance" row would let
+     * any one of them silently lock everyone in that department out,
+     * with no error shown anywhere (see department_manager::
+     * PROTECTED_NAMES, which is the second, row-level line of defence).
+     *
+     * True only for a Moodle site administrator, or a user holding
+     * local/hrdepartment:managedepartments the normal Moodle way (its
+     * only default archetype grant is 'manager' - a distinct Moodle
+     * role from being HR staff via hrdep_employee, so being HR staff
+     * alone is not enough here, unlike every other section).
+     *
+     * @param int $userid defaults to $USER.
+     * @return bool
+     */
+    public static function can_manage_departments(int $userid = 0): bool {
+        global $USER;
+        $userid = $userid ?: (int) $USER->id;
+
+        if (is_siteadmin($userid)) {
+            return true;
+        }
+
+        return has_capability('local/hrdepartment:managedepartments', \context_system::instance(), $userid);
+    }
+
+    /**
+     * require_capability() equivalent for can_manage_departments() -
+     * see that method's docblock for why this is separate from
+     * require_manage().
+     *
+     * @param int $userid defaults to $USER.
+     * @return void
+     * @throws \required_capability_exception
+     */
+    public static function require_manage_departments(int $userid = 0): void {
+        if (!self::can_manage_departments($userid)) {
+            throw new \required_capability_exception(
+                \context_system::instance(),
+                'local/hrdepartment:managedepartments',
+                'nopermissions',
+                ''
+            );
         }
     }
 
