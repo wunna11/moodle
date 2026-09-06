@@ -263,3 +263,63 @@ $string['scholarshiprequestdeleted'] = 'Scholarship request deleted.';
 $string['confirmdeleterequest'] = 'Are you sure you want to delete the scholarship request for {$a}? This cannot be undone from here, but the request stays in the audit history.';
 $string['confirmdeleterequestapproved'] = 'The request for {$a->label} was already APPROVED, and {$a->amount} has already been deducted from the student\'s fee record. Deleting it will restore that amount to the fee record\'s balance. This cannot be undone from here, but the request stays in the audit history. Are you sure you want to continue?';
 $string['errorrequestalreadydeleted'] = 'This request has already been deleted.';
+
+// -----------------------------------------------------------------
+// Discount management (Step 7.5, built 2026-09-06) - pages/discounts/*.php.
+//
+// Unlike scholarships, a discount is NOT restricted to one course
+// category - see classes/discount_manager.php's docblock. Every
+// discount created here is manual-only for now (isautomatic/rulejson
+// are not exposed) - see discountautomaticnotice below and
+// classes/constants.php's DISCOUNT_TYPE_* comment for the full
+// 2026-09-06 scope decision.
+// -----------------------------------------------------------------
+$string['discounts'] = 'Discounts';
+$string['discountsdesc'] = 'Configure discount types and review manual/hardship discount requests.';
+$string['adddiscount'] = 'Add discount';
+$string['adddiscountdesc'] = 'Create a discount as a fixed MMK amount or a percentage of the fee.';
+$string['editdiscount'] = 'Edit discount';
+$string['editdiscountdesc'] = 'Changing these details is recorded in this discount\'s history.';
+$string['discountcreated'] = 'Discount created.';
+$string['discountdeactivated'] = 'Discount deactivated.';
+$string['discountreactivated'] = 'Discount reactivated.';
+$string['confirmdeactivatediscount'] = 'Deactivate the discount "{$a}"? It will no longer be offered for new requests, but existing approved requests are unaffected.';
+$string['confirmreactivatediscount'] = 'Reactivate the discount "{$a}"?';
+$string['errordiscountnotfound'] = 'Discount not found.';
+$string['discountname'] = 'Discount name';
+$string['discounttype'] = 'Discount type';
+$string['discounttype_help'] = 'Early-payment and promotional discounts can eventually auto-apply based on a rule (e.g. days before a due date); hardship discounts are always manual. For now, every discount - regardless of type - requires a manual request and approval, exactly like a scholarship. See the notice on this form for why.';
+$string['discounttype_earlypayment'] = 'Early-payment';
+$string['discounttype_promotional'] = 'Promotional';
+$string['discounttype_hardship'] = 'Hardship';
+$string['discountautomaticnotice'] = 'Automatic rule-based discounts are not available yet (there is no due-date field on fee records/structures for a rule to evaluate against). Every discount created here - including Early-payment and Promotional types - requires a manual request and approval, the same as a scholarship.';
+$string['alltypes'] = 'All types';
+$string['nodiscounts'] = 'No discounts match these filters yet.';
+$string['backtodiscounts'] = 'Back to discounts';
+$string['discountdetails'] = 'Discount details';
+$string['discounthistory'] = 'History';
+
+// -----------------------------------------------------------------
+// Discount requests/approval workflow (Step 7.5, built 2026-09-06) -
+// pages/discountrequests/*.php. Mirrors the scholarship request
+// workflow closely - see pages/scholarshiprequests/*.php and
+// discountrequest_manager's class docblock for what's different
+// (no category restriction, no delete feature yet, and the
+// requestedby !== reviewedby self-approval guard was built in from day
+// one here instead of added later as a post-deploy fix).
+// -----------------------------------------------------------------
+$string['discountrequests'] = 'Discount requests';
+$string['discountrequestsdesc'] = 'Submit a manual or hardship discount request, and review pending requests. Approving auto-applies the approved amount to the student\'s fee record.';
+$string['discount'] = 'Discount';
+$string['requestdiscount_help'] = 'Only active discounts are listed. Any discount can be requested against any fee record - discounts are not restricted to one course category.';
+$string['requestdiscountdescription_help'] = 'A short explanation of why this student qualifies for the discount, shown to the reviewer.';
+$string['errordiscountnoteligible'] = 'This discount is not currently active.';
+$string['errordiscountpending'] = 'A pending or already-approved request already exists for this fee record and discount.';
+$string['submitdiscountrequestdesc'] = 'Search for a student, choose their fee record and a discount, add a description, and optionally attach a supporting document.';
+$string['discountrequestsubmitted'] = 'Discount request submitted.';
+$string['nodiscountrequests'] = 'No discount requests yet.';
+$string['errordiscountrequestnotfound'] = 'Discount request not found.';
+$string['discountrequestapproved'] = 'Discount request approved.';
+$string['discountrequestrejected'] = 'Discount request rejected.';
+$string['discountrequestdetails'] = 'Discount request details';
+$string['discountrequesthistory'] = 'History';

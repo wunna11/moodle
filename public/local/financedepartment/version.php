@@ -25,10 +25,18 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026090601;
+$plugin->version   = 2026090602;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.5.3';
+$plugin->release   = '0.6.0';
+
+// 2026-09-06: Step 7.5 (discount management) built - classes/discount_manager.php,
+// classes/discountrequest_manager.php, pages/discounts/*.php,
+// pages/discountrequests/*.php. Manual/hardship request-and-approve
+// workflow only for this first pass (automatic rule-based discounts
+// deferred - no due-date field exists yet on feerecord/feestructure to
+// evaluate a rule against). See [[financedepartment-schema]] project
+// memory for the full 2026-09-06 scope decision.
 
 // 2026-08-22: this plugin now reuses local_hrdepartment's staff/department
 // model instead of maintaining its own financedep_employee table - see

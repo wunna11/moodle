@@ -107,6 +107,16 @@ function local_financedepartment_get_tabs(string $selected): array {
         );
     }
 
+    if (access_manager::can_manage('local/financedepartment:managediscounts')
+            || access_manager::can_manage('local/financedepartment:approvediscounts')) {
+        $tabs[] = local_financedepartment_make_tab(
+            'discounts',
+            new moodle_url('/local/financedepartment/pages/discounts/index.php'),
+            get_string('discounts', 'local_financedepartment'),
+            'fa-tags'
+        );
+    }
+
     return $tabs;
 }
 
@@ -233,6 +243,31 @@ function local_financedepartment_scholarshiprequest_status_badge(string $status)
 }
 
 /**
+ * Renders a discount request's status as a coloured pill badge. Reuses
+ * the same 'requeststatus_*' lang strings as
+ * local_financedepartment_scholarshiprequest_status_badge() (both
+ * request types share constants::REQUEST_STATUS_* literals) - but has
+ * no DELETED variant, since discount requests have no delete feature
+ * yet (see discountrequest_manager's class docblock).
+ *
+ * @param string $status one of local_financedepartment\constants::REQUEST_STATUS_* (excluding DELETED)
+ * @return string
+ */
+function local_financedepartment_discountrequest_status_badge(string $status): string {
+    $variants = [
+        \local_financedepartment\constants::REQUEST_STATUS_PENDING => 'warning',
+        \local_financedepartment\constants::REQUEST_STATUS_APPROVED => 'success',
+        \local_financedepartment\constants::REQUEST_STATUS_REJECTED => 'danger',
+    ];
+    $variant = $variants[$status] ?? 'secondary';
+
+    return html_writer::span(
+        get_string('requeststatus_' . $status, 'local_financedepartment'),
+        'badge badge-' . $variant
+    );
+}
+
+/**
  * Renders the gradient hero banner used at the top of section landing
  * pages (index.php, pages/fees/index.php).
  *
@@ -331,17 +366,23 @@ function local_financedepartment_render_quicklink(moodle_url $url, string $label
 }
 
 /**
- * Serves a scholarship request's optional supporting-document
- * attachment (added 2026-08-24, classes/form/scholarshiprequest_form.php's
- * 'attachment' filemanager element, saved via
- * file_save_draft_area_files() in pages/scholarshiprequests/submit.php
- * into this component's own 'scholarshiprequest' file area, itemid =
- * the financedep_scholarshipreq.id it belongs to).
+ * Serves a scholarship or discount request's optional supporting-
+ * document attachment. Scholarship requests: added 2026-08-24,
+ * classes/form/scholarshiprequest_form.php's 'attachment' filemanager
+ * element, saved via file_save_draft_area_files() in
+ * pages/scholarshiprequests/submit.php into this component's own
+ * 'scholarshiprequest' file area, itemid = the
+ * financedep_scholarshipreq.id it belongs to. Discount requests: added
+ * 2026-09-06, same shape via classes/form/discountrequest_form.php and
+ * pages/discountrequests/submit.php, into its OWN 'discountrequest'
+ * file area (itemid = financedep_discountreq.id) so the two never
+ * collide even when both share the same itemid.
  *
  * These are finance/HR-sensitive documents (income certificates and
  * similar), so access is gated the same way the request itself is -
- * managescholarships (submitted it) or approvescholarships (reviewing
- * it) - never a plain "logged in" check.
+ * managescholarships/managediscounts (submitted it) or
+ * approvescholarships/approvediscounts (reviewing it) - never a plain
+ * "logged in" check.
  *
  * @param stdClass $course
  * @param stdClass|null $cm
@@ -355,12 +396,28 @@ function local_financedepartment_render_quicklink(moodle_url $url, string $label
 function local_financedepartment_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     require_login();
 
-    if ($context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'scholarshiprequest') {
+    if ($context->contextlevel !== CONTEXT_SYSTEM) {
         return false;
     }
 
-    if (!\local_financedepartment\access_manager::can_manage('local/financedepartment:managescholarships')
-            && !\local_financedepartment\access_manager::can_manage('local/financedepartment:approvescholarships')) {
+    if ($filearea === 'scholarshiprequest') {
+        if (!\local_financedepartment\access_manager::can_manage('local/financedepartment:managescholarships')
+                && !\local_financedepartment\access_manager::can_manage('local/financedepartment:approvescholarships')) {
+            return false;
+        }
+    } else if ($filearea === 'discountrequest') {
+        // Same finance/HR-sensitive-document gating as scholarshiprequest
+        // above, added 2026-09-06 for Step 7.5's discount request
+        // attachments (classes/form/discountrequest_form.php's own
+        // 'attachment' filemanager element, saved via
+        // pages/discountrequests/submit.php into this OWN filearea so it
+        // never collides with a scholarship request's attachment even
+        // when both share the same itemid).
+        if (!\local_financedepartment\access_manager::can_manage('local/financedepartment:managediscounts')
+                && !\local_financedepartment\access_manager::can_manage('local/financedepartment:approvediscounts')) {
+            return false;
+        }
+    } else {
         return false;
     }
 
@@ -369,7 +426,7 @@ function local_financedepartment_pluginfile($course, $cm, $context, $filearea, $
     $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
 
     $fs = get_file_storage();
-    $file = $fs->get_file($context->id, 'local_financedepartment', 'scholarshiprequest', $itemid, $filepath, $filename);
+    $file = $fs->get_file($context->id, 'local_financedepartment', $filearea, $itemid, $filepath, $filename);
     if (!$file || $file->is_directory()) {
         return false;
     }

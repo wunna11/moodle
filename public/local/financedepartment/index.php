@@ -36,11 +36,13 @@ $canmanagefees = access_manager::can_manage('local/financedepartment:managefeest
 $canmanagefeerecords = access_manager::can_manage('local/financedepartment:managefeerecords');
 $canmanagescholarships = access_manager::can_manage('local/financedepartment:managescholarships');
 $canapprovescholarships = access_manager::can_manage('local/financedepartment:approvescholarships');
+$canmanagediscounts = access_manager::can_manage('local/financedepartment:managediscounts');
+$canapprovediscounts = access_manager::can_manage('local/financedepartment:approvediscounts');
 $canviewreports = has_capability('local/financedepartment:viewfinancereports', $context);
 $canviewown = has_capability('local/financedepartment:viewownfeerecord', $context);
 
 if (!$canmanagefees && !$canmanagefeerecords && !$canmanagescholarships && !$canapprovescholarships
-        && !$canviewreports && !$canviewown) {
+        && !$canmanagediscounts && !$canapprovediscounts && !$canviewreports && !$canviewown) {
     throw new moodle_exception('nopermissions', 'error', '', get_string('pluginname', 'local_financedepartment'));
 }
 
@@ -87,9 +89,18 @@ if ($canmanagescholarships || $canapprovescholarships) {
     );
 }
 
+if ($canmanagediscounts || $canapprovediscounts) {
+    echo local_financedepartment_render_quicklink(
+        new moodle_url('/local/financedepartment/pages/discounts/index.php'),
+        get_string('discounts', 'local_financedepartment'),
+        'fa-tags'
+    );
+}
+
 echo html_writer::end_div();
 
-if (!$canmanagefees && !$canmanagefeerecords && !$canmanagescholarships && !$canapprovescholarships) {
+if (!$canmanagefees && !$canmanagefeerecords && !$canmanagescholarships && !$canapprovescholarships
+        && !$canmanagediscounts && !$canapprovediscounts) {
     echo local_financedepartment_render_empty_state(get_string('nosectionsyet', 'local_financedepartment'));
 }
 

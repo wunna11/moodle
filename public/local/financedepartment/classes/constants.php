@@ -68,6 +68,19 @@ class constants {
     const SCHOLARSHIP_STATUS_INACTIVE = 'inactive';
 
     // -----------------------------------------------------------------
+    // Discount definition status (financedep_discount.status). Reuses
+    // the same active/inactive shape (and the same generic
+    // status_active/status_inactive lang strings) as
+    // SCHOLARSHIP_STATUS_*/FEESTRUCTURE_STATUS_* above.
+    // -----------------------------------------------------------------
+
+    /** @var string Discount status: active (selectable for new requests). */
+    const DISCOUNT_STATUS_ACTIVE = 'active';
+
+    /** @var string Discount status: inactive (deactivated, kept for history). */
+    const DISCOUNT_STATUS_INACTIVE = 'inactive';
+
+    // -----------------------------------------------------------------
     // Fee record status (financedep_feerecord.status) - a student's
     // assigned fee and its payment progress.
     // -----------------------------------------------------------------
@@ -109,8 +122,12 @@ class constants {
      * physically removed. Deliberately NOT included in
      * request_statuses() below - that method's docblock describes the
      * shared pending/approved/rejected lifecycle used by both
-     * scholarship and (future) discount requests, and delete is a
-     * scholarship-request-only feature for now.
+     * scholarship and discount requests. Discount requests (Step 7.5,
+     * built 2026-09-06) deliberately do NOT get a delete feature yet -
+     * only scholarship requests use this status today. If discount
+     * requests get their own delete feature later, revisit whether this
+     * constant should move into request_statuses() at that point - see
+     * [[financedepartment-schema]] project memory.
      */
     const REQUEST_STATUS_DELETED = 'deleted';
 
@@ -127,7 +144,24 @@ class constants {
 
     // -----------------------------------------------------------------
     // Discount type classification (financedep_discount.type). Step 7.5,
-    // not built yet - unaffected by the scholarship change above.
+    // built 2026-09-06 - see classes/discount_manager.php's docblock.
+    //
+    // Unlike scholarships, a discount is NOT restricted to one course
+    // category (financedep_discount has no categoryid column) - any
+    // discount can be requested against any student's fee record.
+    //
+    // 2026-09-06 scope decision (user asked via AskUserQuestion after
+    // discovering neither financedep_feerecord nor
+    // financedep_feestructure has a due-date column to evaluate an
+    // automatic "days before due date" rule against): this first pass
+    // builds ONLY the manual/hardship request-and-approve workflow,
+    // mirroring scholarship requests. Every discount created right now
+    // has isautomatic = 0 regardless of its type - discount_form.php
+    // does not expose the isautomatic/rulejson fields at all. A discount
+    // of type earlypayment or promotional can still be created and
+    // manually requested/approved today; only the FUTURE automatic
+    // rule-evaluation engine (rulejson-driven auto-apply) is deferred,
+    // pending a due-date field being added to feerecord/feestructure.
     // -----------------------------------------------------------------
 
     /** @var string Discount type: early-payment. */
@@ -211,6 +245,9 @@ class constants {
 
     /** @var string Audit entity type: a scholarship request. */
     const AUDIT_ENTITY_SCHOLARSHIPREQUEST = 'scholarshiprequest';
+
+    /** @var string Audit entity type: a discount definition (create/edit/deactivate history). */
+    const AUDIT_ENTITY_DISCOUNT = 'discount';
 
     /** @var string Audit entity type: a discount request. */
     const AUDIT_ENTITY_DISCOUNTREQUEST = 'discountrequest';

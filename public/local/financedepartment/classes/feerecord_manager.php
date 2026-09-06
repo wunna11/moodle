@@ -292,6 +292,31 @@ class feerecord_manager {
     }
 
     /**
+     * Adds (or subtracts, for a negative $amount) a discount amount to a
+     * fee record's running total, then recalculates balance and status
+     * via save_and_recalculate() - the discount-side equivalent of
+     * add_scholarship_amount() above, added for Step 7.5 (built
+     * 2026-09-06) exactly as that method's docblock anticipated. This is
+     * the one place financedep_feerecord.discountamount changes -
+     * called by discountrequest_manager on approval (and, symmetrically,
+     * with a negative amount if a discount request is ever reversed).
+     *
+     * @param int $feerecordid
+     * @param float $amount MMK to add to discountamount (negative to reverse)
+     * @param int $usermodified
+     * @return void
+     */
+    public static function add_discount_amount(int $feerecordid, float $amount, int $usermodified): void {
+        global $DB;
+
+        $feerecord = $DB->get_record('financedep_feerecord', ['id' => $feerecordid], '*', MUST_EXIST);
+
+        $feerecord->discountamount = max(0, (float) $feerecord->discountamount + $amount);
+
+        self::save_and_recalculate($feerecord, $usermodified);
+    }
+
+    /**
      * Recomputes balance = totalamount - scholarshipamount -
      * discountamount - paidamount, and derives status from it: fully
      * paid once balance reaches zero (or the fee structure was free to
