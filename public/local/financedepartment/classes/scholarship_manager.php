@@ -195,7 +195,16 @@ class scholarship_manager {
 
     /**
      * Sets a scholarship definition's status (deactivate/reactivate) and
-     * logs an EDIT audit entry.
+     * logs an EDIT audit entry. Deliberately never touches
+     * financedep_scholarshipreq - a PENDING request submitted against
+     * this scholarship before it was deactivated is left exactly as-is
+     * (still PENDING, still referencing this scholarshipid). It is
+     * scholarshiprequest_manager::approve() and
+     * pages/scholarshiprequests/review.php that refuse to approve such
+     * a request once this scholarship is inactive (added 2026-09-06 per
+     * the user's explicit request, mirroring the same fix on the
+     * discount side) - deactivating here does not cascade or
+     * auto-reject anything.
      *
      * @param int $id
      * @param string $status one of constants::SCHOLARSHIP_STATUS_*

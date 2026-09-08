@@ -145,6 +145,7 @@ class discountrequest_manager {
 
         $sql = "SELECT q.*, u.firstname, u.lastname, u.email,
                        d.name AS discountname, d.type AS discounttype, d.amounttype, d.amountvalue,
+                       d.status AS discountstatus,
                        fs.academicyear, cc.name AS categoryname
                   FROM {financedep_discountreq} q
                   JOIN {user} u ON u.id = q.studentid
@@ -281,6 +282,20 @@ class discountrequest_manager {
             return;
         }
         if ((int) $before->requestedby === $reviewedby) {
+            return;
+        }
+
+        // Deactivated-discount guard, added 2026-09-06 per the user's
+        // explicit request: refuse (silent no-op) if the discount this
+        // request references has since been deactivated. Discount
+        // deactivation never cascades to existing financedep_discountreq
+        // rows (see discount_manager::set_status()'s docblock), so a
+        // PENDING request against a now-inactive discount would
+        // otherwise still approve normally. This is defense-in-depth
+        // only - the primary, user-facing gate is in
+        // pages/discountrequests/review.php.
+        $discount = $DB->get_record('financedep_discount', ['id' => $before->discountid]);
+        if (!$discount || $discount->status !== constants::DISCOUNT_STATUS_ACTIVE) {
             return;
         }
 

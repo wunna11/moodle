@@ -96,7 +96,7 @@ class scholarshiprequest_table extends \core_table\sql_table {
         $fields = 'q.id, q.studentid, q.feerecordid, q.scholarshipid, q.requestedamount, q.approvedamount,
                    q.status, q.timecreated, q.requestedby,
                    u.firstname, u.lastname, u.email,
-                   s.name AS scholarshipname,
+                   s.name AS scholarshipname, s.status AS scholarshipstatus,
                    cc.name AS categoryname, fs.academicyear';
         $from = '{financedep_scholarshipreq} q
                    JOIN {user} u ON u.id = q.studentid
@@ -238,10 +238,17 @@ class scholarshiprequest_table extends \core_table\sql_table {
         $isownrequest = (int) $row->requestedby === (int) $USER->id;
 
         if ($this->canapprove && $row->status === \local_financedepartment\constants::REQUEST_STATUS_PENDING && !$isownrequest) {
-            $actions[] = \html_writer::link(
-                new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $row->id, 'decision' => 'approve']),
-                get_string('approve', 'local_financedepartment')
-            );
+            // Approve is hidden (not Reject) once the underlying
+            // scholarship has been deactivated - added 2026-09-06, see
+            // scholarshiprequest_manager::approve()'s docblock. A
+            // reviewer can still reject such a request to clear it out
+            // of the pending queue.
+            if ($row->scholarshipstatus === \local_financedepartment\constants::SCHOLARSHIP_STATUS_ACTIVE) {
+                $actions[] = \html_writer::link(
+                    new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $row->id, 'decision' => 'approve']),
+                    get_string('approve', 'local_financedepartment')
+                );
+            }
             $actions[] = \html_writer::link(
                 new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $row->id, 'decision' => 'reject']),
                 get_string('reject', 'local_financedepartment')

@@ -90,7 +90,7 @@ class discountrequest_table extends \core_table\sql_table {
         $fields = 'q.id, q.studentid, q.feerecordid, q.discountid, q.requestedamount, q.approvedamount,
                    q.status, q.timecreated, q.requestedby,
                    u.firstname, u.lastname, u.email,
-                   d.name AS discountname, d.type AS discounttype';
+                   d.name AS discountname, d.type AS discounttype, d.status AS discountstatus';
         $from = '{financedep_discountreq} q
                    JOIN {user} u ON u.id = q.studentid
                    JOIN {financedep_discount} d ON d.id = q.discountid';
@@ -216,12 +216,20 @@ class discountrequest_table extends \core_table\sql_table {
         ];
 
         $isownrequest = (int) $row->requestedby === (int) $USER->id;
+        $ispending = $row->status === \local_financedepartment\constants::REQUEST_STATUS_PENDING;
 
-        if ($this->canapprove && $row->status === \local_financedepartment\constants::REQUEST_STATUS_PENDING && !$isownrequest) {
-            $actions[] = \html_writer::link(
-                new moodle_url('/local/financedepartment/pages/discountrequests/review.php', ['id' => $row->id, 'decision' => 'approve']),
-                get_string('approve', 'local_financedepartment')
-            );
+        if ($this->canapprove && $ispending && !$isownrequest) {
+            // Approve is hidden (not Reject) once the underlying
+            // discount has been deactivated - added 2026-09-06, see
+            // discountrequest_manager::approve()'s docblock. A reviewer
+            // can still reject such a request to clear it out of the
+            // pending queue.
+            if ($row->discountstatus === \local_financedepartment\constants::DISCOUNT_STATUS_ACTIVE) {
+                $actions[] = \html_writer::link(
+                    new moodle_url('/local/financedepartment/pages/discountrequests/review.php', ['id' => $row->id, 'decision' => 'approve']),
+                    get_string('approve', 'local_financedepartment')
+                );
+            }
             $actions[] = \html_writer::link(
                 new moodle_url('/local/financedepartment/pages/discountrequests/review.php', ['id' => $row->id, 'decision' => 'reject']),
                 get_string('reject', 'local_financedepartment')

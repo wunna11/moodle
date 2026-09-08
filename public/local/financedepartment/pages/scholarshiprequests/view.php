@@ -77,12 +77,21 @@ $actions = [];
 // matching server-side check (which is the actual enforcement point;
 // this is just so the buttons don't appear only to error out).
 $isownrequest = (int) $request->requestedby === (int) $USER->id;
-if ($canapprove && $request->status === constants::REQUEST_STATUS_PENDING && !$isownrequest) {
-    $actions[] = [
-        'url' => new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $id, 'decision' => 'approve']),
-        'label' => get_string('approve', 'local_financedepartment'),
-        'icon' => 'fa-check',
-    ];
+$ispending = $request->status === constants::REQUEST_STATUS_PENDING;
+// Deactivated-scholarship guard, added 2026-09-06 - see
+// scholarshiprequest_manager::approve()'s docblock and review.php's
+// matching server-side check (the actual enforcement point; this is
+// just so the Approve button doesn't appear only to error out). Reject
+// stays available regardless, so a stale request can still be cleared.
+$scholarshipinactive = $request->scholarshipstatus !== constants::SCHOLARSHIP_STATUS_ACTIVE;
+if ($canapprove && $ispending && !$isownrequest) {
+    if (!$scholarshipinactive) {
+        $actions[] = [
+            'url' => new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $id, 'decision' => 'approve']),
+            'label' => get_string('approve', 'local_financedepartment'),
+            'icon' => 'fa-check',
+        ];
+    }
     $actions[] = [
         'url' => new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $id, 'decision' => 'reject']),
         'label' => get_string('reject', 'local_financedepartment'),
@@ -107,9 +116,16 @@ echo local_financedepartment_render_page_hero(
     $actions
 );
 
-if ($canapprove && $isownrequest && $request->status === constants::REQUEST_STATUS_PENDING) {
+if ($canapprove && $isownrequest && $ispending) {
     echo $OUTPUT->notification(
         get_string('errorcannotreviewownrequest', 'local_financedepartment'),
+        \core\output\notification::NOTIFY_INFO
+    );
+}
+
+if ($canapprove && !$isownrequest && $ispending && $scholarshipinactive) {
+    echo $OUTPUT->notification(
+        get_string('errorscholarshipnotactiveforapproval', 'local_financedepartment'),
         \core\output\notification::NOTIFY_INFO
     );
 }

@@ -67,6 +67,19 @@ if ((int) $request->requestedby === (int) $USER->id) {
     redirect($returnurl, get_string('errorcannotreviewownrequest', 'local_financedepartment'), null, \core\output\notification::NOTIFY_WARNING);
 }
 
+// Deactivated-discount guard, added 2026-09-06 per the user's explicit
+// request: an approval is refused (redirected with a clear message)
+// once the underlying discount has since been deactivated - discount
+// deactivation never cascades to an existing PENDING request (see
+// discount_manager::set_status()'s docblock), so without this check a
+// stale-but-still-pending request could still be approved and deducted
+// from the fee record after the discount itself was turned off.
+// Rejecting is deliberately still allowed regardless - a reviewer needs
+// a way to resolve/clear such a request out of the pending queue.
+if ($decision === 'approve' && $request->discountstatus !== constants::DISCOUNT_STATUS_ACTIVE) {
+    redirect($returnurl, get_string('errordiscountnotactiveforapproval', 'local_financedepartment'), null, \core\output\notification::NOTIFY_WARNING);
+}
+
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/discountrequests/review.php', ['id' => $id, 'decision' => $decision]));
 $PAGE->set_pagelayout('standard');

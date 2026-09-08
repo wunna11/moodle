@@ -144,7 +144,7 @@ class scholarshiprequest_manager {
         global $DB;
 
         $sql = "SELECT q.*, u.firstname, u.lastname, u.email,
-                       s.name AS scholarshipname, s.amounttype, s.amountvalue,
+                       s.name AS scholarshipname, s.amounttype, s.amountvalue, s.status AS scholarshipstatus,
                        fs.academicyear, fs.categoryid, cc.name AS categoryname
                   FROM {financedep_scholarshipreq} q
                   JOIN {user} u ON u.id = q.studentid
@@ -283,6 +283,22 @@ class scholarshiprequest_manager {
             return;
         }
         if ((int) $before->requestedby === $reviewedby) {
+            return;
+        }
+
+        // Deactivated-scholarship guard, added 2026-09-06 per the
+        // user's explicit request (mirrors the same fix built into
+        // discountrequest_manager::approve() the same day): refuse
+        // (silent no-op) if the scholarship this request references has
+        // since been deactivated. Deactivating a scholarship
+        // (scholarship_manager::set_status()) never cascades to
+        // existing financedep_scholarshipreq rows, so a PENDING request
+        // against a now-inactive scholarship would otherwise still
+        // approve normally. This is defense-in-depth only - the
+        // primary, user-facing gate is in
+        // pages/scholarshiprequests/review.php.
+        $scholarship = $DB->get_record('financedep_scholarship', ['id' => $before->scholarshipid]);
+        if (!$scholarship || $scholarship->status !== constants::SCHOLARSHIP_STATUS_ACTIVE) {
             return;
         }
 

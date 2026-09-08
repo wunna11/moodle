@@ -69,6 +69,20 @@ if ((int) $request->requestedby === (int) $USER->id) {
     redirect($returnurl, get_string('errorcannotreviewownrequest', 'local_financedepartment'), null, \core\output\notification::NOTIFY_WARNING);
 }
 
+// Deactivated-scholarship guard, added 2026-09-06 per the user's
+// explicit request (mirrors the same fix on the discount side): an
+// approval is refused (redirected with a clear message) once the
+// underlying scholarship has since been deactivated - deactivation
+// never cascades to an existing PENDING request (see
+// scholarship_manager::set_status()'s docblock), so without this check
+// a stale-but-still-pending request could still be approved and
+// deducted from the fee record after the scholarship itself was turned
+// off. Rejecting is deliberately still allowed regardless - a reviewer
+// needs a way to resolve/clear such a request out of the pending queue.
+if ($decision === 'approve' && $request->scholarshipstatus !== constants::SCHOLARSHIP_STATUS_ACTIVE) {
+    redirect($returnurl, get_string('errorscholarshipnotactiveforapproval', 'local_financedepartment'), null, \core\output\notification::NOTIFY_WARNING);
+}
+
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/scholarshiprequests/review.php', ['id' => $id, 'decision' => $decision]));
 $PAGE->set_pagelayout('standard');

@@ -187,7 +187,14 @@ class discount_manager {
 
     /**
      * Sets a discount definition's status (deactivate/reactivate) and
-     * logs an EDIT audit entry.
+     * logs an EDIT audit entry. Deliberately never touches
+     * financedep_discountreq - a PENDING request submitted against this
+     * discount before it was deactivated is left exactly as-is (still
+     * PENDING, still referencing this discountid). It is
+     * discountrequest_manager::approve() and pages/discountrequests/review.php
+     * that refuse to approve such a request once this discount is
+     * inactive (added 2026-09-06 per the user's explicit request) -
+     * deactivating here does not cascade or auto-reject anything.
      *
      * @param int $id
      * @param string $status one of constants::DISCOUNT_STATUS_*

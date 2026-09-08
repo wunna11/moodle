@@ -25,10 +25,23 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026090602;
+$plugin->version   = 2026090603;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.6.0';
+$plugin->release   = '0.6.1';
+
+// 2026-09-06 (post-deploy fix #7): a PENDING scholarship/discount request
+// could still be approved (and its amount deducted from the fee record)
+// after the underlying scholarship/discount was deactivated, since
+// set_status() never re-validates existing requests. Fixed with a
+// deactivated-item guard mirroring the same day's self-approval guard
+// pattern: scholarshiprequest_manager::approve() /
+// discountrequest_manager::approve() now refuse (silent no-op) if the
+// referenced item is no longer ACTIVE; review.php redirects with a clear
+// warning as the primary user-facing gate; the Approve action is hidden
+// in both the row-actions table and the view.php page (Reject stays
+// available either way, so a stale request can still be cleared). See
+// [[financedepartment-schema]] project memory.
 
 // 2026-09-06: Step 7.5 (discount management) built - classes/discount_manager.php,
 // classes/discountrequest_manager.php, pages/discounts/*.php,
