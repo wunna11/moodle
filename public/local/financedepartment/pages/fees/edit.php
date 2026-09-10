@@ -54,7 +54,7 @@ $title = $id
     ? get_string('editfeestructure', 'local_financedepartment')
     : get_string('addfeestructure', 'local_financedepartment');
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $form = new feestructure_form($PAGE->url, ['feestructureid' => $id]);
 

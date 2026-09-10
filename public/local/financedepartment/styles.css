@@ -153,6 +153,13 @@
     max-width: 720px;
 }
 
+/* Short explanatory paragraph above a form/step inside a .findept-form-card (e.g. installments/create.php's "how many installments?" step). */
+.findept-form-intro {
+    color: #6c757d;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
 /* Detail card (view page). */
 .findept-detail-card {
     background: #fff;

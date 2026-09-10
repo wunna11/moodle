@@ -41,10 +41,6 @@ $context = context_system::instance();
 $canmanage = access_manager::can_manage('local/financedepartment:managediscounts');
 $canapprove = access_manager::can_manage('local/financedepartment:approvediscounts');
 
-if (!$canmanage && !$canapprove) {
-    throw new moodle_exception('nopermissions', 'error', '', get_string('pluginname', 'local_financedepartment'));
-}
-
 $request = discountrequest_manager::get($id);
 if (!$request) {
     throw new moodle_exception(
@@ -54,13 +50,23 @@ if (!$request) {
     );
 }
 
+// A student may always view a request THEY submitted (2026-09-09 fix -
+// requests are now student self-service, see submit.php's docblock),
+// read-only - computed once here and reused below for the
+// self-approval guard too.
+$isownrequest = (int) $request->requestedby === (int) $USER->id;
+
+if (!$canmanage && !$canapprove && !$isownrequest) {
+    throw new moodle_exception('nopermissions', 'error', '', get_string('pluginname', 'local_financedepartment'));
+}
+
 $heading = format_string($request->fullname) . ' - ' . format_string($request->discountname);
 
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/discountrequests/view.php', ['id' => $id]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title($heading);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 
@@ -78,7 +84,7 @@ $actions = [];
 // discountrequest_manager::approve()'s docblock and review.php's
 // matching server-side check (the actual enforcement point; this is
 // just so the buttons don't appear only to error out).
-$isownrequest = (int) $request->requestedby === (int) $USER->id;
+// $isownrequest was already computed above for the view-access guard.
 $ispending = $request->status === constants::REQUEST_STATUS_PENDING;
 // Deactivated-discount guard, added 2026-09-06 - see
 // discountrequest_manager::approve()'s docblock and review.php's

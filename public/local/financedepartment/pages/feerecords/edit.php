@@ -55,7 +55,7 @@ $title = $id
     ? get_string('editfeerecord', 'local_financedepartment')
     : get_string('assignfeerecord', 'local_financedepartment');
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $form = new feerecord_form($PAGE->url, ['feerecordid' => $id]);
 

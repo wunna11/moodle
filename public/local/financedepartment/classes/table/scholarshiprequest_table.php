@@ -93,17 +93,25 @@ class scholarshiprequest_table extends \core_table\sql_table {
         $this->collapsible(false);
         $this->set_attribute('class', 'generaltable local-financedepartment-scholarshiprequest-table');
 
+        // LEFT JOINs for the fee-record/category chain (changed
+        // 2026-09-10, v2026091004/0.8.0): feerecordid is now nullable -
+        // a request submitted through the current form never has one
+        // (see scholarshiprequest_manager's class docblock) - only a
+        // legacy pre-change row still has a real feerecordid/category.
+        // s.amounttype/s.amountvalue added so col_requestedamount() can
+        // render a meaningful message for a null (percentage-type)
+        // requestedamount instead of just calling format_money(null).
         $fields = 'q.id, q.studentid, q.feerecordid, q.scholarshipid, q.requestedamount, q.approvedamount,
                    q.status, q.timecreated, q.requestedby,
                    u.firstname, u.lastname, u.email,
-                   s.name AS scholarshipname, s.status AS scholarshipstatus,
+                   s.name AS scholarshipname, s.status AS scholarshipstatus, s.amounttype, s.amountvalue,
                    cc.name AS categoryname, fs.academicyear';
         $from = '{financedep_scholarshipreq} q
                    JOIN {user} u ON u.id = q.studentid
                    JOIN {financedep_scholarship} s ON s.id = q.scholarshipid
-                   JOIN {financedep_feerecord} fr ON fr.id = q.feerecordid
-                   JOIN {financedep_feestructure} fs ON fs.id = fr.feestructureid
-                   JOIN {course_categories} cc ON cc.id = fs.categoryid';
+              LEFT JOIN {financedep_feerecord} fr ON fr.id = q.feerecordid
+              LEFT JOIN {financedep_feestructure} fs ON fs.id = fr.feestructureid
+              LEFT JOIN {course_categories} cc ON cc.id = fs.categoryid';
 
         // Deleted requests are soft-deleted (status = DELETED) and are
         // NEVER shown through this table regardless of the $status
@@ -151,12 +159,20 @@ class scholarshiprequest_table extends \core_table\sql_table {
     }
 
     /**
-     * Renders the category column.
+     * Renders the category column. Returns "-" for a request with no
+     * linked fee record (the normal case going forward, since
+     * v2026091004/0.8.0 removed the fee-record field from submission -
+     * see scholarshiprequest_manager's class docblock) - only a legacy
+     * pre-change row still has a real category/academicyear here.
      *
      * @param \stdClass $row
      * @return string
      */
     public function col_categoryname($row): string {
+        if ($row->categoryname === null) {
+            return '-';
+        }
+
         return format_string($row->categoryname) . ' - ' . s($row->academicyear);
     }
 
@@ -171,12 +187,21 @@ class scholarshiprequest_table extends \core_table\sql_table {
     }
 
     /**
-     * Renders the requested-amount column.
+     * Renders the requested-amount column. Null (a percentage-type
+     * scholarship with no fee record to compute a base amount against -
+     * see scholarshiprequest_manager::compute_suggested_amount()'s
+     * docblock, v2026091004/0.8.0) renders the scholarship's raw
+     * percentage instead of a computed MMK figure.
      *
      * @param \stdClass $row
      * @return string
      */
     public function col_requestedamount($row): string {
+        if ($row->requestedamount === null) {
+            $percent = rtrim(rtrim(number_format((float) $row->amountvalue, 2), '0'), '.');
+            return get_string('requestedamountpercentagebased', 'local_financedepartment', $percent);
+        }
+
         return local_financedepartment_format_money($row->requestedamount);
     }
 

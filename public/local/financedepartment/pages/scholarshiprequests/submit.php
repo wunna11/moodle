@@ -15,17 +15,36 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Submit a scholarship request/nomination - a single self-contained
- * page (student, fee record, scholarship, description, optional
- * attachment all picked here). REWRITTEN 2026-08-24 per the user's
- * request: originally this page required a studentid to already be
- * chosen via a separate search page (pages/scholarshiprequests/pick.php,
- * now retired) before it would even load. studentid is now an optional
- * GET param only kept for backward compatibility with old links (it
- * pre-selects the student autocomplete, see scholarshiprequest_form's
- * presetstudentid customdata) - the normal entry point is this page
- * with no params at all, reached from pages/scholarshiprequests/index.php's
- * "New request" action.
+ * Submit a scholarship request - a single self-contained page
+ * (scholarship, description, optional attachments all picked here).
+ * CHANGED 2026-09-10 (v2026091004/0.8.0): no fee record is picked here
+ * any more at all - the user reported this shouldn't be something a
+ * student has to fill in, and the whole fee-record linkage was removed
+ * from this workflow (see scholarshiprequest_form.php and
+ * scholarshiprequest_manager's own docblocks for the full rationale).
+ * The old "no active fee record yet" empty-state gate that used to
+ * guard this page is gone too - there's nothing left that requires one.
+ *
+ * REWRITTEN AGAIN 2026-09-09: the student picked here used to be chosen
+ * by finance staff from a system-wide autocomplete (managescholarships-
+ * gated) - meaning a student could never nominate themselves, only
+ * finance staff could submit on their behalf. This was backwards - a
+ * scholarship request is now student self-service: the viewer is always
+ * the student, gated on the new
+ * local/financedepartment:submitscholarshiprequest capability (a plain
+ * per-user capability, NOT routed through access_manager::can_manage() -
+ * see db/access.php's docblock for that capability). See
+ * [[financedepartment-schema]] project memory for the full history.
+ *
+ * Earlier revision (2026-08-24) kept for context: originally a studentid
+ * had to be chosen via a separate search page
+ * (pages/scholarshiprequests/pick.php, long since retired) before this
+ * page would even load.
+ *
+ * Added 2026-09-10: an optional `scholarshipid` GET param (from
+ * pages/scholarships/browse.php's "Request this" link) pre-selects the
+ * scholarship on the form - see scholarshiprequest_form.php's
+ * `presetscholarshipid` customdata handling.
  *
  * @package   local_financedepartment
  * @copyright 2026 Wunna
@@ -40,21 +59,26 @@ require_once(__DIR__ . '/../../../../config.php');
 
 require_login();
 
-$presetstudentid = optional_param('studentid', 0, PARAM_INT);
-
 $context = context_system::instance();
-access_manager::require_manage('local/financedepartment:managescholarships');
+require_capability('local/financedepartment:submitscholarshiprequest', $context);
+
+$presetscholarshipid = optional_param('scholarshipid', 0, PARAM_INT);
 
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/local/financedepartment/pages/scholarshiprequests/submit.php', ['studentid' => $presetstudentid]));
+$PAGE->set_url(new moodle_url('/local/financedepartment/pages/scholarshiprequests/submit.php', [
+    'scholarshipid' => $presetscholarshipid,
+]));
 $PAGE->set_pagelayout('standard');
 $title = get_string('submitrequest', 'local_financedepartment');
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $returnurl = new moodle_url('/local/financedepartment/pages/scholarshiprequests/index.php');
 
-$form = new scholarshiprequest_form($PAGE->url, ['presetstudentid' => $presetstudentid]);
+$form = new scholarshiprequest_form($PAGE->url, [
+    'studentid' => (int) $USER->id,
+    'presetscholarshipid' => $presetscholarshipid,
+]);
 
 if ($form->is_cancelled()) {
     redirect($returnurl);
@@ -67,6 +91,9 @@ if ($data = $form->get_data()) {
     // draft area and into this plugin's own permanent file area,
     // itemid = the new request's id - see lib.php's
     // local_financedepartment_pluginfile() for how it's served back.
+    // maxfiles raised 1 -> scholarshiprequest_form::ATTACHMENT_MAXFILES
+    // (5) 2026-09-10, per the user's request for multiple-file upload -
+    // must match the form's own filemanager maxfiles option exactly.
     if (!empty($data->attachment)) {
         file_save_draft_area_files(
             $data->attachment,
@@ -74,7 +101,7 @@ if ($data = $form->get_data()) {
             'local_financedepartment',
             'scholarshiprequest',
             $newid,
-            ['subdirs' => 0, 'maxfiles' => 1]
+            ['subdirs' => 0, 'maxfiles' => scholarshiprequest_form::ATTACHMENT_MAXFILES]
         );
     }
 

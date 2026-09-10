@@ -42,7 +42,7 @@ $PAGE->set_url(new moodle_url('/local/financedepartment/pages/discounts/index.ph
 ]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('discounts', 'local_financedepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 

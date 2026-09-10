@@ -116,6 +116,32 @@ class scholarship_manager {
     }
 
     /**
+     * Returns every ACTIVE scholarship across every course category,
+     * joined with its category name, ordered by category then name -
+     * the "which programs have a scholarship" catalog a student browses
+     * on pages/scholarships/browse.php (added 2026-09-10, per the user's
+     * explicit request for a self-service way to see this before
+     * deciding whether to submit a request). Deliberately NOT scoped to
+     * any one student's own fee-record categories - the user confirmed
+     * via AskUserQuestion that the catalog should show every active
+     * scholarship system-wide, not just ones matching the viewer's own
+     * enrolled programs.
+     *
+     * @return \stdClass[] each row: id, name, categoryid, categoryname, amounttype, amountvalue, description
+     */
+    public static function get_active_catalog(): array {
+        global $DB;
+
+        $sql = "SELECT s.id, s.name, s.categoryid, s.amounttype, s.amountvalue, s.description, cc.name AS categoryname
+                  FROM {financedep_scholarship} s
+                  JOIN {course_categories} cc ON cc.id = s.categoryid
+                 WHERE s.status = :status
+              ORDER BY cc.name ASC, s.name ASC";
+
+        return array_values($DB->get_records_sql($sql, ['status' => constants::SCHOLARSHIP_STATUS_ACTIVE]));
+    }
+
+    /**
      * Creates a new scholarship definition and logs a CREATE audit entry.
      *
      * @param \stdClass $data form data: name, categoryid, amounttype, amountvalue, description

@@ -29,6 +29,7 @@
 use local_financedepartment\access_manager;
 use local_financedepartment\audit_manager;
 use local_financedepartment\constants;
+use local_financedepartment\feepayment_manager;
 use local_financedepartment\feerecord_manager;
 
 require_once(__DIR__ . '/../../../../config.php');
@@ -55,7 +56,7 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/feerecords/view.php', ['id' => $id]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title($heading);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 
@@ -76,6 +77,25 @@ $actions = [
     ],
 ];
 if ($feerecord->status !== constants::FEE_STATUS_CANCELLED) {
+    // Record payment/refund - Step 7.7. Refund is only offered once
+    // something has actually been paid (feerecord_manager::add_payment_amount()
+    // clamps paidamount at 0 anyway, but there is no point offering the
+    // action at all when there is nothing to refund).
+    if (access_manager::can_manage('local/financedepartment:recordpayments')) {
+        $actions[] = [
+            'url' => new moodle_url('/local/financedepartment/pages/payments/create.php', ['feerecordid' => $id]),
+            'label' => get_string('recordpayment', 'local_financedepartment'),
+            'icon' => 'fa-money',
+        ];
+    }
+    if (access_manager::can_manage('local/financedepartment:managerefunds') && (float) $feerecord->paidamount > 0) {
+        $actions[] = [
+            'url' => new moodle_url('/local/financedepartment/pages/payments/create.php', ['feerecordid' => $id, 'mode' => 'refund']),
+            'label' => get_string('recordrefund', 'local_financedepartment'),
+            'icon' => 'fa-undo',
+        ];
+    }
+
     $actions[] = [
         'url' => new moodle_url('/local/financedepartment/pages/feerecords/cancel.php', ['id' => $id]),
         'label' => get_string('cancel'),
@@ -100,7 +120,7 @@ $rows = [
     [get_string('discountamount', 'local_financedepartment'), local_financedepartment_format_money($feerecord->discountamount)],
     [get_string('paidamount', 'local_financedepartment'), local_financedepartment_format_money($feerecord->paidamount)],
     [get_string('balance', 'local_financedepartment'), local_financedepartment_format_money($feerecord->balance)],
-    [get_string('status', 'local_financedepartment'), local_financedepartment_feerecord_status_badge($feerecord->status)],
+    [get_string('status', 'local_financedepartment'), local_financedepartment_feerecord_status_badge($feerecord)],
     [get_string('assignedby', 'local_financedepartment'), ($assignedbyuser = \core_user::get_user($feerecord->assignedby))
         ? fullname($assignedbyuser) : get_string('unknownuser', 'local_financedepartment')],
     [get_string('assigneddate', 'local_financedepartment'), userdate($feerecord->timecreated)],
@@ -115,6 +135,48 @@ foreach ($rows as [$label, $value]) {
 echo html_writer::end_tag('dl');
 
 echo html_writer::end_div();
+
+// Payments mini-table - Step 7.7. Full receipt detail (including void/
+// history) lives on pages/payments/view.php; this is just a compact
+// list, same "summary here, detail elsewhere" role installments/view.php's
+// own schedule table plays relative to a fee record.
+echo html_writer::tag('h3', get_string('payments', 'local_financedepartment'), ['class' => 'findept-section-title']);
+
+$payments = feepayment_manager::get_for_feerecord($id);
+
+if (empty($payments)) {
+    echo local_financedepartment_render_empty_state(get_string('nopaymentsyet', 'local_financedepartment'));
+} else {
+    $table = new html_table();
+    $table->head = [
+        get_string('receiptnumber', 'local_financedepartment'),
+        get_string('paymenttype', 'local_financedepartment'),
+        get_string('amount', 'local_financedepartment'),
+        get_string('linkedinstallment', 'local_financedepartment'),
+        get_string('status', 'local_financedepartment'),
+        get_string('when', 'local_financedepartment'),
+        '',
+    ];
+    $table->attributes['class'] = 'generaltable local-financedepartment-payments-table';
+
+    foreach ($payments as $payment) {
+        $viewurl = new moodle_url('/local/financedepartment/pages/payments/view.php', ['id' => $payment->id]);
+
+        $table->data[] = [
+            s($payment->receiptnumber),
+            local_financedepartment_payment_type_badge($payment->paymenttype),
+            local_financedepartment_format_money($payment->amount),
+            $payment->installmentnumber
+                ? get_string('installmentnumbershort', 'local_financedepartment', $payment->installmentnumber)
+                : get_string('paymentnotlinked', 'local_financedepartment'),
+            local_financedepartment_payment_status_badge($payment->status),
+            userdate($payment->timecreated, get_string('strftimedatetimeshort', 'core_langconfig')),
+            html_writer::link($viewurl, get_string('view')),
+        ];
+    }
+
+    echo local_financedepartment_render_table_card(html_writer::table($table));
+}
 
 // History.
 echo html_writer::tag('h3', get_string('feerecordhistory', 'local_financedepartment'), ['class' => 'findept-section-title']);

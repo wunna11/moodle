@@ -29,97 +29,102 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/formslib.php');
 
 use local_financedepartment\constants;
-use local_financedepartment\feerecord_manager;
 use local_financedepartment\scholarshiprequest_manager;
-use local_hrdepartment\student_manager;
 
 /**
  * Class scholarshiprequest_form
  *
- * REWRITTEN 2026-08-24: originally this form only had feerecordid/
- * scholarshipid/justification, with the student fixed via a hidden
- * field set by a separate "search for a student first" page
- * (pages/scholarshiprequests/pick.php). The user asked for the student
- * to be a real, selectable field directly on this form instead - so
- * pick.php was retired and this form now includes its own studentid
- * autocomplete (same MAX_STUDENT_OPTIONS/500-cap pattern as
- * feerecord_form's own studentid field), plus an optional supporting-
- * document upload and a renamed "Description" field (was
- * "Justification" - same underlying DB column/element name
- * `justification`, since renaming the column would need a schema
- * upgrade step for a purely cosmetic change; only the visible label
- * changed).
+ * CHANGED 2026-09-10 (v2026091004/0.8.0): the user reported the fee
+ * record field shouldn't need to be filled in at all when a student
+ * submits a scholarship request - it's gone entirely. Confirmed via
+ * AskUserQuestion: no fee record linkage anywhere in this workflow any
+ * more (financedep_scholarshipreq.feerecordid is now nullable and
+ * always stored null by scholarshiprequest_manager::submit()), and the
+ * old category-eligibility restriction is removed too (any ACTIVE
+ * scholarship may now be requested by any eligible student - finance
+ * staff use their own judgement at review time). See
+ * scholarshiprequest_manager's own class docblock for the full
+ * rationale and the backward-compatibility handling for requests
+ * submitted before this change. The optional attachment now also
+ * accepts up to 5 files (was 1), per the same request.
  *
- * customdata keys: presetstudentid (int, optional - pre-selects the
- * studentid autocomplete when this form is reached via a direct link
- * that already names a student, e.g. an old bookmarked
- * submit.php?studentid=X URL; the field is still fully editable).
+ * REWRITTEN AGAIN 2026-09-09: this form used to be reached only by
+ * finance staff (managescholarships), who picked a target student via a
+ * studentid autocomplete - meaning a student could never nominate
+ * themselves, only finance staff could nominate on their behalf. The
+ * user reported this was backwards: a scholarship request should be
+ * something a STUDENT submits for themselves. The studentid field is
+ * now gone entirely - the student is always the logged-in viewer
+ * (pages/scholarshiprequests/submit.php passes it in as customdata
+ * `studentid`, rendered as a hidden field plus a read-only static
+ * display, never editable). See [[financedepartment-schema]] project
+ * memory for the full history; db/access.php's new
+ * local/financedepartment:submitscholarshiprequest capability is what
+ * gates who can even reach this form.
  *
- * The feerecordid autocomplete lists every non-cancelled fee record
- * SYSTEM-WIDE (feerecord_manager::get_active_options(), each labelled
- * with its own student's name) rather than being scoped to whichever
- * student is chosen above - this plain moodleform has no JS to
- * re-populate a dependent select when another field changes. Likewise
- * scholarshipid lists every ACTIVE scholarship regardless of category.
- * validation() is what actually enforces that the three choices are a
- * real, allowed combination (feerecord belongs to the chosen student,
- * scholarship is eligible for the fee record's category, no duplicate
- * pending/approved request) - same server-side-validate-the-match
- * pattern as feerecord_bulkassign_form.
+ * Earlier revision (2026-08-24) kept for context: originally this form
+ * only had feerecordid/scholarshipid/justification, with the student
+ * fixed via a hidden field set by a separate "search for a student
+ * first" page (pages/scholarshiprequests/pick.php, long since retired).
+ * That revision added the optional supporting-document upload and
+ * renamed "Justification" to "Description" (same underlying DB column/
+ * element name `justification` - only the visible label changed).
+ *
+ * customdata keys: studentid (int, required - always $USER->id, set by
+ * submit.php), presetscholarshipid (int, optional, added 2026-09-10 -
+ * pre-selects the scholarshipid element when arriving from
+ * pages/scholarships/browse.php's "Request this" link; 0 means no
+ * preselection).
+ *
+ * validation() enforces that the scholarship is ACTIVE and there isn't
+ * already a pending/approved request for the same student+scholarship
+ * pairing (scholarshiprequest_manager::has_pending_request()).
  */
 class scholarshiprequest_form extends \moodleform {
 
-    /** @var int cap on the studentid autocomplete - see feerecord_form's own constant for the same caveat. */
-    const MAX_STUDENT_OPTIONS = 500;
-
     /** @var string[] accepted supporting-document file extensions. */
     const ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
+
+    /** @var int max number of supporting-document files (raised from 1 to 5, 2026-09-10, per user request). */
+    const ATTACHMENT_MAXFILES = 5;
 
     /**
      * Form definition.
      */
     public function definition() {
+        global $USER;
+
         $mform = $this->_form;
-        $presetstudentid = (int) ($this->_customdata['presetstudentid'] ?? 0);
+        $studentid = (int) ($this->_customdata['studentid'] ?? 0);
 
-        $students = student_manager::get_students('', 0, 'active', 0, self::MAX_STUDENT_OPTIONS);
-        $studentoptions = [];
-        foreach ($students as $student) {
-            $studentoptions[$student->id] = $student->fullname . ' (' . $student->email . ')';
-        }
+        // The student is always the logged-in viewer - shown as a
+        // read-only static field for clarity, carried as a hidden field
+        // so get_data()->studentid still comes through unchanged for
+        // scholarshiprequest_manager::submit() (see that method's
+        // docblock: it reads $data->studentid directly).
+        $mform->addElement('static', 'studentiddisplay', get_string('student', 'local_financedepartment'), fullname($USER));
+        $mform->addElement('hidden', 'studentid', $studentid);
+        $mform->setType('studentid', PARAM_INT);
 
-        $mform->addElement(
-            'autocomplete',
-            'studentid',
-            get_string('student', 'local_financedepartment'),
-            $studentoptions,
-            ['noselectionstring' => get_string('choosedots')]
-        );
-        $mform->addRule('studentid', get_string('required'), 'required', null, 'client');
-        $mform->addHelpButton('studentid', 'student', 'local_financedepartment');
-        if ($presetstudentid) {
-            $mform->setDefault('studentid', $presetstudentid);
-        }
-
-        $mform->addElement(
-            'autocomplete',
-            'feerecordid',
-            get_string('feerecord', 'local_financedepartment'),
-            feerecord_manager::get_active_options(),
-            ['noselectionstring' => get_string('choosedots')]
-        );
-        $mform->addRule('feerecordid', get_string('required'), 'required', null, 'client');
-        $mform->addHelpButton('feerecordid', 'requestfeerecord', 'local_financedepartment');
-
+        $scholarshipoptions = $this->get_scholarship_options();
         $mform->addElement(
             'autocomplete',
             'scholarshipid',
             get_string('scholarship', 'local_financedepartment'),
-            $this->get_scholarship_options(),
+            $scholarshipoptions,
             ['noselectionstring' => get_string('choosedots')]
         );
         $mform->addRule('scholarshipid', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('scholarshipid', 'requestscholarship', 'local_financedepartment');
+
+        // Optional preselection from pages/scholarships/browse.php's
+        // "Request this" link (2026-09-10) - only applied if that
+        // scholarship id is actually one of the options just built above,
+        // so a stale/invalid link never silently selects nothing visible.
+        $presetscholarshipid = (int) ($this->_customdata['presetscholarshipid'] ?? 0);
+        if ($presetscholarshipid && array_key_exists($presetscholarshipid, $scholarshipoptions)) {
+            $mform->setDefault('scholarshipid', $presetscholarshipid);
+        }
 
         $mform->addElement(
             'textarea',
@@ -138,7 +143,7 @@ class scholarshiprequest_form extends \moodleform {
             null,
             [
                 'subdirs' => 0,
-                'maxfiles' => 1,
+                'maxfiles' => self::ATTACHMENT_MAXFILES,
                 'accepted_types' => self::ATTACHMENT_TYPES,
             ]
         );
@@ -195,12 +200,13 @@ class scholarshiprequest_form extends \moodleform {
     }
 
     /**
-     * Server-side validation: the student must exist, the fee record
-     * must belong to that student, the scholarship must actually be
-     * eligible for that fee record's category
-     * (scholarshiprequest_manager::is_eligible() - the real
-     * program-restriction enforcement point), and there must not
-     * already be a pending/approved request for the same pairing.
+     * Server-side validation: the scholarship must be ACTIVE, and there
+     * must not already be a pending/approved request for the same
+     * student+scholarship pairing. CHANGED 2026-09-10 (v2026091004/
+     * 0.8.0): no fee record to validate any more (the field is gone -
+     * see this class's own docblock), and the old category-eligibility
+     * check (scholarshiprequest_manager::is_eligible(), since removed)
+     * is no longer performed.
      *
      * @param array $data
      * @param array $files
@@ -212,32 +218,26 @@ class scholarshiprequest_form extends \moodleform {
         $errors = parent::validation($data, $files);
 
         $studentid = (int) $data['studentid'];
-        $feerecordid = (int) $data['feerecordid'];
         $scholarshipid = (int) $data['scholarshipid'];
-
-        if (!$studentid || !$DB->record_exists('user', ['id' => $studentid, 'deleted' => 0])) {
-            $errors['studentid'] = get_string('required');
-        }
-
-        $feerecord = $feerecordid ? $DB->get_record('financedep_feerecord', ['id' => $feerecordid]) : false;
-        if (!$feerecord) {
-            $errors['feerecordid'] = get_string('errorfeerecordnotfound', 'local_financedepartment');
-        } else if (empty($errors['studentid']) && (int) $feerecord->studentid !== $studentid) {
-            $errors['feerecordid'] = get_string('errorfeerecordwrongstudent', 'local_financedepartment');
-        } else if ($feerecord->status === constants::FEE_STATUS_CANCELLED) {
-            $errors['feerecordid'] = get_string('errorfeerecordcancelled', 'local_financedepartment');
-        }
 
         if ($scholarshipid && !$DB->record_exists('financedep_scholarship', ['id' => $scholarshipid, 'status' => constants::SCHOLARSHIP_STATUS_ACTIVE])) {
             $errors['scholarshipid'] = get_string('errorscholarshipnotfound', 'local_financedepartment');
         }
 
-        if (empty($errors['feerecordid']) && empty($errors['scholarshipid'])) {
-            if (!scholarshiprequest_manager::is_eligible($scholarshipid, $feerecordid)) {
-                $errors['scholarshipid'] = get_string('errorscholarshipnoteligible', 'local_financedepartment');
-            } else if (scholarshiprequest_manager::has_pending_request($feerecordid, $scholarshipid)) {
-                $errors['scholarshipid'] = get_string('errorscholarshippending', 'local_financedepartment');
+        // Already-paid guard, added 2026-09-10 per the user's explicit
+        // request - see scholarshiprequest_manager::has_paid_in_category()'s
+        // own docblock for the full rationale. Checked against the
+        // scholarship's own categoryid (not a fee record - requests no
+        // longer carry one, see this form's class docblock).
+        if (empty($errors['scholarshipid']) && $scholarshipid) {
+            $categoryid = (int) $DB->get_field('financedep_scholarship', 'categoryid', ['id' => $scholarshipid]);
+            if ($categoryid && scholarshiprequest_manager::has_paid_in_category($studentid, $categoryid)) {
+                $errors['scholarshipid'] = get_string('errorscholarshipalreadypaid', 'local_financedepartment');
             }
+        }
+
+        if (empty($errors['scholarshipid']) && scholarshiprequest_manager::has_pending_request($studentid, $scholarshipid)) {
+            $errors['scholarshipid'] = get_string('errorscholarshippending', 'local_financedepartment');
         }
 
         return $errors;

@@ -153,4 +153,33 @@ $capabilities = [
             'user' => CAP_ALLOW,
         ],
     ],
+
+    // Student self-service, submit a scholarship request against the
+    // student's OWN fee record (2026-09-09 fix). Originally this whole
+    // workflow was built backwards - only managescholarships (finance
+    // staff) could reach the submit form at all, with the student picked
+    // via an autocomplete, so a student could never nominate themselves.
+    // Deliberately NOT routed through access_manager::can_manage() (see
+    // that class's docblock) - like viewownfeerecord above, this is a
+    // plain per-user self-service capability, not a finance-management
+    // one, so it's checked directly via has_capability()/
+    // require_capability() everywhere it's used.
+    'local/financedepartment:submitscholarshiprequest' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'user' => CAP_ALLOW,
+        ],
+    ],
+
+    // Student self-service, submit a manual/hardship discount request
+    // against the student's OWN fee record - same 2026-09-09 fix,
+    // mirrored for discount requests. See submitscholarshiprequest above.
+    'local/financedepartment:submitdiscountrequest' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'user' => CAP_ALLOW,
+        ],
+    ],
 ];

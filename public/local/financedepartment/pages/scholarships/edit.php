@@ -54,7 +54,7 @@ $title = $id
     ? get_string('editscholarship', 'local_financedepartment')
     : get_string('addscholarship', 'local_financedepartment');
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $form = new scholarship_form($PAGE->url, ['scholarshipid' => $id]);
 

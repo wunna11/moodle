@@ -28,31 +28,41 @@ defined('MOODLE_INTERNAL') || die;
 use local_financedepartment\access_manager;
 
 /**
- * Adds the Finance Department entry to the main Moodle navigation for
- * users who have finance management access, or (once built) their own
- * self-service capability to view their own fee record.
+ * Adds the Finance Department entry to the site navigation tree
+ * ($PAGE->navigation, shown in the navigation drawer/"Site pages") for
+ * users who have finance management access, or their own self-service
+ * capability to view their own fee record or submit a scholarship/
+ * discount request.
+ *
+ * Fixed 2026-09-10 (first fix, same day): the two student self-service
+ * capabilities added by the 2026-09-09 fix (submitscholarshiprequest/
+ * submitdiscountrequest) were never added to this check.
+ *
+ * Fixed 2026-09-10 (second fix, same day): this callback alone is NOT
+ * enough to make the plugin visible in this site's TOP navigation bar -
+ * see \local_financedepartment\access_manager::can_view_navigation_entry()'s
+ * docblock and classes/hooks/navigation/primary_extend.php for why a
+ * second, hook-based entry point was needed on this Moodle version, and
+ * why the capability check itself now lives in access_manager rather
+ * than being duplicated here.
+ *
+ * Changed 2026-09-10 (third change, same day): the node's label is now
+ * access_manager::get_display_name() instead of a hardcoded
+ * get_string('pluginname', ...) - "Finance Department" for finance
+ * staff/admins, "Scholarship" for a plain self-service student. See
+ * that method's own docblock. The primary_extend hook callback (the
+ * OTHER entry point added earlier the same day) uses the same method,
+ * so both nav labels always agree.
  *
  * @param global_navigation $nav
  */
 function local_financedepartment_extend_navigation(global_navigation $nav) {
-    global $USER;
-
-    if (!isloggedin() || isguestuser()) {
-        return;
-    }
-
-    $context = context_system::instance();
-
-    $cancontent = access_manager::can_access_finance_department((int) $USER->id)
-        || has_capability('local/financedepartment:viewfinancereports', $context)
-        || has_capability('local/financedepartment:viewownfeerecord', $context);
-
-    if (!$cancontent) {
+    if (!access_manager::can_view_navigation_entry()) {
         return;
     }
 
     $url = new moodle_url('/local/financedepartment/index.php');
-    $name = get_string('pluginname', 'local_financedepartment');
+    $name = access_manager::get_display_name();
 
     $node = $nav->add(
         $name,
@@ -95,25 +105,85 @@ function local_financedepartment_get_tabs(string $selected): array {
             get_string('feerecords', 'local_financedepartment'),
             'fa-id-card'
         );
+    } else if (has_capability('local/financedepartment:viewownfeerecord', context_system::instance())) {
+        // Student self-service (2026-09-10, per the user's request) - a
+        // plain student can't reach the admin fee records list
+        // (managefeerecords-gated), so their tab routes to their own
+        // read-only pages/myfeerecord/index.php instead - same routing
+        // split already established for the scholarships/discounts tabs
+        // below.
+        $tabs[] = local_financedepartment_make_tab(
+            'myfeerecord',
+            new moodle_url('/local/financedepartment/pages/myfeerecord/index.php'),
+            get_string('myfeerecord', 'local_financedepartment'),
+            'fa-id-card'
+        );
     }
 
-    if (access_manager::can_manage('local/financedepartment:managescholarships')
-            || access_manager::can_manage('local/financedepartment:approvescholarships')) {
+    // Scholarships tab: finance staff (manage/approve) land on the
+    // scholarship DEFINITIONS list (pages/scholarships/index.php,
+    // managescholarships-gated); a plain student who only has the new
+    // local/financedepartment:submitscholarshiprequest self-service
+    // capability (2026-09-09 fix - see pages/scholarshiprequests/
+    // submit.php's docblock) would be denied entry to that page, so
+    // they're routed straight to their own request list instead. The
+    // capability check is a plain has_capability(), NOT routed through
+    // access_manager - see db/access.php's docblock for why self-service
+    // capabilities are checked directly, same as viewownfeerecord.
+    $syscontext = context_system::instance();
+    $canmanagescholarships = access_manager::can_manage('local/financedepartment:managescholarships');
+    $canapprovescholarships = access_manager::can_manage('local/financedepartment:approvescholarships');
+    if ($canmanagescholarships || $canapprovescholarships) {
         $tabs[] = local_financedepartment_make_tab(
             'scholarships',
             new moodle_url('/local/financedepartment/pages/scholarships/index.php'),
             get_string('scholarships', 'local_financedepartment'),
             'fa-graduation-cap'
         );
+    } else if (has_capability('local/financedepartment:submitscholarshiprequest', $syscontext)) {
+        $tabs[] = local_financedepartment_make_tab(
+            'scholarships',
+            new moodle_url('/local/financedepartment/pages/scholarshiprequests/index.php'),
+            get_string('scholarships', 'local_financedepartment'),
+            'fa-graduation-cap'
+        );
     }
 
-    if (access_manager::can_manage('local/financedepartment:managediscounts')
-            || access_manager::can_manage('local/financedepartment:approvediscounts')) {
+    // Discounts tab: same routing split as scholarships above.
+    $canmanagediscounts = access_manager::can_manage('local/financedepartment:managediscounts');
+    $canapprovediscounts = access_manager::can_manage('local/financedepartment:approvediscounts');
+    if ($canmanagediscounts || $canapprovediscounts) {
         $tabs[] = local_financedepartment_make_tab(
             'discounts',
             new moodle_url('/local/financedepartment/pages/discounts/index.php'),
             get_string('discounts', 'local_financedepartment'),
             'fa-tags'
+        );
+    } else if (has_capability('local/financedepartment:submitdiscountrequest', $syscontext)) {
+        $tabs[] = local_financedepartment_make_tab(
+            'discounts',
+            new moodle_url('/local/financedepartment/pages/discountrequests/index.php'),
+            get_string('discounts', 'local_financedepartment'),
+            'fa-tags'
+        );
+    }
+
+    if (access_manager::can_manage('local/financedepartment:manageinstallments')) {
+        $tabs[] = local_financedepartment_make_tab(
+            'installments',
+            new moodle_url('/local/financedepartment/pages/installments/index.php'),
+            get_string('installmentplans', 'local_financedepartment'),
+            'fa-calendar-check-o'
+        );
+    }
+
+    if (access_manager::can_manage('local/financedepartment:recordpayments')
+            || access_manager::can_manage('local/financedepartment:managerefunds')) {
+        $tabs[] = local_financedepartment_make_tab(
+            'payments',
+            new moodle_url('/local/financedepartment/pages/payments/index.php'),
+            get_string('payments', 'local_financedepartment'),
+            'fa-money'
         );
     }
 
@@ -202,10 +272,19 @@ function local_financedepartment_feestructure_status_badge(string $status): stri
 /**
  * Renders a fee record's status as a coloured pill badge.
  *
- * @param string $status one of local_financedepartment\constants::FEE_STATUS_*
+ * OVERDUE is a live-computed display state (Step 7.8) - it is never
+ * written to financedep_feerecord.status itself, only derived on the fly
+ * by feerecord_manager::display_status() from the record's schedule (if
+ * it has an active installment plan). Never bypass this helper and badge
+ * $feerecord->status directly, or a genuinely overdue fee record will
+ * render as if it were merely "unpaid"/"partially paid".
+ *
+ * @param \stdClass $feerecord a financedep_feerecord row
  * @return string
  */
-function local_financedepartment_feerecord_status_badge(string $status): string {
+function local_financedepartment_feerecord_status_badge(\stdClass $feerecord): string {
+    $status = \local_financedepartment\feerecord_manager::display_status($feerecord);
+
     $variants = [
         \local_financedepartment\constants::FEE_STATUS_UNPAID => 'secondary',
         \local_financedepartment\constants::FEE_STATUS_PARTIALLY_PAID => 'warning',
@@ -263,6 +342,92 @@ function local_financedepartment_discountrequest_status_badge(string $status): s
 
     return html_writer::span(
         get_string('requeststatus_' . $status, 'local_financedepartment'),
+        'badge badge-' . $variant
+    );
+}
+
+/**
+ * Renders one installment schedule line's status as a coloured pill
+ * badge. IMPORTANT: takes the row itself, not a bare status string -
+ * unlike every other status badge helper in this file, this one calls
+ * \local_financedepartment\installmentplan_manager::display_status()
+ * internally to compute whether the row is actually overdue right now
+ * (pending/partiallypaid AND its due date has passed), since "overdue"
+ * is a live, computed display state that is never written to
+ * financedep_installmentsched.status - see that manager's class
+ * docblock for the 2026-09-08 scope decision behind this. Never bypass
+ * this helper and badge $schedrow->status directly, or a genuinely
+ * overdue installment will render as if it were merely "pending".
+ *
+ * @param \stdClass $schedrow a financedep_installmentsched row
+ * @return string
+ */
+function local_financedepartment_installment_status_badge(\stdClass $schedrow): string {
+    $status = \local_financedepartment\installmentplan_manager::display_status($schedrow);
+
+    $variants = [
+        \local_financedepartment\constants::INSTALLMENT_STATUS_PENDING => 'secondary',
+        \local_financedepartment\constants::INSTALLMENT_STATUS_PARTIALLY_PAID => 'warning',
+        \local_financedepartment\constants::INSTALLMENT_STATUS_PAID => 'success',
+        \local_financedepartment\constants::INSTALLMENT_STATUS_OVERDUE => 'danger',
+    ];
+    $variant = $variants[$status] ?? 'secondary';
+
+    return html_writer::span(
+        get_string('installmentstatus_' . $status, 'local_financedepartment'),
+        'badge badge-' . $variant
+    );
+}
+
+/**
+ * Renders an installment plan's own status (active/cancelled, not to be
+ * confused with one schedule line's status above) as a coloured pill
+ * badge.
+ *
+ * @param string $status one of local_financedepartment\constants::INSTALLMENTPLAN_STATUS_*
+ * @return string
+ */
+function local_financedepartment_installmentplan_status_badge(string $status): string {
+    $variant = ($status === \local_financedepartment\constants::INSTALLMENTPLAN_STATUS_ACTIVE) ? 'success' : 'dark';
+
+    return html_writer::span(
+        get_string('installmentplanstatus_' . $status, 'local_financedepartment'),
+        'badge badge-' . $variant
+    );
+}
+
+/**
+ * Renders a payment/refund row's status (active/void, NOT its
+ * paymenttype - see local_financedepartment_payment_type_badge() for
+ * that) as a coloured pill badge. Added for Step 7.7.
+ *
+ * @param string $status one of local_financedepartment\constants::PAYMENT_STATUS_*
+ * @return string
+ */
+function local_financedepartment_payment_status_badge(string $status): string {
+    $variant = ($status === \local_financedepartment\constants::PAYMENT_STATUS_ACTIVE) ? 'success' : 'dark';
+
+    return html_writer::span(
+        get_string('paymentstatus_' . $status, 'local_financedepartment'),
+        'badge badge-' . $variant
+    );
+}
+
+/**
+ * Renders a payment row's type (payment vs refund) as a coloured pill
+ * badge - separate from local_financedepartment_payment_status_badge()
+ * above, since a payment row's type and its status are two independent
+ * things (a REFUND can be ACTIVE or VOID, same as a PAYMENT can). Added
+ * for Step 7.7.
+ *
+ * @param string $paymenttype one of local_financedepartment\constants::PAYMENT_TYPE_*
+ * @return string
+ */
+function local_financedepartment_payment_type_badge(string $paymenttype): string {
+    $variant = ($paymenttype === \local_financedepartment\constants::PAYMENT_TYPE_REFUND) ? 'warning' : 'info';
+
+    return html_writer::span(
+        get_string('paymenttype_' . $paymenttype, 'local_financedepartment'),
         'badge badge-' . $variant
     );
 }
@@ -380,8 +545,12 @@ function local_financedepartment_render_quicklink(moodle_url $url, string $label
  *
  * These are finance/HR-sensitive documents (income certificates and
  * similar), so access is gated the same way the request itself is -
- * managescholarships/managediscounts (submitted it) or
- * approvescholarships/approvediscounts (reviewing it) - never a plain
+ * managescholarships/managediscounts (still allowed to view, even
+ * though they can no longer SUBMIT one - see submit.php's 2026-09-09
+ * docblock) or approvescholarships/approvediscounts (reviewing it) -
+ * PLUS, as of that same 2026-09-09 fix, the request's own submitter
+ * (requestedby), since a student can now upload their own supporting
+ * document and must be able to see it again afterward - never a plain
  * "logged in" check.
  *
  * @param stdClass $course
@@ -394,34 +563,62 @@ function local_financedepartment_render_quicklink(moodle_url $url, string $label
  * @return bool false to let Moodle send a 404, never actually returned on the success path (send_stored_file() exits)
  */
 function local_financedepartment_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
+    global $DB, $USER;
+
     require_login();
 
     if ($context->contextlevel !== CONTEXT_SYSTEM) {
         return false;
     }
 
+    if ($filearea !== 'scholarshiprequest' && $filearea !== 'discountrequest' && $filearea !== 'payment') {
+        return false;
+    }
+
+    // itemid (the request's own id) is needed both for the ownership
+    // check below and for the file lookup further down, so it's shifted
+    // off $args once, up front.
+    $itemid = (int) array_shift($args);
+
     if ($filearea === 'scholarshiprequest') {
-        if (!\local_financedepartment\access_manager::can_manage('local/financedepartment:managescholarships')
+        $isowner = (int) $DB->get_field('financedep_scholarshipreq', 'requestedby', ['id' => $itemid]) === (int) $USER->id;
+        if (!$isowner
+                && !\local_financedepartment\access_manager::can_manage('local/financedepartment:managescholarships')
                 && !\local_financedepartment\access_manager::can_manage('local/financedepartment:approvescholarships')) {
             return false;
         }
     } else if ($filearea === 'discountrequest') {
-        // Same finance/HR-sensitive-document gating as scholarshiprequest
-        // above, added 2026-09-06 for Step 7.5's discount request
-        // attachments (classes/form/discountrequest_form.php's own
-        // 'attachment' filemanager element, saved via
-        // pages/discountrequests/submit.php into this OWN filearea so it
-        // never collides with a scholarship request's attachment even
-        // when both share the same itemid).
-        if (!\local_financedepartment\access_manager::can_manage('local/financedepartment:managediscounts')
+        // discountrequest - same finance/HR-sensitive-document gating as
+        // scholarshiprequest above, added 2026-09-06 for Step 7.5's
+        // discount request attachments (classes/form/
+        // discountrequest_form.php's own 'attachment' filemanager
+        // element, saved via pages/discountrequests/submit.php into this
+        // OWN filearea so it never collides with a scholarship request's
+        // attachment even when both share the same itemid).
+        $isowner = (int) $DB->get_field('financedep_discountreq', 'requestedby', ['id' => $itemid]) === (int) $USER->id;
+        if (!$isowner
+                && !\local_financedepartment\access_manager::can_manage('local/financedepartment:managediscounts')
                 && !\local_financedepartment\access_manager::can_manage('local/financedepartment:approvediscounts')) {
             return false;
         }
     } else {
-        return false;
+        // payment - added 2026-09-10 for Step 7.7's payment/refund
+        // attachments (classes/form/feepayment_form.php's own
+        // 'attachment' filemanager element, saved via
+        // pages/payments/create.php into this OWN filearea, itemid = the
+        // financedep_feepayment row's own id). Unlike scholarshiprequest/
+        // discountrequest, a payment row has no "requestedby" (finance
+        // staff always records it, never the student themselves - see
+        // feepayment_manager's docblock, there is no student self-service
+        // payment flow at all) - so gating is exactly the same as
+        // pages/payments/view.php's own gate, with no separate owner
+        // check.
+        if (!\local_financedepartment\access_manager::can_manage('local/financedepartment:recordpayments')
+                && !\local_financedepartment\access_manager::can_manage('local/financedepartment:managerefunds')) {
+            return false;
+        }
     }
 
-    $itemid = (int) array_shift($args);
     $filename = array_pop($args);
     $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
 

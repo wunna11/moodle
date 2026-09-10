@@ -111,11 +111,11 @@
             </INDEXES>
         </TABLE>
 
-        <TABLE NAME="financedep_scholarshipreq" COMMENT="A scholarship request/nomination for a student against one fee record, and its approval workflow state">
+        <TABLE NAME="financedep_scholarshipreq" COMMENT="A scholarship request for a student, and its approval workflow state">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
                 <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
-                <FIELD NAME="feerecordid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_feerecord.id"/>
+                <FIELD NAME="feerecordid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to financedep_feerecord.id. Made nullable 2026-09-10 (v2026091004/0.8.0) - the fee-record field was removed from submission, so this is always null for a new request; a non-null value only ever appears on a request submitted before that change (see scholarshiprequest_manager's class docblock for the backward-compatibility handling)."/>
                 <FIELD NAME="scholarshipid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to financedep_scholarship.id"/>
                 <FIELD NAME="requestedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, computed suggestion, may be overridden on approval"/>
                 <FIELD NAME="approvedamount" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="MMK, final amount once approved"/>

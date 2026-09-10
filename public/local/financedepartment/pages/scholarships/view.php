@@ -49,7 +49,7 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/scholarships/view.php', ['id' => $id]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(format_string($scholarship->name));
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 

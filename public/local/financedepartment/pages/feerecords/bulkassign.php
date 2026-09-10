@@ -37,7 +37,7 @@ $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/feerecords/bulkassign.php'));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('bulkassignfeerecord', 'local_financedepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $form = new feerecord_bulkassign_form($PAGE->url);
 

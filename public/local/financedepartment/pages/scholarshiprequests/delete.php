@@ -67,7 +67,7 @@ $PAGE->set_context($context);
 $PAGE->set_url($actionurl);
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('deleterequest', 'local_financedepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 if ($confirm && confirm_sesskey()) {
     scholarshiprequest_manager::delete($id, $USER->id);

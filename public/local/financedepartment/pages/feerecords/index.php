@@ -48,7 +48,7 @@ $PAGE->set_url(new moodle_url('/local/financedepartment/pages/feerecords/index.p
 ]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('feerecords', 'local_financedepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 
@@ -144,7 +144,7 @@ if ($studentid) {
                 html_writer::link($viewurl, format_string($record->categoryname) . ' - ' . s($record->academicyear)),
                 local_financedepartment_format_money($record->totalamount),
                 local_financedepartment_format_money($record->balance),
-                local_financedepartment_feerecord_status_badge($record->status),
+                local_financedepartment_feerecord_status_badge($record),
                 userdate($record->timecreated, get_string('strftimedatetimeshort', 'core_langconfig')),
                 implode(' | ', $actions),
             ];
@@ -201,7 +201,7 @@ if ($studentid) {
                 html_writer::link($studenturl, format_string($record->fullname)),
                 html_writer::link($viewurl, format_string($record->categoryname) . ' - ' . s($record->academicyear)),
                 local_financedepartment_format_money($record->totalamount),
-                local_financedepartment_feerecord_status_badge($record->status),
+                local_financedepartment_feerecord_status_badge($record),
                 userdate($record->timecreated, get_string('strftimedatetimeshort', 'core_langconfig')),
             ];
         }

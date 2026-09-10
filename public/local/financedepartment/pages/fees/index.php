@@ -44,7 +44,7 @@ $PAGE->set_url(new moodle_url('/local/financedepartment/pages/fees/index.php', [
 ]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('feestructures', 'local_financedepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 

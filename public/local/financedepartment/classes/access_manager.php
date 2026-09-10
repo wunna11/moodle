@@ -91,6 +91,115 @@ class access_manager {
     const FINANCE_DEPARTMENT_NAME = 'Finance';
 
     /**
+     * Every local/financedepartment:* capability that marks someone as
+     * finance STAFF (management/approval/reporting), as opposed to the
+     * three plain per-user self-service capabilities (viewownfeerecord,
+     * submitscholarshiprequest, submitdiscountrequest) every logged-in
+     * user gets by default. Used by is_finance_staff_viewer() below -
+     * keep this in sync with db/access.php whenever a new manage/approve/
+     * report-style capability is added.
+     *
+     * @var string[]
+     */
+    const MANAGEMENT_CAPABILITIES = [
+        'viewfinancereports',
+        'viewallrecords',
+        'managefeestructures',
+        'managefeerecords',
+        'managescholarships',
+        'approvescholarships',
+        'managediscounts',
+        'approvediscounts',
+        'manageinstallments',
+        'recordpayments',
+        'managerefunds',
+    ];
+
+    /**
+     * Whether the current user should see this plugin's finance-staff
+     * branding ("Finance Department") as opposed to the narrower
+     * self-service branding ("Scholarship") - see
+     * local_financedepartment_get_display_name() in lib.php, which this
+     * feeds.
+     *
+     * Added 2026-09-10: the user asked for the nav label and page
+     * heading to say "Scholarship" for a plain student (who can only
+     * ever reach the self-service pages: the landing page, the
+     * scholarship catalog, and their own scholarship/discount requests)
+     * while staying "Finance Department" for finance staff/admins, who
+     * see the full multi-section plugin (fee structures, fee records,
+     * installments, payments, ...). True for a Finance-department
+     * hrdep_employee/site admin (can_access_finance_department()), OR
+     * anyone holding at least one of MANAGEMENT_CAPABILITIES above -
+     * the capability check covers a role granted e.g. managescholarships
+     * directly without an hrdep_employee record, which
+     * can_access_finance_department() alone would miss.
+     *
+     * @return bool
+     */
+    public static function is_finance_staff_viewer(): bool {
+        global $USER;
+
+        if (self::can_access_finance_department((int) $USER->id)) {
+            return true;
+        }
+
+        $context = \context_system::instance();
+        foreach (self::MANAGEMENT_CAPABILITIES as $capability) {
+            if (has_capability('local/financedepartment:' . $capability, $context)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The plugin's display name for the CURRENT VIEWER - "Finance
+     * Department" for finance staff/admins (is_finance_staff_viewer()
+     * above), "Scholarship" for a plain student who can only ever reach
+     * the self-service pages (landing page, scholarship catalog, their
+     * own scholarship/discount requests).
+     *
+     * Added 2026-09-10 per an explicit user request: a student logging
+     * in only ever sees the self-service slice of this plugin, so
+     * "Finance Department" (which implies fee structures/records/
+     * installments/payments they can't access) reads as confusing
+     * branding to them - "Scholarship" is what they actually came here
+     * to do. Finance staff/admins are UNCHANGED - they still see
+     * "Finance Department" everywhere, since they DO manage the full
+     * multi-section plugin.
+     *
+     * Deliberately lives HERE, not as a lib.php helper, even though
+     * every call site (the two nav entry points below, and every page's
+     * $PAGE->set_title()/set_heading()/hero title) could reach a lib.php
+     * function just as easily: classes/hooks/navigation/primary_extend.php
+     * calls this from a hook callback dispatched during navigation setup,
+     * and this file's own CRITICAL RULE (see the frontmatter) already
+     * warns that lib.php's inclusion timing is not guaranteed outside of
+     * page-body code running after $OUTPUT->header() - a hook callback is
+     * exactly the kind of early, autoloaded call site that rule exists
+     * for. access_manager.php is autoloaded like any other class with no
+     * such timing risk, so this method (and is_finance_staff_viewer()
+     * above) live here instead.
+     *
+     * Deliberately NOT used for the plain get_string('pluginname', ...)
+     * calls that identify the plugin in a 403/moodle_exception message -
+     * those stay the literal plugin name regardless of viewer, since
+     * that's an error-page context naming the component, not user-facing
+     * branding.
+     *
+     * @return string
+     */
+    public static function get_display_name(): string {
+        if (self::is_finance_staff_viewer()) {
+            return get_string('pluginname', 'local_financedepartment');
+        }
+
+        return get_string('pluginnamestudent', 'local_financedepartment');
+    }
+
+    /**
      * Whether $userid may access the Finance Department feature's
      * management side (fee structures, fee records, scholarships,
      * discounts, installments, payments, dashboard/reports).
@@ -153,6 +262,63 @@ class access_manager {
         if (!self::can_manage($capability, $userid)) {
             throw new \required_capability_exception(\context_system::instance(), $capability, 'nopermissions', '');
         }
+    }
+
+    /**
+     * Whether the current user should see the Finance Department entry in
+     * navigation at all - true for finance staff/admins, or for a student
+     * who holds any of the self-service capabilities (view own fee
+     * record, submit a scholarship/discount request).
+     *
+     * Added 2026-09-10 to fix a SECOND navigation-visibility bug in the
+     * same week: this plugin has TWO separate navigation entry points on
+     * this Moodle 5.2 site -
+     *   (1) local_financedepartment_extend_navigation() (lib.php), the
+     *       classic callback that populates $PAGE->navigation (the site
+     *       navigation tree/drawer) - this plugin's ORIGINAL and only nav
+     *       hook, in place since Step 7.2.
+     *   (2) \local_financedepartment\hooks\navigation\primary_extend
+     *       (new this fix), registered via db/hooks.php for Moodle's
+     *       core\hook\navigation\primary_extend hook - this is what
+     *       actually populates the TOP primary nav bar (Home/Dashboard/My
+     *       courses/...) on this Moodle version. Investigated after the
+     *       user reported the plugin still wasn't visible in that top bar
+     *       even after the 2026-09-10 fix that added the two missing
+     *       submit capabilities to entry point (1)'s check: traced
+     *       core\navigation\output\primary::get_primary_nav() and found
+     *       it reads $this->page->primarynav, NOT $PAGE->navigation -  a
+     *       completely separate tree that extend_navigation() never
+     *       touches. core\navigation\views\primary::initialise() (Moodle
+     *       core) builds that tree itself (Home/Dashboard/My courses/Site
+     *       admin) and then dispatches core\hook\navigation\primary_extend
+     *       so plugins/themes can add their own nodes to it - lib/
+     *       navigationlib.php also confirms the OLD global_navigation-based
+     *       flat_navigation/showinflatnavigation mechanism this plugin's
+     *       extend_navigation() callback relied on for "flat" visibility
+     *       is deprecated as of this Moodle version, so that flag no
+     *       longer does anything useful either.
+     *
+     * Both entry points must show the SAME node for the SAME users, so
+     * the capability check is centralised here rather than duplicated -
+     * duplicating it a second time is exactly how the first
+     * navigation-visibility bug (fixed earlier the same day) happened.
+     *
+     * @return bool
+     */
+    public static function can_view_navigation_entry(): bool {
+        global $USER;
+
+        if (!isloggedin() || isguestuser()) {
+            return false;
+        }
+
+        $context = \context_system::instance();
+
+        return self::can_access_finance_department((int) $USER->id)
+            || has_capability('local/financedepartment:viewfinancereports', $context)
+            || has_capability('local/financedepartment:viewownfeerecord', $context)
+            || has_capability('local/financedepartment:submitscholarshiprequest', $context)
+            || has_capability('local/financedepartment:submitdiscountrequest', $context);
     }
 
     /**

@@ -87,7 +87,7 @@ $title = $decision === 'approve'
     ? get_string('approverequest', 'local_financedepartment')
     : get_string('rejectrequest', 'local_financedepartment');
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $form = new discountrequestreview_form($PAGE->url, [
     'requestid' => $id,

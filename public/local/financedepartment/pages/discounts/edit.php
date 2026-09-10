@@ -54,7 +54,7 @@ $title = $id
     ? get_string('editdiscount', 'local_financedepartment')
     : get_string('adddiscount', 'local_financedepartment');
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $form = new discount_form($PAGE->url, ['discountid' => $id]);
 

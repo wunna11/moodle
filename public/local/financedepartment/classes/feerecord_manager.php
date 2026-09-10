@@ -317,6 +317,32 @@ class feerecord_manager {
     }
 
     /**
+     * Adds (or subtracts, for a negative $amount) a payment amount to a
+     * fee record's running total, then recalculates balance and status
+     * via save_and_recalculate() - the payment-side equivalent of
+     * add_scholarship_amount()/add_discount_amount() above, added for
+     * Step 7.7 (built 2026-09-09) exactly as those methods' docblocks
+     * anticipated. This is the one place financedep_feerecord.paidamount
+     * changes - called by feepayment_manager when a payment is recorded
+     * (positive amount) or when a payment is voided/refunded (negative
+     * amount, to reverse it).
+     *
+     * @param int $feerecordid
+     * @param float $amount MMK to add to paidamount (negative to reverse)
+     * @param int $usermodified
+     * @return void
+     */
+    public static function add_payment_amount(int $feerecordid, float $amount, int $usermodified): void {
+        global $DB;
+
+        $feerecord = $DB->get_record('financedep_feerecord', ['id' => $feerecordid], '*', MUST_EXIST);
+
+        $feerecord->paidamount = max(0, (float) $feerecord->paidamount + $amount);
+
+        self::save_and_recalculate($feerecord, $usermodified);
+    }
+
+    /**
      * Recomputes balance = totalamount - scholarshipamount -
      * discountamount - paidamount, and derives status from it: fully
      * paid once balance reaches zero (or the fee structure was free to
@@ -325,13 +351,34 @@ class feerecord_manager {
      * since a student whose balance was cut in half by a scholarship
      * has legitimately made progress even before paying anything),
      * otherwise unpaid. Never touches a CANCELLED record's numbers, and
-     * never sets/clears OVERDUE - that depends on installment due dates
-     * (Step 7.6/7.8), out of scope for whatever caller reaches this.
+     * never sets/clears the PERSISTED status to OVERDUE - as of Step 7.8,
+     * "overdue" is a LIVE, COMPUTED display state only (see
+     * display_status() below), the same pattern
+     * installmentplan_manager::display_status() already established in
+     * Step 7.6 for schedule rows - financedep_feerecord.status itself is
+     * never found holding 'overdue'.
      *
      * Shared by every manager that touches a fee record's running
      * totals, so balance/status logic lives in exactly one place instead
      * of being reimplemented per step - see add_scholarship_amount()'s
      * docblock.
+     *
+     * **Step 7.8 addition:** if this recalculation actually changes the
+     * PERSISTED status (e.g. unpaid -> partiallypaid after a payment, or
+     * partiallypaid -> fullypaid after a scholarship approval, or a
+     * backward move like fullypaid -> partiallypaid after a payment is
+     * voided), an audit entry is now logged - previously these automatic
+     * transitions were completely silent, unlike the manual create()/
+     * update()/cancel() paths which always logged. This closes the exact
+     * gap audit_manager.php's own class docblock has referenced as
+     * "Step 7.8" since Step 7.2. Deliberately logs ONLY the status field
+     * (not which payment/scholarship/discount caused it - the user chose
+     * "status change only" over a fuller transaction-linked history when
+     * asked) - a fixed, generic reason string is used instead, and
+     * pages/feerecords/view.php's EXISTING generic olddata/newdata diff
+     * rendering (already built for update()'s AUDIT_ACTION_EDIT entries)
+     * picks this up with no page changes needed, since it already knows
+     * how to render a 'status' field diff via feestatus_* strings.
      *
      * @param \stdClass $feerecord a fetched financedep_feerecord row,
      *                             with scholarshipamount/discountamount/
@@ -341,6 +388,8 @@ class feerecord_manager {
      */
     protected static function save_and_recalculate(\stdClass $feerecord, int $usermodified): void {
         global $DB;
+
+        $statusbefore = $feerecord->status;
 
         if ($feerecord->status !== constants::FEE_STATUS_CANCELLED) {
             $balance = $feerecord->totalamount - $feerecord->scholarshipamount - $feerecord->discountamount - $feerecord->paidamount;
@@ -359,6 +408,73 @@ class feerecord_manager {
         $feerecord->usermodified = $usermodified;
 
         $DB->update_record('financedep_feerecord', $feerecord);
+
+        if ($feerecord->status !== $statusbefore) {
+            audit_manager::log(
+                constants::AUDIT_ENTITY_FEERECORD,
+                $feerecord->id,
+                constants::AUDIT_ACTION_EDIT,
+                ['status' => $statusbefore],
+                ['status' => $feerecord->status],
+                $usermodified,
+                get_string('statusautorecalcreason', 'local_financedepartment')
+            );
+        }
+    }
+
+    /**
+     * Whether $feerecordid currently has at least one installment
+     * schedule row that is overdue right now (still pending/
+     * partiallypaid AND its due date has passed) on its ACTIVE
+     * installment plan - added for Step 7.8's live-computed OVERDUE
+     * display state, see display_status() below. Returns false if the
+     * fee record has no installment plan at all, or only a CANCELLED
+     * one - a fee record with no plan has no due date of any kind under
+     * this plugin's current schema (see [[financedepartment-schema]]
+     * project memory's note on Step 7.5's same due-date gap), so it can
+     * never be "overdue" either.
+     *
+     * @param int $feerecordid
+     * @return bool
+     */
+    public static function has_overdue_installment(int $feerecordid): bool {
+        $schedule = installmentplan_manager::get_schedule_for_feerecord($feerecordid);
+
+        foreach ($schedule as $schedrow) {
+            if (installmentplan_manager::is_overdue($schedrow)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The status to actually DISPLAY for a fee record: the same as
+     * financedep_feerecord.status, EXCEPT it becomes
+     * constants::FEE_STATUS_OVERDUE when the record is still
+     * unpaid/partiallypaid AND has_overdue_installment() is true. Never
+     * persisted - see save_and_recalculate()'s docblock. Use this
+     * everywhere a fee record's status is shown to a user (badges,
+     * lists, detail pages) - never read $feerecord->status directly for
+     * display, or a genuinely overdue fee record will render as merely
+     * "partially paid". Mirrors
+     * installmentplan_manager::display_status()'s exact shape.
+     *
+     * @param \stdClass $feerecord a financedep_feerecord row (must have ->id and ->status)
+     * @return string one of constants::FEE_STATUS_*
+     */
+    public static function display_status(\stdClass $feerecord): string {
+        $unsettled = in_array($feerecord->status, [
+            constants::FEE_STATUS_UNPAID,
+            constants::FEE_STATUS_PARTIALLY_PAID,
+        ], true);
+
+        if ($unsettled && self::has_overdue_installment((int) $feerecord->id)) {
+            return constants::FEE_STATUS_OVERDUE;
+        }
+
+        return $feerecord->status;
     }
 
     /**
@@ -506,14 +622,24 @@ class feerecord_manager {
 
     /**
      * Maximum number of fee records loaded into
-     * scholarshiprequest_form's feerecordid autocomplete. See that
-     * form's docblock for why the list isn't scoped to one student -
-     * this plain moodleform has no JS to re-populate the select once a
-     * student is chosen, so every non-cancelled fee record is offered
-     * (labelled with the student's own name) and validation() checks
-     * the chosen pairing actually matches. Same scale caveat as
-     * feerecord_form's own 500-student cap: fine for a small/medium
-     * site, would need to become an ajax-backed selector past that.
+     * installmentplan_form's feerecordid autocomplete (create mode).
+     * This plain moodleform has no JS to re-populate the select once a
+     * student is chosen, so every non-cancelled fee record system-wide
+     * is offered (labelled with the student's own name) and the
+     * calling form's validation() checks the chosen pairing actually
+     * matches. Same scale caveat as feerecord_form's own 500-student
+     * cap: fine for a small/medium site, would need to become an
+     * ajax-backed selector past that.
+     *
+     * NOTE (2026-09-09 fix): scholarshiprequest_form/discountrequest_form
+     * used to reuse this method too, back when a scholarship/discount
+     * request was submitted by finance staff ON BEHALF OF a student they
+     * picked from a system-wide list. Now that submitting a request is a
+     * student self-service action (see [[financedepartment-schema]]
+     * project memory), those two forms use the new
+     * get_active_options_for_student() below instead, scoped to the
+     * viewer's own fee records only. This method is still used as-is by
+     * installmentplan_form, which remains finance-staff CRUD.
      *
      * @var int
      */
@@ -522,10 +648,11 @@ class feerecord_manager {
     /**
      * Returns feerecordid => "Student - Category - Year (Balance: X MMK)"
      * options for every non-cancelled fee record system-wide, for
-     * scholarshiprequest_form's feerecordid field. Deliberately doesn't
-     * call local_financedepartment_format_money() (a lib.php function) -
-     * see get_feestructure_options()'s docblock above for why manager
-     * classes never call it.
+     * installmentplan_form's feerecordid field (finance-staff CRUD, not
+     * self-service - see MAX_REQUEST_FEERECORD_OPTIONS's docblock above).
+     * Deliberately doesn't call local_financedepartment_format_money()
+     * (a lib.php function) - see get_feestructure_options()'s docblock
+     * above for why manager classes never call it.
      *
      * @return array
      */
@@ -554,6 +681,49 @@ class feerecord_manager {
             $decimals = (abs($balance - round($balance)) > 0.001) ? 2 : 0;
             $options[$record->id] = fullname($record) . ' - ' . format_string($record->categoryname)
                 . ' - ' . s($record->academicyear)
+                . ' (' . get_string('balance', 'local_financedepartment') . ': '
+                . number_format($balance, $decimals) . ' MMK)';
+        }
+
+        return $options;
+    }
+
+    /**
+     * Returns feerecordid => "Category - Year (Balance: X MMK)" options
+     * for every non-cancelled fee record belonging to ONE student, for
+     * scholarshiprequest_form/discountrequest_form's feerecordid field
+     * now that submitting a request is student self-service (2026-09-09
+     * fix - see get_active_options()'s docblock above for the history).
+     * No student name in the label since it's always the viewer's own
+     * record. Deliberately doesn't call
+     * local_financedepartment_format_money() (a lib.php function) - see
+     * get_feestructure_options()'s docblock above for why manager
+     * classes never call it.
+     *
+     * @param int $studentid
+     * @return array
+     */
+    public static function get_active_options_for_student(int $studentid): array {
+        global $DB;
+
+        $sql = "SELECT r.id, r.balance, f.academicyear, cc.name AS categoryname
+                  FROM {financedep_feerecord} r
+                  JOIN {financedep_feestructure} f ON f.id = r.feestructureid
+                  JOIN {course_categories} cc ON cc.id = f.categoryid
+                 WHERE r.studentid = :studentid
+                   AND r.status != :cancelled
+              ORDER BY f.academicyear DESC";
+
+        $records = $DB->get_records_sql($sql, [
+            'studentid' => $studentid,
+            'cancelled' => constants::FEE_STATUS_CANCELLED,
+        ]);
+
+        $options = [];
+        foreach ($records as $record) {
+            $balance = (float) $record->balance;
+            $decimals = (abs($balance - round($balance)) > 0.001) ? 2 : 0;
+            $options[$record->id] = format_string($record->categoryname) . ' - ' . s($record->academicyear)
                 . ' (' . get_string('balance', 'local_financedepartment') . ': '
                 . number_format($balance, $decimals) . ' MMK)';
         }

@@ -54,8 +54,8 @@ $actionurl = new moodle_url('/local/financedepartment/pages/scholarships/deactiv
 $PAGE->set_context($context);
 $PAGE->set_url($actionurl);
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(get_string('pluginname', 'local_financedepartment'));
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_title(access_manager::get_display_name());
+$PAGE->set_heading(access_manager::get_display_name());
 
 if ($confirm && confirm_sesskey()) {
     $newstatus = $reactivate ? constants::SCHOLARSHIP_STATUS_ACTIVE : constants::SCHOLARSHIP_STATUS_INACTIVE;

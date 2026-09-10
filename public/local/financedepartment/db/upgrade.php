@@ -90,6 +90,48 @@ function xmldb_local_financedepartment_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082400, 'local', 'financedepartment');
     }
 
+    if ($oldversion < 2026091004) {
+        // The user reported a scholarship request shouldn't need a fee
+        // record picked at all (v2026091004/0.8.0) - the field is gone
+        // from scholarshiprequest_form entirely, so
+        // financedep_scholarshipreq.feerecordid must become nullable to
+        // let scholarshiprequest_manager::submit() store null going
+        // forward. Existing rows (which all have a real feerecordid from
+        // before this change) are left completely untouched - only the
+        // column's NOT NULL constraint changes, see
+        // scholarshiprequest_manager's class docblock for how approve()/
+        // delete() branch on whether a row's feerecordid is null.
+        //
+        // financedep_scholarshipreq.feerecordid has a non-unique index
+        // (idx_feerecordid, see db/install.xml) - change_field_notnull()
+        // refuses to alter a field with a dependent index attached
+        // (ddl_dependency_exception, thrown by
+        // database_manager::check_field_dependencies() before anything is
+        // actually altered) on some DB drivers. The index has to be
+        // dropped first, the field altered, then the index re-added -
+        // this exact three-step dance is the fix for that error; simply
+        // re-running the original single-step version against the same
+        // schema will hit the same exception every time.
+        $table = new xmldb_table('financedep_scholarshipreq');
+        $field = new xmldb_field('feerecordid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'studentid');
+        $index = new xmldb_index('idx_feerecordid', XMLDB_INDEX_NOTUNIQUE, ['feerecordid']);
+
+        if ($dbman->field_exists($table, $field)) {
+            $indexexisted = $dbman->index_exists($table, $index);
+            if ($indexexisted) {
+                $dbman->drop_index($table, $index);
+            }
+
+            $dbman->change_field_notnull($table, $field);
+
+            if ($indexexisted && !$dbman->index_exists($table, $index)) {
+                $dbman->add_index($table, $index);
+            }
+        }
+
+        upgrade_plugin_savepoint(true, 2026091004, 'local', 'financedepartment');
+    }
+
     // Future upgrade steps go here, gated by $oldversion checks, e.g.:
     // if ($oldversion < 2026090100) {
     //     ... table/field changes via $dbman ...

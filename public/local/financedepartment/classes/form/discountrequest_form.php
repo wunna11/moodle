@@ -32,61 +32,59 @@ use local_financedepartment\constants;
 use local_financedepartment\discount_manager;
 use local_financedepartment\discountrequest_manager;
 use local_financedepartment\feerecord_manager;
-use local_hrdepartment\student_manager;
 
 /**
  * Class discountrequest_form
  *
- * Mirrors scholarshiprequest_form's shape exactly (student/fee record/
- * item/description/optional attachment all on one self-contained page) -
- * see that form's docblock for the full rationale. The one structural
- * difference: the discountid autocomplete lists every ACTIVE discount
- * regardless of category (discount_manager::get_active_options()),
- * since a discount has no category restriction to narrow it down (see
- * discount_manager's class docblock) - validation() still enforces the
+ * REWRITTEN AGAIN 2026-09-09, mirroring scholarshiprequest_form's own
+ * rewrite the same day - see that form's docblock for the full
+ * rationale. Submitting a discount request is now student self-service:
+ * the studentid field is gone, the student is always the logged-in
+ * viewer (pages/discountrequests/submit.php passes it in as customdata
+ * `studentid`), and feerecordid is scoped to that student's own fee
+ * records only (feerecord_manager::get_active_options_for_student()).
+ * db/access.php's new local/financedepartment:submitdiscountrequest
+ * capability gates who can reach this form.
+ *
+ * The one structural difference from scholarshiprequest_form: the
+ * discountid autocomplete lists every ACTIVE discount regardless of
+ * category (discount_manager::get_active_options()), since a discount
+ * has no category restriction to narrow it down (see discount_manager's
+ * class docblock) - validation() still enforces the
  * fee-record-belongs-to-student and no-duplicate-pending-request checks.
  *
- * customdata keys: presetstudentid (int, optional).
+ * customdata keys: studentid (int, required - always $USER->id, set by
+ * submit.php).
  */
 class discountrequest_form extends \moodleform {
 
-    /** @var int cap on the studentid autocomplete - see feerecord_form's own constant for the same caveat. */
-    const MAX_STUDENT_OPTIONS = 500;
-
     /** @var string[] accepted supporting-document file extensions. */
     const ATTACHMENT_TYPES = ['.pdf', '.jpg', '.jpeg', '.png'];
+
+    /** @var int max number of supporting-document files (raised from 1 to 5, 2026-09-10, per user request - see scholarshiprequest_form's matching change). */
+    const ATTACHMENT_MAXFILES = 5;
 
     /**
      * Form definition.
      */
     public function definition() {
+        global $USER;
+
         $mform = $this->_form;
-        $presetstudentid = (int) ($this->_customdata['presetstudentid'] ?? 0);
+        $studentid = (int) ($this->_customdata['studentid'] ?? 0);
 
-        $students = student_manager::get_students('', 0, 'active', 0, self::MAX_STUDENT_OPTIONS);
-        $studentoptions = [];
-        foreach ($students as $student) {
-            $studentoptions[$student->id] = $student->fullname . ' (' . $student->email . ')';
-        }
-
-        $mform->addElement(
-            'autocomplete',
-            'studentid',
-            get_string('student', 'local_financedepartment'),
-            $studentoptions,
-            ['noselectionstring' => get_string('choosedots')]
-        );
-        $mform->addRule('studentid', get_string('required'), 'required', null, 'client');
-        $mform->addHelpButton('studentid', 'student', 'local_financedepartment');
-        if ($presetstudentid) {
-            $mform->setDefault('studentid', $presetstudentid);
-        }
+        // The student is always the logged-in viewer - see
+        // scholarshiprequest_form::definition()'s matching block for the
+        // full rationale (same pattern, mirrored here).
+        $mform->addElement('static', 'studentiddisplay', get_string('student', 'local_financedepartment'), fullname($USER));
+        $mform->addElement('hidden', 'studentid', $studentid);
+        $mform->setType('studentid', PARAM_INT);
 
         $mform->addElement(
             'autocomplete',
             'feerecordid',
             get_string('feerecord', 'local_financedepartment'),
-            feerecord_manager::get_active_options(),
+            feerecord_manager::get_active_options_for_student($studentid),
             ['noselectionstring' => get_string('choosedots')]
         );
         $mform->addRule('feerecordid', get_string('required'), 'required', null, 'client');
@@ -119,7 +117,7 @@ class discountrequest_form extends \moodleform {
             null,
             [
                 'subdirs' => 0,
-                'maxfiles' => 1,
+                'maxfiles' => self::ATTACHMENT_MAXFILES,
                 'accepted_types' => self::ATTACHMENT_TYPES,
             ]
         );
@@ -130,10 +128,11 @@ class discountrequest_form extends \moodleform {
     }
 
     /**
-     * Server-side validation: the student must exist, the fee record
-     * must belong to that student and not be cancelled, the discount
-     * must be active, and there must not already be a pending/approved
-     * request for the same pairing.
+     * Server-side validation: the fee record must belong to $USER (the
+     * hidden studentid field is never user-editable, but is still
+     * re-checked here defensively rather than trusted blindly) and not
+     * be cancelled, the discount must be active, and there must not
+     * already be a pending/approved request for the same pairing.
      *
      * @param array $data
      * @param array $files
@@ -148,14 +147,10 @@ class discountrequest_form extends \moodleform {
         $feerecordid = (int) $data['feerecordid'];
         $discountid = (int) $data['discountid'];
 
-        if (!$studentid || !$DB->record_exists('user', ['id' => $studentid, 'deleted' => 0])) {
-            $errors['studentid'] = get_string('required');
-        }
-
         $feerecord = $feerecordid ? $DB->get_record('financedep_feerecord', ['id' => $feerecordid]) : false;
         if (!$feerecord) {
             $errors['feerecordid'] = get_string('errorfeerecordnotfound', 'local_financedepartment');
-        } else if (empty($errors['studentid']) && (int) $feerecord->studentid !== $studentid) {
+        } else if ((int) $feerecord->studentid !== $studentid) {
             $errors['feerecordid'] = get_string('errorfeerecordwrongstudent', 'local_financedepartment');
         } else if ($feerecord->status === constants::FEE_STATUS_CANCELLED) {
             $errors['feerecordid'] = get_string('errorfeerecordcancelled', 'local_financedepartment');

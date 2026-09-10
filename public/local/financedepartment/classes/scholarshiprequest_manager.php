@@ -30,72 +30,61 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Class scholarshiprequest_manager
  *
- * A scholarship request/nomination is submitted against one specific fee
- * record (financedep_feerecord), not just "a student" - a student can
- * hold several fee records (Step 7.3), so the request has to say which
- * one the scholarship applies to. is_eligible() is the program-level
- * restriction enforcement point: a scholarship can only be requested
- * against a fee record whose fee structure's category matches the
- * scholarship's own categoryid (see scholarship_manager's docblock for
- * why this replaced the original "scholarship type" classification).
+ * CHANGED 2026-09-10 (v2026091004/0.8.0): the user reported that a
+ * plain self-service student should NOT have to pick which fee record
+ * a scholarship request applies to - the fee record field is gone
+ * entirely from the submission form (see scholarshiprequest_form.php).
+ * Confirmed via AskUserQuestion: (1) `financedep_scholarshipreq.feerecordid`
+ * is now NULLABLE (db/upgrade.php v2026091004) and always NULL for a
+ * request submitted through this form going forward; (2) the
+ * program/category restriction that used to be enforced via
+ * is_eligible() (matching the fee record's category against the
+ * scholarship's categoryid) is REMOVED entirely - any ACTIVE scholarship
+ * may be requested by any student holding submitscholarshiprequest, and
+ * finance staff use their own judgement when reviewing; (3) approve()
+ * no longer calls feerecord_manager::add_scholarship_amount() for a
+ * NEW-style request (feerecordid null) - approval is now a pure history/
+ * decision record, no automated balance effect. delete() mirrors this:
+ * it only reverses a balance deduction if one was actually made.
  *
- * Approval auto-deducts via feerecord_manager::add_scholarship_amount()
- * rather than writing to financedep_feerecord directly - see that
- * method's docblock for why balance/status recalculation is centralised
- * there.
+ * BACKWARD COMPATIBILITY: a request submitted BEFORE this change still
+ * has a real feerecordid and, if approved, really did deduct from that
+ * fee record's balance via add_scholarship_amount(). approve()/delete()
+ * both branch on `!empty($before->feerecordid)` so those legacy rows
+ * keep behaving exactly as before (deduct on approve, restore on
+ * delete) - only NEW requests (feerecordid null) skip the fee-record
+ * side effect entirely. Do not remove this branching without checking
+ * for legacy rows with a non-null feerecordid first.
+ *
+ * is_eligible() (the old category-matching check) has been REMOVED -
+ * do not reintroduce it without a fresh AskUserQuestion decision, since
+ * removing it was an explicit, deliberate user choice, not an oversight.
  */
 class scholarshiprequest_manager {
 
     /**
-     * Whether $scholarshipid may be requested against $feerecordid: the
-     * scholarship must be ACTIVE, and its categoryid must match the fee
-     * record's own category (via its fee structure). This is the actual
-     * "which program has a scholarship" enforcement point - see
-     * scholarship_manager's class docblock.
-     *
-     * @param int $scholarshipid
-     * @param int $feerecordid
-     * @return bool
-     */
-    public static function is_eligible(int $scholarshipid, int $feerecordid): bool {
-        global $DB;
-
-        $sql = "SELECT 1
-                  FROM {financedep_scholarship} s
-                  JOIN {financedep_feerecord} r ON r.id = :feerecordid
-                  JOIN {financedep_feestructure} f ON f.id = r.feestructureid
-                 WHERE s.id = :scholarshipid
-                   AND s.status = :status
-                   AND s.categoryid = f.categoryid";
-
-        return $DB->record_exists_sql($sql, [
-            'scholarshipid' => $scholarshipid,
-            'feerecordid' => $feerecordid,
-            'status' => constants::SCHOLARSHIP_STATUS_ACTIVE,
-        ]);
-    }
-
-    /**
      * Whether a PENDING or already-APPROVED request exists for this
-     * exact fee record + scholarship pair. Blocks two different
-     * problems: a duplicate nomination piling up in the approval queue
-     * (PENDING), and the same scholarship being applied to the same fee
-     * record twice - once approved, `feerecord_manager::add_scholarship_amount()`
-     * has already deducted it, so approving a second identical request
-     * would double-deduct. A REJECTED request deliberately does NOT
-     * block a new submission - rejection might just mean the first
-     * justification was weak, and the student should be able to be
-     * re-nominated with a better one.
+     * student + scholarship pair. Blocks two different problems: a
+     * duplicate submission piling up in the approval queue (PENDING),
+     * and the same scholarship being requested by the same student
+     * twice in a row. A REJECTED request deliberately does NOT block a
+     * new submission - rejection might just mean the first
+     * justification was weak, and the student should be able to
+     * resubmit with a better one.
      *
-     * (Originally only checked PENDING - broadened 2026-08-24 after the
-     * user reported the same fee record/scholarship pair could be
-     * submitted more than once even after approval.)
+     * CHANGED 2026-09-10 (v2026091004/0.8.0): originally keyed on
+     * (feerecordid, scholarshipid) - now keyed on (studentid,
+     * scholarshipid) since a request is no longer tied to a specific
+     * fee record at all. (Before that, originally only checked PENDING -
+     * broadened 2026-08-24 after the user reported the same pairing
+     * could be submitted more than once even after approval - that
+     * broadening is preserved here.)
      *
-     * @param int $feerecordid
+     * @param int $studentid
      * @param int $scholarshipid
      * @return bool
      */
-    public static function has_pending_request(int $feerecordid, int $scholarshipid): bool {
+    public static function has_pending_request(int $studentid, int $scholarshipid): bool {
         global $DB;
 
         list($insql, $inparams) = $DB->get_in_or_equal(
@@ -104,38 +93,87 @@ class scholarshiprequest_manager {
         );
 
         $params = array_merge([
-            'feerecordid' => $feerecordid,
+            'studentid' => $studentid,
             'scholarshipid' => $scholarshipid,
         ], $inparams);
 
         return $DB->record_exists_select(
             'financedep_scholarshipreq',
-            "feerecordid = :feerecordid AND scholarshipid = :scholarshipid AND status $insql",
+            "studentid = :studentid AND scholarshipid = :scholarshipid AND status $insql",
             $params
         );
     }
 
     /**
-     * Computes the suggested requestedamount for a scholarship against a
-     * fee record: the scholarship's fixed MMK value, or a percentage of
-     * the fee record's totalamount. This is only a starting suggestion -
-     * approve() lets the reviewer override it.
+     * Whether $studentid has already made a real payment (paidamount >
+     * 0, on any non-CANCELLED fee record) against $categoryid - the
+     * course category a scholarship belongs to (financedep_scholarship.
+     * categoryid). Added 2026-09-10 per the user's explicit request: once
+     * a student has started paying for a program, they should no longer
+     * be able to request a scholarship against that same program - a
+     * scholarship is meant to reduce what is owed BEFORE payment, not
+     * refund what has already been paid (that is what a refund/Step 7.7
+     * is for, a completely separate workflow with its own approval-free,
+     * direct-entry shape - see feepayment_manager's docblock).
+     *
+     * Deliberately keyed on the CATEGORY, not a specific fee record - a
+     * scholarship request no longer carries a feerecordid at all as of
+     * v2026091004/0.8.0 (see this class's own docblock), so this checks
+     * every fee record the student holds in the same category as the
+     * scholarship, not just one. A CANCELLED fee record is excluded (a
+     * cancelled assignment is not a real, current obligation - matches
+     * feerecord_manager::has_active_assignment()'s same exclusion).
+     *
+     * @param int $studentid
+     * @param int $categoryid a financedep_scholarship.categoryid value
+     * @return bool
+     */
+    public static function has_paid_in_category(int $studentid, int $categoryid): bool {
+        global $DB;
+
+        $sql = "SELECT 1
+                  FROM {financedep_feerecord} r
+                  JOIN {financedep_feestructure} f ON f.id = r.feestructureid
+                 WHERE r.studentid = :studentid
+                   AND f.categoryid = :categoryid
+                   AND r.status <> :cancelled
+                   AND r.paidamount > 0";
+
+        return $DB->record_exists_sql($sql, [
+            'studentid' => $studentid,
+            'categoryid' => $categoryid,
+            'cancelled' => constants::FEE_STATUS_CANCELLED,
+        ]);
+    }
+
+    /**
+     * Computes the suggested requestedamount for a scholarship: the
+     * scholarship's fixed MMK value as-is, or null for a percentage-type
+     * scholarship - a percentage needs a base amount (a fee record's
+     * totalamount) to compute against, and requests no longer carry a
+     * fee record (see this class's own docblock, v2026091004/0.8.0).
+     * A null requestedamount means "not yet known" everywhere it's
+     * displayed (table/view/history rendering all check for this) - the
+     * reviewer still types a real amountapproved value manually on
+     * approval regardless.
      *
      * @param \stdClass $scholarship a financedep_scholarship row
-     * @param \stdClass $feerecord a financedep_feerecord row
-     * @return float
+     * @return float|null
      */
-    public static function compute_suggested_amount(\stdClass $scholarship, \stdClass $feerecord): float {
+    public static function compute_suggested_amount(\stdClass $scholarship): ?float {
         if ($scholarship->amounttype === constants::AMOUNT_TYPE_PERCENTAGE) {
-            return round(((float) $scholarship->amountvalue / 100) * (float) $feerecord->totalamount, 2);
+            return null;
         }
 
         return (float) $scholarship->amountvalue;
     }
 
     /**
-     * Returns one scholarship request with student, fee record, and
-     * scholarship details joined in, or false if not found.
+     * Returns one scholarship request with student and scholarship
+     * details joined in, or false if not found. The fee record/category
+     * join is now a LEFT JOIN (v2026091004/0.8.0) since feerecordid is
+     * nullable going forward - categoryname/academicyear come back null
+     * for a request with no linked fee record; callers must handle that.
      *
      * @param int $id
      * @return \stdClass|false
@@ -149,9 +187,9 @@ class scholarshiprequest_manager {
                   FROM {financedep_scholarshipreq} q
                   JOIN {user} u ON u.id = q.studentid
                   JOIN {financedep_scholarship} s ON s.id = q.scholarshipid
-                  JOIN {financedep_feerecord} r ON r.id = q.feerecordid
-                  JOIN {financedep_feestructure} fs ON fs.id = r.feestructureid
-                  JOIN {course_categories} cc ON cc.id = fs.categoryid
+             LEFT JOIN {financedep_feerecord} r ON r.id = q.feerecordid
+             LEFT JOIN {financedep_feestructure} fs ON fs.id = r.feestructureid
+             LEFT JOIN {course_categories} cc ON cc.id = fs.categoryid
                  WHERE q.id = :id";
 
         $record = $DB->get_record_sql($sql, ['id' => $id]);
@@ -166,7 +204,10 @@ class scholarshiprequest_manager {
 
     /**
      * Returns every scholarship request submitted for one student,
-     * newest first.
+     * newest first. Includes the scholarship's amounttype/amountvalue
+     * (added 2026-09-10) so a null requestedamount (percentage-type, see
+     * compute_suggested_amount()'s docblock) can still be rendered
+     * meaningfully by callers.
      *
      * @param int $studentid
      * @return \stdClass[]
@@ -174,7 +215,7 @@ class scholarshiprequest_manager {
     public static function get_for_student(int $studentid): array {
         global $DB;
 
-        $sql = "SELECT q.*, s.name AS scholarshipname
+        $sql = "SELECT q.*, s.name AS scholarshipname, s.amounttype, s.amountvalue
                   FROM {financedep_scholarshipreq} q
                   JOIN {financedep_scholarship} s ON s.id = q.scholarshipid
                  WHERE q.studentid = :studentid
@@ -210,10 +251,13 @@ class scholarshiprequest_manager {
     }
 
     /**
-     * Submits a new scholarship request/nomination. Does NOT touch the
-     * fee record's balance - only approve() does that.
+     * Submits a new scholarship request. Does NOT touch any fee record's
+     * balance - only approve() does that, and only for a legacy request
+     * that still has a real feerecordid (see this class's own docblock,
+     * v2026091004/0.8.0). feerecordid is always stored NULL here going
+     * forward - the field was removed from the submission form entirely.
      *
-     * @param \stdClass $data form data: studentid, feerecordid, scholarshipid, justification
+     * @param \stdClass $data form data: studentid, scholarshipid, justification
      * @param int $requestedby
      * @return int the new request id
      */
@@ -221,15 +265,14 @@ class scholarshiprequest_manager {
         global $DB;
 
         $scholarship = $DB->get_record('financedep_scholarship', ['id' => (int) $data->scholarshipid], '*', MUST_EXIST);
-        $feerecord = $DB->get_record('financedep_feerecord', ['id' => (int) $data->feerecordid], '*', MUST_EXIST);
 
         $now = time();
 
         $record = new \stdClass();
         $record->studentid = (int) $data->studentid;
-        $record->feerecordid = (int) $data->feerecordid;
+        $record->feerecordid = null;
         $record->scholarshipid = (int) $data->scholarshipid;
-        $record->requestedamount = self::compute_suggested_amount($scholarship, $feerecord);
+        $record->requestedamount = self::compute_suggested_amount($scholarship);
         $record->approvedamount = null;
         $record->status = constants::REQUEST_STATUS_PENDING;
         $record->justification = $data->justification ?? '';
@@ -247,7 +290,12 @@ class scholarshiprequest_manager {
             $id,
             constants::AUDIT_ACTION_CREATE,
             null,
-            ['status' => $record->status, 'requestedamount' => $record->requestedamount],
+            [
+                'status' => $record->status,
+                'requestedamount' => $record->requestedamount,
+                'amounttype' => $scholarship->amounttype,
+                'amountvalue' => $scholarship->amountvalue,
+            ],
             $requestedby
         );
 
@@ -256,10 +304,18 @@ class scholarshiprequest_manager {
 
     /**
      * Approves a pending scholarship request: records the final
-     * (possibly overridden) approved amount, and auto-deducts it from
-     * the fee record via feerecord_manager::add_scholarship_amount() -
-     * Step 7.4's "auto-deduct the approved scholarship amount from the
-     * student's fee record" requirement.
+     * (possibly overridden) approved amount.
+     *
+     * CHANGED 2026-09-10 (v2026091004/0.8.0): approval is now a pure
+     * history/decision record for any request submitted through the
+     * current form - it does NOT touch any fee record's balance,
+     * per the user's explicit choice (see this class's own docblock).
+     * feerecord_manager::add_scholarship_amount() is only still called
+     * for a LEGACY request that has a real (non-null) feerecordid, so
+     * pre-existing approved-and-deducted requests keep behaving exactly
+     * as before. If finance staff want an approved scholarship to
+     * actually reduce a student's balance, they now do that manually via
+     * pages/feerecords/edit.php - this method no longer does it for them.
      *
      * Refuses (silent no-op) if $reviewedby is the same user who
      * submitted the request - the self-approval fix requested by the
@@ -314,7 +370,13 @@ class scholarshiprequest_manager {
             'timemodified' => $now,
         ]);
 
-        feerecord_manager::add_scholarship_amount($before->feerecordid, $approvedamount, $reviewedby);
+        // Legacy-only: a request submitted before v2026091004/0.8.0
+        // still has a real feerecordid and expects the old auto-deduct
+        // behaviour - see this method's own docblock above. A new-style
+        // request (feerecordid null) skips this entirely.
+        if (!empty($before->feerecordid)) {
+            feerecord_manager::add_scholarship_amount((int) $before->feerecordid, $approvedamount, $reviewedby);
+        }
 
         audit_manager::log(
             constants::AUDIT_ENTITY_SCHOLARSHIPREQUEST,
@@ -382,15 +444,17 @@ class scholarshiprequest_manager {
      * remaining visible via a direct view.php?id= link and kept in
      * financedep_auditlog for a full history.
      *
-     * If the request was APPROVED, its approvedamount has already been
-     * deducted from the fee record's balance via approve() ->
-     * feerecord_manager::add_scholarship_amount(). Deleting it reverses
-     * that deduction by calling add_scholarship_amount() again with a
-     * NEGATIVE amount (that method's docblock already documents this as
-     * the supported way to reverse a scholarship amount), restoring the
-     * fee record's balance to what it would have been had this request
-     * never been approved. A PENDING or REJECTED request never touched
-     * the fee record, so no reversal is needed for those.
+     * If the request was APPROVED AND has a real (legacy) feerecordid,
+     * its approvedamount was already deducted from that fee record's
+     * balance via approve() -> feerecord_manager::add_scholarship_amount().
+     * Deleting it reverses that deduction the same way (a NEGATIVE
+     * amount - see that method's own docblock). CHANGED 2026-09-10
+     * (v2026091004/0.8.0): a new-style approved request (feerecordid
+     * null) never touched any fee record on approval in the first place
+     * (see approve()'s docblock), so there is nothing to reverse -
+     * deleting one just marks it DELETED with no balance side effect.
+     * A PENDING or REJECTED request never touched the fee record either
+     * way, so no reversal is needed for those regardless of feerecordid.
      *
      * Idempotent - deleting an already-deleted request is a no-op.
      *
@@ -409,9 +473,10 @@ class scholarshiprequest_manager {
         $now = time();
         $reversedamount = null;
 
-        if ($before->status === constants::REQUEST_STATUS_APPROVED && $before->approvedamount !== null) {
+        if ($before->status === constants::REQUEST_STATUS_APPROVED && $before->approvedamount !== null
+                && !empty($before->feerecordid)) {
             $reversedamount = (float) $before->approvedamount;
-            feerecord_manager::add_scholarship_amount($before->feerecordid, -$reversedamount, $userid);
+            feerecord_manager::add_scholarship_amount((int) $before->feerecordid, -$reversedamount, $userid);
         }
 
         $DB->update_record('financedep_scholarshipreq', (object) [

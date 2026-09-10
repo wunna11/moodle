@@ -44,6 +44,17 @@ class student_manager {
     const PAGE_SIZE = 12;
 
     /**
+     * @var string shortname of this site's custom "Role" user profile
+     * field (menu of choices: Student/Teacher/Staff) - an additional,
+     * non-enrolment signal for "is this user a student", see
+     * build_where()'s docblock/comment.
+     */
+    const ROLE_PROFILE_FIELD_SHORTNAME = 'Role';
+
+    /** @var string the profile field value that means "student". */
+    const ROLE_PROFILE_FIELD_STUDENT_VALUE = 'Student';
+
+    /**
      * Builds the shared WHERE clause + params used by both
      * count_students() and get_students(): every non-deleted, non-guest
      * user holding the "student" role in at least one real course,
@@ -65,17 +76,38 @@ class student_manager {
             'guestid' => $CFG->siteguest ?? 1,
         ];
 
-        $existssql = "EXISTS (
+        $courseexistssql = "EXISTS (
                         SELECT 1
                           FROM {role_assignments} ra
                           JOIN {context} ctx ON ctx.id = ra.contextid AND ctx.contextlevel = :coursecontextlevel
                           JOIN {role} r ON r.id = ra.roleid AND r.shortname = :rolestudent
                          WHERE ra.userid = u.id AND ctx.instanceid <> :siteid";
         if ($courseid) {
-            $existssql .= ' AND ctx.instanceid = :courseid';
+            $courseexistssql .= ' AND ctx.instanceid = :courseid';
             $params['courseid'] = $courseid;
         }
-        $existssql .= ')';
+        $courseexistssql .= ')';
+
+        // As of 2026-09-10: a user can ALSO count as a student via this
+        // site's custom "Role" user profile field (shortname 'Role', a
+        // menu-of-choices field with Student/Teacher/Staff options - see
+        // the "newly-created account not found in Fee Records"
+        // investigation) - this lets a brand-new account be recognised
+        // as a student before it's ever enrolled in a course. Only
+        // combined in when NOT narrowing by a specific course, since a
+        // profile-field-only "student" isn't actually *in* any course.
+        if ($courseid) {
+            $existssql = $courseexistssql;
+        } else {
+            $existssql = "($courseexistssql OR EXISTS (
+                        SELECT 1
+                          FROM {user_info_data} uid
+                          JOIN {user_info_field} uif ON uif.id = uid.fieldid AND uif.shortname = :roleprofilefield
+                         WHERE uid.userid = u.id AND " . $DB->sql_equal('uid.data', ':roleprofilevalue', false) . "
+                       ))";
+            $params['roleprofilefield'] = self::ROLE_PROFILE_FIELD_SHORTNAME;
+            $params['roleprofilevalue'] = self::ROLE_PROFILE_FIELD_STUDENT_VALUE;
+        }
 
         $where = "u.deleted = 0 AND u.id <> :guestid AND $existssql";
 
@@ -183,9 +215,12 @@ class student_manager {
         }
 
         $courses = self::get_courses_for_users([$userid])[$userid] ?? [];
-        if (empty($courses)) {
-            // Not enrolled as a student anywhere - out of this
-            // directory's scope, same as build_where()'s EXISTS check.
+
+        if (empty($courses) && !self::has_student_role_profile_field($userid)) {
+            // Not enrolled as a student anywhere, and this site's custom
+            // "Role" profile field (see build_where()) doesn't say
+            // Student either - out of this directory's scope, same
+            // combined check as build_where().
             return null;
         }
 
@@ -193,6 +228,31 @@ class student_manager {
         $record->courses = $courses;
 
         return $record;
+    }
+
+    /**
+     * Whether a user's custom "Role" profile field (see
+     * ROLE_PROFILE_FIELD_SHORTNAME/build_where()'s docblock) is set to
+     * "Student" - the single-user equivalent of build_where()'s EXISTS
+     * subquery, used by get_student() since it doesn't run through
+     * build_where() itself.
+     *
+     * @param int $userid
+     * @return bool
+     */
+    protected static function has_student_role_profile_field(int $userid): bool {
+        global $DB;
+
+        $sql = "SELECT 1
+                  FROM {user_info_data} uid
+                  JOIN {user_info_field} uif ON uif.id = uid.fieldid AND uif.shortname = :roleprofilefield
+                 WHERE uid.userid = :userid AND " . $DB->sql_equal('uid.data', ':roleprofilevalue', false);
+
+        return $DB->record_exists_sql($sql, [
+            'userid' => $userid,
+            'roleprofilefield' => self::ROLE_PROFILE_FIELD_SHORTNAME,
+            'roleprofilevalue' => self::ROLE_PROFILE_FIELD_STUDENT_VALUE,
+        ]);
     }
 
     /**

@@ -25,10 +25,501 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026090603;
+$plugin->version   = 2026091007;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.6.1';
+$plugin->release   = '0.8.3';
+
+// 2026-09-10 (post-deploy feature, same day, follows the My Fee Record
+// self-service feature below) - the user asked for a validation rule: a
+// student who has already made a payment towards a program should not
+// be able to request a scholarship for that same program.
+//
+// scholarshiprequest_manager gained has_paid_in_category(int $studentid,
+// int $categoryid): bool - checks whether the student has any
+// non-CANCELLED financedep_feerecord with paidamount > 0 whose fee
+// structure belongs to $categoryid. Deliberately keyed on the CATEGORY
+// (financedep_scholarship.categoryid), not a specific fee record -
+// scholarship requests no longer carry a feerecordid at all as of
+// v2026091004/0.8.0 (the fee-record field was removed from the
+// submission form that same day), so this checks every fee record the
+// student holds in the scholarship's own category, not just one.
+//
+// Wired into classes/form/scholarshiprequest_form.php's validation()
+// only (same place has_pending_request()/the ACTIVE-status check
+// already live) - submit()/scholarshiprequest_manager itself does not
+// re-check this, matching this class's existing pattern where form
+// validation is the only gate for has_pending_request() too. New lang
+// string: errorscholarshipalreadypaid.
+//
+// Deliberately did NOT restore the old is_eligible()/category-matching
+// restriction that was removed in v0.8.0 - that removal was a separate,
+// explicit user decision (any ACTIVE scholarship may be requested for
+// any program) and is unrelated to this new already-paid guard, which
+// only blocks a student who has started paying for the SAME program the
+// scholarship is for.
+//
+// No schema/capability change. 1 new lang string. Verified with php -l
+// on classes/scholarshiprequest_manager.php,
+// classes/form/scholarshiprequest_form.php, and the lang file.
+
+// 2026-09-10 (post-deploy feature, same day, follows the multiple-file
+// upload feature below) - the user asked (in Burmese) for a student to
+// be able to see their own paid/payment information, including
+// installment plans, in their own account - "only the information
+// related to them".
+//
+// Investigated first: local/financedepartment:viewownfeerecord already
+// existed (defined since Step 7.1) and was already checked in index.php
+// ($canviewown) and access_manager::can_view_navigation_entry() - but it
+// was never actually WIRED to any page. A student holding it saw no
+// broken link, just nothing at all: no tile, no tab, no page.
+//
+// Built pages/myfeerecord/index.php (list of the logged-in student's own
+// fee records via feerecord_manager::get_for_student($USER->id), reused
+// as-is) and pages/myfeerecord/view.php (one record's read-only detail:
+// balance breakdown, full payment history via
+// feepayment_manager::get_for_feerecord(), and installment schedule via
+// installmentplan_manager::get_for_feerecord()/get_schedule() if a plan
+// exists) - both gated on viewownfeerecord via a direct
+// require_capability() call, same pattern already established for
+// submitscholarshiprequest/submitdiscountrequest (see db/access.php's
+// docblock). view.php also double-checks $feerecord->studentid ===
+// $USER->id (a managefeerecords-holding finance-staff viewer is let
+// through too, harmless since they already see everything on the admin
+// pages) so one student can never open another's fee record via this
+// page even by guessing/changing the id in the URL.
+//
+// Deliberately a SEPARATE section from pages/feerecords/*.php (the
+// finance-staff admin pages) rather than reusing those with extra
+// permission branching bolted on - matches this plugin's established
+// pattern of always giving student self-service its own pages
+// (scholarshiprequests, discountrequests) instead of retrofitting the
+// admin ones; no edit/cancel/record-payment/void actions exist anywhere
+// on the new pages.
+//
+// Wired in two more places: lib.php's local_financedepartment_get_tabs()
+// gained an else-if branch (managefeerecords -> the existing admin
+// "Fee records" tab; else viewownfeerecord -> a new "My Fee Record" tab
+// routing to myfeerecord/index.php, same routing-split shape as the
+// scholarships/discounts tabs). index.php's quicklink tile section
+// gained the identical else-if split ($canviewown was computed there
+// already but never actually used before this fix - see index.php's
+// existing nopermissions guard). local_financedepartment_extend_navigation()
+// and access_manager::can_view_navigation_entry() needed NO change -
+// viewownfeerecord was already included in the top-nav visibility check
+// from earlier work, it just had nowhere to go until now.
+//
+// Deliberately NOT built: payment attachment download access for the
+// student's own payments (pages/payments/* attachments stay
+// finance-staff-only, local_financedepartment_pluginfile()'s 'payment'
+// filearea branch unchanged) - not asked for, can be added later as a
+// small extension to that branch's gate if the user wants it.
+//
+// No schema/capability change (viewownfeerecord already existed). 4 new
+// lang strings (myfeerecord, myfeerecorddesc, myfeerecordsempty,
+// backtomyfeerecords). Verified with php -l on all 6 changed/new files.
+
+// 2026-09-10 (post-deploy feature, same day, follows the void.php
+// format_money()/payment_type_badge() fix below) - the user asked for a
+// multiple-file upload field on the "Record payment"/"Record refund"
+// form (classes/form/feepayment_form.php), to attach supporting
+// documents such as a receipt or bank transfer confirmation.
+//
+// Same shape as scholarshiprequest_form/discountrequest_form's own
+// attachment field: a filemanager element (feepayment_form::
+// ATTACHMENT_TYPES = pdf/jpg/jpeg/png, ATTACHMENT_MAXFILES = 5),
+// deliberately optional (no addRule('required')), added to both modes
+// of the shared form (payment and refund alike - not asked to be
+// restricted to one mode). pages/payments/create.php saves the files
+// via file_save_draft_area_files() into a NEW 'payment' filearea
+// (itemid = the new financedep_feepayment row's own id) right after
+// feepayment_manager::record_payment()/record_refund() returns the new
+// id, same "save right after insert, before redirect" placement as
+// pages/scholarshiprequests/submit.php.
+//
+// local_financedepartment_pluginfile() (lib.php) gained a third
+// filearea branch for 'payment'. Unlike scholarshiprequest/
+// discountrequest, a payment row has no "requestedby"/self-service
+// submitter (finance staff always records payments - there is no
+// student-facing payment flow at all, see feepayment_manager's
+// docblock), so this branch has no separate owner check - it's gated
+// identically to pages/payments/view.php itself: recordpayments OR
+// managerefunds. pages/payments/view.php renders the attached files as
+// download links (same pattern as pages/scholarshiprequests/view.php),
+// shown only when at least one file exists.
+//
+// No schema/capability change (Moodle's File API needs no new column,
+// same as every other attachment field in this plugin). New lang
+// strings: paymentattachment, paymentattachment_help. See
+// [[financedepartment-schema]] project memory for the full write-up.
+
+// 2026-09-10 (post-deploy fix, same day, follows the feepayment_form.php
+// format_money() fix below) - after that fix, the user next hit "Call to
+// undefined function local_financedepartment_payment_type_badge()"
+// opening pages/payments/void.php - a third occurrence of the same
+// underlying mistake, this time in a plain page script rather than a
+// form class, and one that couldn't simply be fixed by moving the call
+// after $OUTPUT->header() (the offending $summary string is needed as
+// customdata for feepaymentvoid_form's constructor, which must run
+// BEFORE header()). Fixed by reimplementing the badge/formatting logic
+// inline in void.php itself, using only core Moodle functions and the
+// already-autoloaded constants class. See [[financedepartment-schema]]
+// project memory for the full write-up.
+
+// 2026-09-10 (post-deploy feature, same day, follows the display-name
+// feature below) - the user reported (in Burmese) that a student
+// shouldn't have to pick a fee record when submitting a scholarship
+// request, and asked for multiple-file upload on the supporting-
+// document attachment.
+//
+// Confirmed via three rounds of AskUserQuestion: (1) the fee record
+// field is removed from scholarshiprequest_form entirely - not
+// auto-selected behind the scenes, not deferred to an edge-case picker -
+// financedep_scholarshipreq.feerecordid is now nullable (db/upgrade.php
+// v2026091004) and always null for a new submission; (2) approving a
+// scholarship request is now a pure history/decision record - it no
+// longer auto-deducts anything from any fee record
+// (scholarshiprequest_manager::approve() only still calls
+// feerecord_manager::add_scholarship_amount() for a LEGACY request that
+// still has a real feerecordid from before this change, so pre-existing
+// approved-and-deducted requests are unaffected; delete() mirrors this
+// for reversal); (3) the old category-eligibility restriction
+// (is_eligible(), matching a fee record's category against the
+// scholarship's own categoryid) is removed entirely, not replaced with
+// a course-enrollment-based check - any ACTIVE scholarship may now be
+// requested by any student holding submitscholarshiprequest, and
+// finance staff use their own judgement when reviewing.
+//
+// A percentage-type scholarship's requestedamount is now null at
+// submission (compute_suggested_amount() has no fee record left to
+// compute a base amount against) - every display site (the admin table,
+// the student's own request list, view.php, and audit history
+// rendering) was updated to show a "{$a}% (final amount set on
+// approval)" message instead of a misleading "0 MMK" in that case; the
+// reviewer still types the real amountapproved value manually either
+// way.
+//
+// Multiple-file upload: scholarshiprequest_form and discountrequest_form
+// (the user asked for this to apply to both) both raised their
+// filemanager's maxfiles from 1 to 5 (ATTACHMENT_MAXFILES constant on
+// each form) - the matching file_save_draft_area_files() maxfiles option
+// on each submit.php was updated to match exactly.
+//
+// financedep_scholarshipreq.feerecordid, scholarshiprequest_manager::get()/
+// get_for_student(), and classes/table/scholarshiprequest_table.php's
+// fee-record/category JOINs all changed from INNER to LEFT JOIN so a
+// null-feerecordid request still displays correctly (category shows "-"
+// instead of disappearing from the query results entirely).
+//
+// No new capabilities. 1 schema change (feerecordid: NOT NULL -> NULL,
+// via db/upgrade.php). A few new/reworded lang strings
+// (requestedamountpercentagebased, historyrequestsubmittedpercentage,
+// historyrequestapproved/scholarshiprequestsdesc/submitrequestdesc/
+// myscholarshiprequestsdesc reworded since they described behaviour that
+// no longer applies) - nofeerecordsownscholarship left orphaned rather
+// than deleted, per this codebase's usual practice. See
+// [[financedepartment-schema]] project memory for the full write-up.
+
+// 2026-09-10 (post-deploy feature) - the user asked for a
+// role-based display name: "Scholarship" instead of "Finance Department"
+// for a plain student's nav label and page title/heading, while an
+// admin/finance-staff account keeps seeing "Finance Department"
+// unchanged everywhere.
+//
+// classes/access_manager.php gained MANAGEMENT_CAPABILITIES (every
+// local/financedepartment:* capability that marks someone as finance
+// STAFF - management/approval/reporting - as opposed to the three plain
+// self-service capabilities), is_finance_staff_viewer() (true for a
+// Finance-department hrdep_employee/site admin OR anyone holding at
+// least one management capability directly), and get_display_name()
+// (returns the 'pluginname' string for a finance-staff viewer, the new
+// 'pluginnamestudent' = "Scholarship" string otherwise). Deliberately
+// added to access_manager.php rather than as a lib.php helper, even
+// though every call site could reach a lib.php function just as easily -
+// classes/hooks/navigation/primary_extend.php (added in the fix above)
+// calls this from a hook callback dispatched during navigation setup,
+// and this plugin's own CRITICAL RULE already warns lib.php's inclusion
+// timing is not guaranteed outside of page-body code running after
+// $OUTPUT->header(). access_manager.php is autoloaded with no such
+// timing risk.
+//
+// Wired into BOTH navigation entry points (lib.php's
+// local_financedepartment_extend_navigation() and the primary_extend
+// hook callback, so the site-tree/drawer label and the top-bar label
+// always agree) and every page's $PAGE->set_title()/set_heading() call
+// plus index.php's hero title (~40 call sites, replaced mechanically -
+// verified via `php -l` on every file and the usual lang-string
+// cross-check afterwards). Deliberately did NOT touch the
+// get_string('pluginname', ...) calls used inside a 403/
+// moodle_exception('nopermissions', ...) message (4 call sites) - those
+// identify the plugin/component in an error context, not user-facing
+// branding.
+//
+// Since a plain student can only ever reach the self-service pages
+// (blocked by capability from every finance-staff-only page), this
+// swap is safe to apply uniformly across every page without a
+// per-section allowlist - a student will only ever actually see
+// "Scholarship" on the handful of pages they can open (landing page,
+// scholarship catalog, their own scholarship/discount requests); a
+// finance-staff viewer sees "Finance Department" everywhere, unchanged.
+//
+// No DB schema/capability change. 1 new lang string (pluginnamestudent).
+
+// 2026-09-10 (post-deploy fix, same day, follows the nav-visibility fix
+// below): the user reported the plugin STILL wasn't visible in the top
+// nav bar even after that fix. Investigated by tracing this site's
+// actual Moodle 5.2 navigation code rather than assuming the theme was
+// simply hiding it as previously guessed: local_financedepartment_
+// extend_navigation() (lib.php) only ever populates $PAGE->navigation
+// (the site navigation tree/drawer) - core\navigation\output\primary::
+// get_primary_nav() (which builds the TOP bar: Home/Dashboard/My
+// courses/...) reads $PAGE->primarynav instead, a completely separate
+// tree that extend_navigation() never touches on this Moodle version.
+// core\navigation\views\primary::initialise() (Moodle core) builds that
+// tree itself, then dispatches core\hook\navigation\primary_extend so
+// plugins/themes can add their own nodes to it (theme_stream, also
+// present on this site, already does exactly this - used as the
+// reference implementation). lib/navigationlib.php also confirms the
+// OLD global_navigation-based flat_navigation/showinflatnavigation
+// mechanism this plugin's extend_navigation() relied on for "flat"
+// visibility is deprecated on this Moodle version, so that flag no
+// longer does anything either.
+//
+// Fixed by adding a SECOND navigation entry point: db/hooks.php
+// registers \local_financedepartment\hooks\navigation\primary_extend
+// for core\hook\navigation\primary_extend, adding the same "Finance
+// Department" node directly to the top primary nav bar. Both entry
+// points now share ONE capability check -
+// access_manager::can_view_navigation_entry() (new method) - rather
+// than each duplicating it, since duplicated-then-drifted checks are
+// exactly how the earlier same-day nav-visibility bug happened.
+// lib.php's extend_navigation() was refactored to call this shared
+// method instead of inlining the OR chain itself.
+//
+// No schema/capability/lang-string change - db/hooks.php + one new
+// class + an access_manager refactor only. Requires a Moodle cache
+// purge (hook callbacks are cached) to take effect after deploy - see
+// [[financedepartment-schema]] project memory for the full write-up.
+
+// 2026-09-10 (post-deploy fix, same day as the scholarship catalog
+// feature below): the user reported not being able to find the
+// scholarship request pages anywhere in navigation as a student.
+// Investigated: local_financedepartment_extend_navigation() (lib.php)
+// only checked viewfinancereports/viewownfeerecord to decide whether to
+// add the "Finance Department" nav node - it never checked the two new
+// submitscholarshiprequest/submitdiscountrequest self-service
+// capabilities added by the 2026-09-09 fix. In practice most students
+// also have viewownfeerecord (both are archetype user/CAP_ALLOW, so they
+// usually travel together), which likely masked this - but a site whose
+// student role has viewownfeerecord overridden/removed, or a custom role
+// that grants only the submit capabilities, would never get this nav
+// node at all, leaving the plugin's pages reachable only by direct URL.
+// Fixed by adding both submit capabilities to the OR check. This does
+// NOT change db/access.php or any capability definition - only the
+// navigation-node visibility check in lib.php.
+//
+// Also relevant background given to the user: this particular Moodle
+// site's top navigation bar (Home/Dashboard/My courses/"Kopere
+// Dashboard") is a custom theme menu, not the standard Boost primary
+// navigation - a plugin-added extend_navigation() node may render in a
+// different place (a navigation drawer, "Site pages", the user menu)
+// depending on the theme, so even after this fix the item may not
+// appear in that exact top bar. The plugin's pages remain directly
+// reachable by URL regardless (e.g. /local/financedepartment/index.php,
+// /local/financedepartment/pages/scholarships/browse.php).
+
+// 2026-09-10 (post-deploy feature, follows the 2026-09-09 student
+// self-service fix below): the user asked for a page where a student can
+// see which programs/course categories currently have a scholarship,
+// before deciding whether to submit a request. Confirmed scope via
+// AskUserQuestion (all Recommended): (1) show every ACTIVE scholarship
+// across every category system-wide (a catalog), not just categories
+// matching the viewer's own fee records; (2) any logged-in user can view
+// it, not gated on submitscholarshiprequest or any manage/approve
+// capability - a plain require_login() only; (3) each row gets a
+// "Request this" link (shown only to a viewer who actually holds
+// submitscholarshiprequest) that pre-selects that scholarship on the
+// submit form.
+//
+// New: pages/scholarships/browse.php (read-only, reuses the new
+// scholarship_manager::get_active_catalog()). classes/form/
+// scholarshiprequest_form.php gained an optional `presetscholarshipid`
+// customdata key (submit.php now accepts a `scholarshipid` GET param)
+// to pre-select the scholarship element when arriving from a catalog
+// row's "Request this" link. pages/scholarshiprequests/index.php's
+// student "my requests" branch gained a "Browse scholarships" hero
+// button alongside "New request" for discoverability. No schema/
+// capability change; 5 new lang strings, zero missing/duplicate.
+
+// 2026-09-09 (post-deploy fix, same day as Step 7.8) - scholarship AND
+// discount request submission was backwards: only finance staff
+// (managescholarships/managediscounts) could reach the submit form,
+// picking the target student from a system-wide autocomplete - so a
+// student could never nominate/request for themselves, only finance
+// staff could submit on their behalf. The user reported this directly
+// ("student ka thin ya mesha, finance staff ka mahotphu" - roughly "the
+// student should submit it, not finance staff").
+//
+// Fixed by making submission student self-service on BOTH request
+// types: two new capabilities, local/financedepartment:
+// submitscholarshiprequest and submitdiscountrequest (archetype 'user',
+// CAP_ALLOW - every logged-in user by default), checked directly via
+// has_capability()/require_capability() rather than through
+// access_manager::can_manage() - same pattern already established by
+// viewownfeerecord, since this is a per-user self-service capability,
+// not a finance-management one. Confirmed via AskUserQuestion (both
+// Recommended): (1) student self-service only - finance staff's
+// nominate-on-behalf-of flow is removed entirely, not kept alongside;
+// (2) apply the same fix to discount requests too, not scholarships
+// only.
+//
+// classes/form/scholarshiprequest_form.php / discountrequest_form.php:
+// the studentid autocomplete is gone - the student is always the
+// logged-in viewer (a hidden field + read-only static display), and
+// feerecordid is now scoped to that student's own fee records only via
+// the new feerecord_manager::get_active_options_for_student() (the old
+// system-wide get_active_options() is unchanged and still used by
+// installmentplan_form, which remains finance-staff CRUD).
+// pages/{scholarship,discount}requests/submit.php now gate on the new
+// submit capability and show a friendly empty state (no form) if the
+// student has no fee record to request against at all.
+// pages/{scholarship,discount}requests/view.php now let the request's
+// own submitter view it (read-only - approve/reject/delete stay
+// finance-staff-only, unaffected). pages/{scholarship,discount}requests/
+// index.php gained a separate "my requests" branch for a plain student
+// (their own requests only, with the "New request" action that used to
+// sit in the finance-staff admin view) - the admin browsable list is
+// unchanged for finance staff. lib.php's tab bar and the plugin landing
+// page route a student's Scholarships/Discounts tab/tile to the
+// requests list instead of the (managescholarships/managediscounts-
+// gated) definitions list, which a student can't access.
+// local_financedepartment_pluginfile() now also lets a request's own
+// submitter download their own supporting-document attachment, which
+// was impossible before this fix (only finance staff could).
+//
+// No schema/upgrade change (db/access.php only). 8 new lang strings, 4
+// existing hero-subtitle strings reworded since they described the old
+// "search for a student" flow. See [[financedepartment-schema]] project
+// memory for the full write-up.
+
+// 2026-09-09: Step 7.8 (fee record status history + overdue detection)
+// built - two independent gaps closed, both traced to comments already
+// left in the codebase (audit_manager's own class docblock names "Step
+// 7.8"; feerecord_manager::save_and_recalculate()'s docblock flagged
+// OVERDUE as never implemented). Asked the user what functions this step
+// would include before building, then confirmed two scope questions via
+// AskUserQuestion (both Recommended): (1) OVERDUE detection is
+// LIVE-COMPUTED, same "never persisted" pattern as Step 7.6's installment
+// overdue state - feerecord_manager gained has_overdue_installment()
+// (checks the fee record's active installment schedule, if any, via
+// installmentplan_manager::get_schedule_for_feerecord()/is_overdue()) and
+// display_status() (returns FEE_STATUS_OVERDUE instead of the stored
+// status when unpaid/partially-paid AND overdue) - financedep_feerecord.
+// status itself is NEVER written as 'overdue'. No cron job was built, no
+// existing scheduled-task infrastructure existed in either this plugin or
+// local_hrdepartment to reuse (confirmed before asking). (2) automatic
+// fee-record status changes (e.g. unpaid -> partially paid when a payment
+// lands) now get a real audit_manager::log() entry - previously
+// save_and_recalculate() (shared by add_scholarship_amount()/
+// add_discount_amount()/add_payment_amount()) silently recalculated
+// paidamount/scholarshipamount/discountamount/status with zero logging.
+// Deliberately logs ONLY the status field (before/after) with a fixed
+// generic reason (statusautorecalcreason), not which transaction caused
+// it - reuses pages/feerecords/view.php's existing generic history
+// diff-rendering with zero page changes, since it already special-cases
+// status via feestatus_* strings.
+//
+// local_financedepartment_feerecord_status_badge() (lib.php) signature
+// changed from (string $status) to (\stdClass $feerecord), calling
+// feerecord_manager::display_status() internally - same redesign Step 7.6
+// already did for the installment badge helper. All 4 call sites updated
+// (pages/feerecords/index.php x2, pages/feerecords/view.php,
+// pages/payments/index.php). No DB/capability change; 1 new lang string
+// (statusautorecalcreason). See [[financedepartment-schema]] project
+// memory for the full write-up.
+
+// 2026-09-09: Step 7.7 (payment processing) built - classes/feepayment_manager.php,
+// classes/form/feepayment_form.php, classes/form/feepaymentvoid_form.php,
+// pages/payments/*.php. financedep_feepayment (schema already existed
+// since Step 7.1) now finally gets real rows: every row is either a
+// PAYMENT (money in, increases financedep_feerecord.paidamount via the
+// new feerecord_manager::add_payment_amount()) or a REFUND (money out,
+// decreases it) - the sign comes from paymenttype, never a signed
+// amount column. Voiding a payment/refund reverses whichever effect it
+// had, then marks it VOID - never deletes it, same "financial history is
+// never destroyed" pattern as everywhere else in this plugin.
+//
+// Three scope decisions confirmed with the user via AskUserQuestion
+// before building (all Recommended options): (1) linking a payment to a
+// specific installment (financedep_feepayment.installmentschedid) is
+// OPTIONAL in both directions - a payment can always be recorded against
+// the fee record as a whole; (2) recording a refund is a DIRECT, instant
+// entry (like a normal payment), not a request-and-approve workflow -
+// see local/financedepartment:managerefunds; (3) voiding an existing
+// payment requires that SAME higher-trust managerefunds capability, not
+// the lower-trust recordpayments capability a normal payment needs.
+//
+// Proactively discovered while planning this step (not asked as a
+// separate question, since it follows directly from the user's own Q1
+// answer): installmentplan_manager::reschedule() AND create()'s
+// cancelled-row-reuse path both delete/reinsert every schedule row for a
+// plan, which would silently destroy a row with a real payment applied.
+// Both now refuse (throw errorinstallmentplanhaspayments) if any
+// schedule row already has paidamount > 0 - see
+// installmentplan_manager::schedule_has_payments()'s docblock.
+//
+// Receipt numbers (financedep_feepayment.receiptnumber, UNIQUE) are
+// SYSTEM-GENERATED (feepayment_manager::generate_receipt_number(), format
+// RCPT-YYYYMMDD-XXXXXX) rather than typed in by finance staff - a
+// discretionary implementation choice, not something the user was asked
+// about; see feepayment_manager's class docblock if this needs revisiting.
+//
+// No new capabilities/tables (financedep_feepayment,
+// local/financedepartment:recordpayments/managerefunds all already
+// existed since Step 7.1); ~50 new lang strings. See
+// [[financedepartment-schema]] project memory for the full write-up.
+
+// 2026-09-08 (post-deploy fix, same day as Step 7.6, follows the hero-button
+// fix below): the user reported the create form "felt stuck at 3" - it
+// always started with exactly installmentplan_form::DEFAULT_REPEATS (3)
+// blank installment rows, only growable one at a time via the
+// repeat_elements() "Add another installment" button. Added an explicit
+// "how many installments?" first step to pages/installments/create.php (a
+// plain GET selector, 1-36) - the chosen count is passed into
+// installmentplan_form as `repeatcount`, which (as of this fix) drives
+// create mode too, not just reschedule mode - see that form's docblock and
+// classes/form/installmentplan_form.php's MIN_REPEATS/MAX_REPEATS/
+// DEFAULT_REPEATS constants. The "Add another installment" button still
+// works afterwards for growing beyond the chosen count. No DB/capability
+// change; 2 new lang strings (numinstallments, numinstallmentsdesc).
+
+// 2026-09-08 (post-deploy fix, same day as Step 7.6): pages/installments/index.php
+// had NO way to reach create.php except drilling into a specific student's fee
+// record row (search -> pick student -> fee record with no plan yet). Every
+// other section (scholarships, discounts) has an "Add X" button in the page
+// hero - installments was missing its equivalent, so the create form was
+// effectively undiscoverable. Fixed by adding a "Create installment plan"
+// hero action button (reusing the existing createinstallmentplan string,
+// same $heroactions pattern as pages/scholarships/index.php) that links to
+// create.php with no feerecordid preset - the form's own autocomplete (any
+// non-cancelled fee record without an active plan) handles the rest.
+
+// 2026-09-08: Step 7.6 (installment plans) built - classes/installmentplan_manager.php,
+// classes/form/installmentplan_form.php, pages/installments/*.php. An
+// installment plan is a payment SCHEDULE for one fee record only - it
+// never moves money or touches the fee record's balance (unlike
+// scholarship/discount approval); only Step 7.7 (payments) will do that.
+// Two scope decisions confirmed with the user via AskUserQuestion before
+// building: (1) each installment's amount/due date is entered MANUALLY
+// (Moodle's repeat_elements(), no auto-split), validated to sum to the
+// fee record's current balance; (2) "overdue" is a LIVE, COMPUTED
+// display state (installmentplan_manager::display_status()) - never
+// persisted to financedep_installmentsched.status, no cron job exists
+// for this. financedep_installmentplan.feerecordid has a UNIQUE index
+// (one plan per fee record, ever) - create() reuses a CANCELLED row
+// rather than inserting a duplicate. See [[financedepartment-schema]]
+// project memory for the full 2026-09-08 write-up.
 
 // 2026-09-06 (post-deploy fix #7): a PENDING scholarship/discount request
 // could still be approved (and its amount deducted from the fee record)

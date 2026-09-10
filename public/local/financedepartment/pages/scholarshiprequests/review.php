@@ -15,9 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Approve or reject a pending scholarship request. Approving auto-
- * deducts the approved amount from the fee record via
- * scholarshiprequest_manager::approve() -> feerecord_manager::add_scholarship_amount().
+ * Approve or reject a pending scholarship request. CHANGED 2026-09-10
+ * (v2026091004/0.8.0): approving no longer auto-deducts from any fee
+ * record for a request submitted through the current form - it's a
+ * pure history/decision record now (see scholarshiprequest_manager::
+ * approve()'s own docblock for the full rationale and the backward-
+ * compatible handling of legacy requests that still have a real
+ * feerecordid).
  *
  * @package   local_financedepartment
  * @copyright 2026 Wunna
@@ -90,7 +94,7 @@ $title = $decision === 'approve'
     ? get_string('approverequest', 'local_financedepartment')
     : get_string('rejectrequest', 'local_financedepartment');
 $PAGE->set_title($title);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 $form = new scholarshiprequestreview_form($PAGE->url, [
     'requestid' => $id,

@@ -38,10 +38,6 @@ $context = context_system::instance();
 $canmanage = access_manager::can_manage('local/financedepartment:managescholarships');
 $canapprove = access_manager::can_manage('local/financedepartment:approvescholarships');
 
-if (!$canmanage && !$canapprove) {
-    throw new moodle_exception('nopermissions', 'error', '', get_string('pluginname', 'local_financedepartment'));
-}
-
 $request = scholarshiprequest_manager::get($id);
 if (!$request) {
     throw new moodle_exception(
@@ -51,13 +47,24 @@ if (!$request) {
     );
 }
 
+// A student may always view a request THEY submitted (2026-09-09 fix -
+// requests are now student self-service, see submit.php's docblock),
+// read-only - the approve/reject/delete actions below stay gated on
+// $canapprove/$canmanage exactly as before, computed once here and
+// reused below for the self-approval guard too.
+$isownrequest = (int) $request->requestedby === (int) $USER->id;
+
+if (!$canmanage && !$canapprove && !$isownrequest) {
+    throw new moodle_exception('nopermissions', 'error', '', get_string('pluginname', 'local_financedepartment'));
+}
+
 $heading = format_string($request->fullname) . ' - ' . format_string($request->scholarshipname);
 
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/financedepartment/pages/scholarshiprequests/view.php', ['id' => $id]));
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title($heading);
-$PAGE->set_heading(get_string('pluginname', 'local_financedepartment'));
+$PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 
@@ -76,7 +83,7 @@ $actions = [];
 // scholarshiprequest_manager::approve()'s docblock and review.php's
 // matching server-side check (which is the actual enforcement point;
 // this is just so the buttons don't appear only to error out).
-$isownrequest = (int) $request->requestedby === (int) $USER->id;
+// $isownrequest was already computed above for the view-access guard.
 $ispending = $request->status === constants::REQUEST_STATUS_PENDING;
 // Deactivated-scholarship guard, added 2026-09-06 - see
 // scholarshiprequest_manager::approve()'s docblock and review.php's
@@ -135,10 +142,30 @@ echo html_writer::start_div('findept-detail-card');
 
 $rows = [
     [get_string('student', 'local_financedepartment'), format_string($request->fullname) . ' (' . s($request->email) . ')'],
-    [get_string('category', 'local_financedepartment'), format_string($request->categoryname) . ' - ' . s($request->academicyear)],
-    [get_string('scholarship', 'local_financedepartment'), format_string($request->scholarshipname)],
-    [get_string('requestedamount', 'local_financedepartment'), local_financedepartment_format_money($request->requestedamount)],
 ];
+
+// A request with no linked fee record (the normal case going forward,
+// since v2026091004/0.8.0 removed the fee-record field from submission -
+// see scholarshiprequest_manager's class docblock) has no category to
+// show - only a legacy pre-change row still has one.
+if ($request->categoryname !== null) {
+    $rows[] = [get_string('category', 'local_financedepartment'), format_string($request->categoryname) . ' - ' . s($request->academicyear)];
+}
+
+$rows[] = [get_string('scholarship', 'local_financedepartment'), format_string($request->scholarshipname)];
+
+// A null requestedamount means the scholarship is percentage-based and
+// there is no fee record to compute a base amount against (see
+// scholarshiprequest_manager::compute_suggested_amount()'s docblock) -
+// show the raw percentage instead of a computed MMK figure.
+$requestedamountdisplay = $request->requestedamount !== null
+    ? local_financedepartment_format_money($request->requestedamount)
+    : get_string(
+        'requestedamountpercentagebased',
+        'local_financedepartment',
+        rtrim(rtrim(number_format((float) $request->amountvalue, 2), '0'), '.')
+    );
+$rows[] = [get_string('requestedamount', 'local_financedepartment'), $requestedamountdisplay];
 
 if ($request->status !== constants::REQUEST_STATUS_PENDING) {
     $rows[] = [
@@ -225,7 +252,19 @@ if (empty($history)) {
 
         $changelines = [];
         if ($entry->action === constants::AUDIT_ACTION_CREATE) {
-            $changelines[] = get_string('historyrequestsubmitted', 'local_financedepartment', local_financedepartment_format_money($new['requestedamount'] ?? 0));
+            // requestedamount is null for a percentage-type scholarship
+            // with no fee record to compute a base amount against (see
+            // scholarshiprequest_manager::compute_suggested_amount()'s
+            // docblock, v2026091004/0.8.0) - amounttype/amountvalue were
+            // added to this audit entry's newdata at the same time
+            // specifically so history can still render something
+            // meaningful here instead of a misleading "0 MMK".
+            if (isset($new['requestedamount']) && $new['requestedamount'] !== null) {
+                $changelines[] = get_string('historyrequestsubmitted', 'local_financedepartment', local_financedepartment_format_money($new['requestedamount']));
+            } else {
+                $percent = isset($new['amountvalue']) ? rtrim(rtrim(number_format((float) $new['amountvalue'], 2), '0'), '.') : '';
+                $changelines[] = get_string('historyrequestsubmittedpercentage', 'local_financedepartment', $percent);
+            }
         } else if ($entry->action === constants::AUDIT_ACTION_APPROVE) {
             $changelines[] = get_string('historyrequestapproved', 'local_financedepartment', local_financedepartment_format_money($new['approvedamount'] ?? 0));
         } else if ($entry->action === constants::AUDIT_ACTION_REJECT) {
