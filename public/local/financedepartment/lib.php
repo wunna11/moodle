@@ -118,6 +118,21 @@ function local_financedepartment_get_tabs(string $selected): array {
             get_string('myfeerecord', 'local_financedepartment'),
             'fa-id-card'
         );
+    } else if (access_manager::can_manage('local/financedepartment:viewfinancereports')) {
+        // Step 7.9 (2026-09-10) - a report-only viewer who holds
+        // viewfinancereports but neither managefeerecords nor
+        // viewownfeerecord (e.g. a custom role built purely for
+        // reporting) previously had NO tab in this slot at all - the
+        // page existed nowhere in navigation without a direct URL, same
+        // class of gap already fixed once for viewownfeerecord itself.
+        // Routes straight to the new all-students list,
+        // pages/feerecords/all.php.
+        $tabs[] = local_financedepartment_make_tab(
+            'allfeerecords',
+            new moodle_url('/local/financedepartment/pages/feerecords/all.php'),
+            get_string('allfeerecords', 'local_financedepartment'),
+            'fa-table'
+        );
     }
 
     // Scholarships tab: finance staff (manage/approve) land on the
@@ -184,6 +199,23 @@ function local_financedepartment_get_tabs(string $selected): array {
             new moodle_url('/local/financedepartment/pages/payments/index.php'),
             get_string('payments', 'local_financedepartment'),
             'fa-money'
+        );
+    }
+
+    // Reports tab (Step 7.11, 2026-09-10) - a SEPARATE top-level slot
+    // from the fee-records one above (not an else-if branch there),
+    // since the dashboard is a distinct concept from the fee-records
+    // list/assign flow - a full finance manager sees BOTH "Fee records"
+    // and "Reports" tabs at once. Gated purely on viewfinancereports,
+    // independent of every other capability, matching that capability's
+    // own db/access.php comment ("the finance dashboard, summary cards,
+    // and the finance staff list view").
+    if (access_manager::can_manage('local/financedepartment:viewfinancereports')) {
+        $tabs[] = local_financedepartment_make_tab(
+            'reports',
+            new moodle_url('/local/financedepartment/pages/reports/index.php'),
+            get_string('financedashboard', 'local_financedepartment'),
+            'fa-bar-chart'
         );
     }
 
@@ -528,6 +560,36 @@ function local_financedepartment_render_quicklink(moodle_url $url, string $label
         html_writer::span($label, 'findept-quicklink-label'),
         ['class' => 'findept-quicklink']
     );
+}
+
+/**
+ * Renders one summary stat card for pages/reports/index.php (Step
+ * 7.11). $value is passed already formatted (money string or a plain
+ * count) - this helper only handles layout/icon/colour, not formatting,
+ * since some cards are MMK amounts and others are plain integers.
+ *
+ * @param string $label already a get_string() result
+ * @param string $value already-formatted display value
+ * @param string $icon a Font Awesome class, e.g. 'fa-money'
+ * @param string $variant one of success|warning|danger|info|teal
+ * @return string
+ */
+function local_financedepartment_render_stat_card(string $label, string $value, string $icon, string $variant = 'info'): string {
+    $out = html_writer::start_div('findept-stat-card findept-variant-' . $variant);
+
+    $out .= html_writer::div(
+        html_writer::tag('i', '', ['class' => 'icon fa ' . $icon, 'aria-hidden' => 'true']),
+        'findept-stat-icon findept-variant-' . $variant
+    );
+
+    $out .= html_writer::start_div('findept-stat-body');
+    $out .= html_writer::div($value, 'findept-stat-value');
+    $out .= html_writer::div($label, 'findept-stat-label');
+    $out .= html_writer::end_div();
+
+    $out .= html_writer::end_div();
+
+    return $out;
 }
 
 /**

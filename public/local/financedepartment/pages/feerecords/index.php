@@ -18,9 +18,13 @@
  * Fee records: search for a student to view their assigned fee
  * record(s), or jump straight to assigning/bulk-assigning one. Step 7.3
  * frames this per-student ("view a student's assigned fee record(s)"),
- * not as a full searchable all-students table - that's Step 7.9's job -
- * so this page is a search-then-view flow, with a small "recently
- * assigned" panel as the default view so it isn't empty on first load.
+ * not as a full searchable all-students table - so this page is a
+ * search-then-view flow, with a small "recently assigned" panel as the
+ * default view so it isn't empty on first load.
+ *
+ * 2026-09-10 (Step 7.9): the real searchable/filterable all-students
+ * table now exists at pages/feerecords/all.php, linked from this page's
+ * hero actions - this page's own search-then-view flow is unchanged.
  *
  * @package   local_financedepartment
  * @copyright 2026 Wunna
@@ -69,6 +73,11 @@ echo local_financedepartment_render_page_hero(
             'url' => new moodle_url('/local/financedepartment/pages/feerecords/bulkassign.php'),
             'label' => get_string('bulkassign', 'local_financedepartment'),
             'icon' => 'fa-users',
+        ],
+        [
+            'url' => new moodle_url('/local/financedepartment/pages/feerecords/all.php'),
+            'label' => get_string('allfeerecords', 'local_financedepartment'),
+            'icon' => 'fa-table',
         ],
     ]
 );

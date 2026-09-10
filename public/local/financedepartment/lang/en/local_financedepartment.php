@@ -169,6 +169,13 @@ $string['feerecordhistory'] = 'History';
 $string['historyassigned'] = 'Fee record assigned.';
 $string['nostudentsfound'] = 'No matching students found.';
 $string['recentfeerecords'] = 'Recently assigned';
+// Step 7.9 (2026-09-10) - the all-students fee status list,
+// pages/feerecords/all.php, and its wider drill-down access to
+// pages/feerecords/view.php via viewallrecords.
+$string['allfeerecords'] = 'All fee records';
+$string['allfeerecordsdesc'] = 'Every student\'s fee status in one searchable, filterable table - by student name/email, course category, academic year and status.';
+$string['nofeerecordsfound'] = 'No fee records match your filters.';
+$string['backtoallfeerecords'] = 'Back to all fee records';
 $string['bulkassign'] = 'Bulk assign';
 $string['bulkassignfeerecord'] = 'Bulk assign fee record';
 $string['bulkassignfeerecorddesc'] = 'Assign one fee structure to every student currently enrolled in a course category. Students who already have this fee structure are skipped automatically.';
@@ -496,3 +503,22 @@ $string['myscholarshiprequestsdesc'] = 'Scholarship requests you have submitted.
 $string['mydiscountrequestsdesc'] = 'Discount requests you have submitted for your own fee records.';
 $string['nofeerecordsownscholarship'] = 'You don\'t have any fee record yet, so there is nothing to request a scholarship against. Please contact the Finance office if you believe this is a mistake.';
 $string['nofeerecordsowndiscount'] = 'You don\'t have any fee record yet, so there is nothing to request a discount against. Please contact the Finance office if you believe this is a mistake.';
+
+// -----------------------------------------------------------------
+// Finance Dashboard & Reports (Step 7.11, 2026-09-10) -
+// pages/reports/index.php + pages/reports/export.php.
+// -----------------------------------------------------------------
+$string['financedashboard'] = 'Finance Dashboard';
+$string['financedashboarddesc'] = 'Institution-wide fee totals, charts, and exportable records.';
+$string['reportsstatusfilterhint'] = '(status filter applies to exports only)';
+$string['totalcollected'] = 'Total collected';
+$string['totaloutstanding'] = 'Total outstanding';
+$string['overduecount'] = 'Overdue fee records';
+$string['activescholarshipscount'] = 'Active scholarships';
+$string['activediscountscount'] = 'Active discounts';
+$string['chartcollectedvsoutstanding'] = 'Collected vs outstanding';
+$string['chartoutstandingbycategory'] = 'Outstanding balance by category';
+$string['nochartdata'] = 'Not enough data yet to draw this chart.';
+$string['exportrecords'] = 'Export records';
+$string['exportfeerecords'] = 'Fee records ({$a})';
+$string['exportpayments'] = 'Payments ({$a})';

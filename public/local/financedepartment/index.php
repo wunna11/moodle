@@ -15,9 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Finance Department landing page. A lightweight hub for now - just a
- * quicklink to Fee Structures - that grows into the full dashboard
- * (summary cards, reports) once Step 7.11 is built.
+ * Finance Department landing page - a lightweight navigation hub of
+ * quicklink tiles, shared by every role this plugin has any page for
+ * (finance staff and self-service students alike).
+ *
+ * 2026-09-10 (Step 7.11): the real "full dashboard" (summary cards,
+ * charts, exports) this docblock used to say would grow HERE was built
+ * as its own separate page instead, pages/reports/index.php, gated on
+ * viewfinancereports specifically - see that page's docblock for why
+ * (an AskUserQuestion scope decision: keeping institution-wide
+ * financial totals out of the one page every role, including a plain
+ * self-service student, lands on). This page gained one more quicklink
+ * tile pointing there for whoever holds viewfinancereports.
  *
  * @package   local_financedepartment
  * @copyright 2026 Wunna
@@ -41,7 +50,7 @@ $canapprovediscounts = access_manager::can_manage('local/financedepartment:appro
 $canmanageinstallments = access_manager::can_manage('local/financedepartment:manageinstallments');
 $canrecordpayments = access_manager::can_manage('local/financedepartment:recordpayments');
 $canmanagerefunds = access_manager::can_manage('local/financedepartment:managerefunds');
-$canviewreports = has_capability('local/financedepartment:viewfinancereports', $context);
+$canviewreports = access_manager::can_manage('local/financedepartment:viewfinancereports');
 $canviewown = has_capability('local/financedepartment:viewownfeerecord', $context);
 // Plain per-user self-service capabilities (2026-09-09 fix), NOT routed
 // through access_manager - see db/access.php's docblock and
@@ -147,12 +156,28 @@ if ($canrecordpayments || $canmanagerefunds) {
     );
 }
 
+if ($canviewreports) {
+    // Step 7.11 - a separate tile from every branch above (not an
+    // else-if anywhere), same "own top-level slot" reasoning as the
+    // Reports tab in lib.php's local_financedepartment_get_tabs().
+    echo local_financedepartment_render_quicklink(
+        new moodle_url('/local/financedepartment/pages/reports/index.php'),
+        get_string('financedashboard', 'local_financedepartment'),
+        'fa-bar-chart'
+    );
+}
+
 echo html_writer::end_div();
 
 if (!$canmanagefees && !$canmanagefeerecords && !$canmanagescholarships && !$canapprovescholarships
         && !$canmanagediscounts && !$canapprovediscounts && !$canmanageinstallments
         && !$canrecordpayments && !$canmanagerefunds && !$cansubmitscholarship && !$cansubmitdiscount
-        && !$canviewown) {
+        && !$canviewown && !$canviewreports) {
+    // $canviewreports added 2026-09-10 (Step 7.11) - previously missing
+    // from this list entirely (harmless before, since no tile existed
+    // for a viewfinancereports-only holder either way) - now that the
+    // new Reports tile exists above, omitting it here would show BOTH
+    // the tile and this "no sections" message at once for that viewer.
     echo local_financedepartment_render_empty_state(get_string('nosectionsyet', 'local_financedepartment'));
 }
 

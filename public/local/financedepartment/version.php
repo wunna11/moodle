@@ -25,10 +25,154 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026091007;
+$plugin->version   = 2026091011;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.8.3';
+$plugin->release   = '0.8.7';
+
+// 2026-09-10: Step 7.11 (Finance Dashboard & Reports) built, per the
+// user's own request ("let's go step 7.11 and create modern beautiful
+// design"). Confirmed four scope decisions via AskUserQuestion before
+// building (all Recommended):
+//
+// (1) NEW page, pages/reports/index.php, gated on
+// local/financedepartment:viewfinancereports specifically - rather than
+// growing index.php itself into the dashboard, which is what that
+// page's OWN docblock had said would happen "once Step 7.11 is built".
+// Reason: index.php is the shared navigation hub every role lands on,
+// including a plain self-service student (viewownfeerecord only) - an
+// institution-wide "total collected"/"total outstanding" figure has no
+// business rendering unconditionally on that shared page even if
+// capability-gated inline, and the same separate-page shape Step 7.9
+// already established for pages/feerecords/all.php (own tab, own hero
+// link from the general hub) fit naturally here too.
+//
+// (2) Charts: YES, using Moodle's OWN core\chart_pie/core\chart_bar
+// (the Chart.js wrapper already shipped with Moodle core, rendered via
+// $OUTPUT->render($chart) - confirmed available in this checkout before
+// asking) - explicitly requested for the "modern beautiful design" the
+// user asked for, rather than stat cards/tables alone. Two charts: a
+// doughnut (collected vs outstanding) and a bar chart (outstanding
+// balance by course category, capped at
+// dashboard_manager::MAX_CHART_CATEGORIES = 10 bars).
+//
+// (3) Export formats: CSV + Excel + PDF, all three - confirmed this
+// site already has all three core dataformat subplugins installed
+// (dataformat_csv/dataformat_excel/dataformat_pdf, checked via ls before
+// asking) via one shared call to \core\dataformat::download_data(), so
+// supporting all three cost no more than supporting one.
+//
+// (4) Export scope: TWO separate exports - "Export fee records" (one
+// row per fee record: student, category, year, total/scholarship/
+// discount/paid/balance, status, assigned date) and "Export payments"
+// (one row per payment/refund transaction: receipt number, student,
+// category, year, type, amount, date, method, status) - six download
+// links total (3 formats x 2 types) in pages/reports/index.php's export
+// row.
+//
+// New: classes/dashboard_manager.php (all aggregation queries) +
+// pages/reports/index.php (the dashboard) + pages/reports/export.php
+// (the six-way export dispatcher). A deliberate, NOT-asked-about design
+// choice made while planning (see dashboard_manager.php's own class
+// docblock for the full reasoning): the category + academic year
+// filters narrow every summary card/chart/export, but the STATUS filter
+// on the dashboard page only narrows the two exports, not the five
+// summary cards - those cards ARE themselves a status breakdown, so
+// applying a status filter to them would zero out most cards for no
+// useful reason (the filter bar shows a small inline hint,
+// reportsstatusfilterhint, explaining this).
+//
+// The overdue-count aggregate and the fee-records export's status
+// filter both reuse the EXACT SAME "status as DISPLAYED, not the raw DB
+// column" EXISTS-subquery logic classes/table/feerecord_table.php's
+// build_status_where() introduced in Step 7.9 - duplicated in SQL form
+// (dashboard_manager::overdue_exists_sql()) rather than shared, since
+// feerecord_table's version is a protected instance method tied to that
+// class's own $params naming; kept in sync manually if the overdue rule
+// ever changes, same caveat that class's own docblock already carries.
+//
+// lib.php's local_financedepartment_get_tabs() gained a Reports tab in
+// its OWN top-level slot (not an else-if branch anywhere else - a full
+// finance manager sees BOTH "Fee records" and "Reports" tabs
+// simultaneously), gated purely on viewfinancereports. index.php gained
+// a matching quicklink tile. Also fixed, while touching index.php: its
+// $canviewreports variable was plain has_capability() instead of
+// access_manager::can_manage() like every other capability check on
+// that page - a pre-existing inconsistency (an actual Finance-department
+// hrdep_employee with no capability directly assigned would never have
+// seen ANY viewfinancereports-gated UI on that page) that would have
+// silently broken the new Reports tile for that exact case if left
+// unfixed; and index.php's bottom "no sections yet" empty-state
+// condition, which never included $canviewreports at all (harmless
+// before today since no tile existed for that capability, but would
+// have shown a contradictory "no sections" message directly under the
+// new Reports tile if left as-is).
+//
+// New CSS (styles.css) for the stat cards/chart cards/export buttons -
+// this is the one place in the plugin's stylesheet with an explicitly
+// heavier visual treatment than the rest (gradient icon badges, hover
+// lift, per Step 7.11's own "modern beautiful design" ask) - see that
+// file's own updated docblock.
+//
+// No DB schema/capability change (viewfinancereports already existed
+// since Step 7.1, and its own db/access.php comment already named
+// "Finance dashboard/reports (Step 7.11)" as one of its two intended
+// uses). 14 new lang strings. Verified with php -l on every new/changed
+// file (staged to a cloud container for the check, no local PHP CLI on
+// this device) and the usual lang-string cross-check (used-vs-defined
+// python scan, zero missing/duplicate).
+
+// 2026-09-10: Step 7.9 (student fee statement & views) - the last two
+// pieces of this step that were missing, per the user's own request to
+// "start Step 7.9": pages/myfeerecord/* (student self-view) and
+// pages/feerecords/view.php (a finance-staff itemised statement) were
+// ALREADY built by earlier same-day work - only the "finance staff list
+// view: all students' fee status, searchable/filterable by category,
+// year, status" piece was missing, confirmed by grep before starting
+// (pages/feerecords/index.php's own docblock explicitly named this as
+// "Step 7.9's job", and db/access.php's viewfinancereports/
+// viewallrecords capabilities were defined since Step 7.1 with comments
+// naming Step 7.9 but never actually checked by any page).
+//
+// Asked the user three scope questions via AskUserQuestion before
+// building (all Recommended): (1) pages/feerecords/view.php (the
+// existing itemised statement) is widened from managefeerecords-only to
+// ALSO accept local/financedepartment:viewallrecords, via a new
+// access_manager::can_manage_any()/require_manage_any() helper (OR of
+// several capabilities, still OR'd with the usual finance-staff blanket
+// grant) - a report-only viewer can now drill into a student's
+// statement from the new list, but sees no Edit/Cancel action and no
+// managefeerecords-gated back-link (routes to the new list instead);
+// (2) the new list's filters are category + academic year + status
+// (the spec's three) PLUS a student name/email search box, matching
+// every other list page in this plugin; (3) built as a new page,
+// pages/feerecords/all.php, rather than folded into
+// pages/feerecords/index.php's existing per-student search-then-assign
+// flow - index.php (managefeerecords-gated) gained a hero-button link
+// to it, and a viewfinancereports-only holder (no managefeerecords) gets
+// their own new tab-bar entry routing straight to it, the same
+// routing-split pattern already used for My Fee Record/Scholarships/
+// Discounts.
+//
+// New: classes/table/feerecord_table.php (a \core_table\sql_table,
+// same shape as feestructure_table/discount_table). Its status filter
+// deliberately matches what local_financedepartment_feerecord_status_badge()
+// DISPLAYS, not the raw financedep_feerecord.status column - "Overdue"
+// is Step 7.8's live-computed state, never persisted, so filtering by it
+// needed an EXISTS subquery against financedep_installmentplan/
+// financedep_installmentsched (active plan, pending/partiallypaid
+// schedule line, due date passed) mirroring
+// feerecord_manager::has_overdue_installment()'s logic in SQL, and
+// filtering by "Unpaid"/"Partially paid" explicitly EXCLUDES an overdue
+// record for the same reason - otherwise a record could show as
+// "Overdue" in the Status column while matching the "Unpaid" filter, or
+// fail to appear under "Overdue" at all.
+//
+// No DB schema/capability change (viewfinancereports/viewallrecords both
+// already existed since Step 7.1). 4 new lang strings (allfeerecords,
+// allfeerecordsdesc, nofeerecordsfound, backtoallfeerecords). Verified
+// with php -l on every new/changed file and the usual lang-string
+// cross-check (comm -23, zero missing/duplicate).
 
 // 2026-09-10 (post-deploy feature, same day, follows the My Fee Record
 // self-service feature below) - the user asked for a validation rule: a
@@ -520,6 +664,56 @@ $plugin->release   = '0.8.3';
 // (one plan per fee record, ever) - create() reuses a CANCELLED row
 // rather than inserting a duplicate. See [[financedepartment-schema]]
 // project memory for the full 2026-09-08 write-up.
+
+// 2026-09-10 (post-deploy fix #9): a further round of the same dashboard
+// visual bug report - the user shared a NEW screenshot after fix #8, this
+// time showing the "Outstanding balance by category" BAR chart rendering
+// as a huge, near-square solid-colour block (and the doughnut chart's
+// canvas was oversized too). Root cause this time was NOT this plugin's
+// own CSS at all: Moodle core's own theme_boost/scss/moodle/core.scss
+// hardcodes ".chart-area .chart-image { height: 48vh; width: 46vw; }" on
+// large screens for EVERY Moodle chart site-wide. That sizing is
+// reasonable for a chart with many data points, but this dashboard's bar
+// chart currently has only a single category ("First Year (MBA)") - with
+// responsive:true/maintainAspectRatio:false (Moodle's own Chart.js
+// default, confirmed in lib/amd/src/chart_output_chartjs.js), Chart.js
+// always fills its container exactly, so one bar reaching the y-axis max
+// filled almost that entire 48vh x 46vw box, reading as a giant coloured
+// square rather than a normal-looking bar. core\chart_bar/chart_series
+// expose no maxBarThickness/barPercentage setter to constrain this from
+// the PHP side (checked lib/classes/chart_bar.php, chart_series.php,
+// chart_base.php), so fixed with a scoped CSS override instead:
+// ".findept-chart-card .chart-area .chart-image { height: 280px; width:
+// 100%; }" in styles.css - higher specificity than core's rule, and
+// scoped only to this plugin's own dashboard chart cards, so no other
+// page's charts anywhere else on the site are affected. CSS-only, no
+// PHP/lang/capability change. See [[financedepartment-step711]] project
+// memory.
+
+// 2026-09-10 (post-deploy fix #8): Step 7.11's finance dashboard
+// (pages/reports/index.php) had a visual bug reported by the user - the
+// two money-value stat cards ("Total collected", "Total outstanding")
+// had their amount text clipped at the card edge (e.g. "20,000,000 MMK"
+// cut off), while short numeric cards (counts) rendered fine. Root
+// cause: .findept-stat-value used white-space: nowrap while the grid
+// track width (grid-template-columns: repeat(auto-fit, minmax(220px,
+// 1fr))) could be forced narrower than the nowrap text's natural width.
+// Fixed in styles.css: removed white-space: nowrap in favour of
+// white-space: normal + overflow-wrap: anywhere + a responsive
+// clamp() font-size; widened the grid minmax to 240px; gave
+// .findept-stat-card min-width: 0 and .findept-stat-body flex: 1 1 auto
+// so flex/grid children can shrink instead of overflowing. Took the
+// opportunity to also address the user's "design is missing" feedback
+// with more visual polish: each stat card now has a per-variant
+// gradient accent bar along its top edge (.findept-stat-card::before),
+// matching the existing icon-badge gradient colours, plus a deeper
+// icon shadow. This required lib.php's
+// local_financedepartment_render_stat_card() to also add the
+// findept-variant-{$variant} class to the OUTER card div (previously
+// only the inner icon div carried a variant class), since the new
+// ::before accent-bar rule is scoped to .findept-stat-card.findept-variant-*.
+// CSS-only + one helper-function change - no lang string or capability
+// changes. See [[financedepartment-step711]] project memory.
 
 // 2026-09-06 (post-deploy fix #7): a PENDING scholarship/discount request
 // could still be approved (and its amount deducted from the fee record)

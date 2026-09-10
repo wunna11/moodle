@@ -265,6 +265,63 @@ class access_manager {
     }
 
     /**
+     * Like can_manage() above, but true if the user satisfies ANY one of
+     * several capabilities (still OR'd with the can_access_finance_department()
+     * blanket grant, checked only once regardless of how many capabilities
+     * are passed). Added for Step 7.9 (the all-students fee status list,
+     * pages/feerecords/all.php) - a page that should be reachable by
+     * EITHER local/financedepartment:viewfinancereports (a report-only
+     * role with no record-management access) OR
+     * local/financedepartment:managefeerecords (finance staff who already
+     * manage fee records day-to-day), and by pages/feerecords/view.php,
+     * extended the same day to accept EITHER managefeerecords OR
+     * viewallrecords (db/access.php's own comment on viewallrecords: "view
+     * any student's fee statement, regardless of who assigned or manages
+     * it" - previously defined since Step 7.1 but never actually checked
+     * anywhere, same class of gap as viewownfeerecord before its own
+     * 2026-09-10 fix). Pulled out here rather than inlined at each call
+     * site, for the same reason can_view_navigation_entry() exists - a
+     * duplicated OR chain is how this plugin's earlier same-day
+     * navigation bug happened.
+     *
+     * @param string[] $capabilities e.g. ['local/financedepartment:managefeerecords', 'local/financedepartment:viewallrecords']
+     * @param int $userid defaults to $USER.
+     * @return bool
+     */
+    public static function can_manage_any(array $capabilities, int $userid = 0): bool {
+        global $USER;
+        $userid = $userid ?: (int) $USER->id;
+
+        if (self::can_access_finance_department($userid)) {
+            return true;
+        }
+
+        foreach ($capabilities as $capability) {
+            if (has_capability($capability, \context_system::instance(), $userid)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Drop-in require_capability()-style companion to can_manage_any()
+     * above - throws using the FIRST capability in the list so the
+     * standard "you don't have permission" page still names a real
+     * capability rather than a synthetic one.
+     *
+     * @param string[] $capabilities
+     * @param int $userid defaults to $USER.
+     * @return void
+     */
+    public static function require_manage_any(array $capabilities, int $userid = 0): void {
+        if (!self::can_manage_any($capabilities, $userid)) {
+            throw new \required_capability_exception(\context_system::instance(), $capabilities[0], 'nopermissions', '');
+        }
+    }
+
+    /**
      * Whether the current user should see the Finance Department entry in
      * navigation at all - true for finance staff/admins, or for a student
      * who holds any of the self-service capabilities (view own fee

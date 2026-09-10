@@ -224,3 +224,169 @@
     font-size: 1.5rem;
     color: #2f6fed;
 }
+
+/* -----------------------------------------------------------------
+ * Finance Dashboard & Reports (Step 7.11, 2026-09-10) -
+ * pages/reports/index.php. The one deliberately more "designed" corner
+ * of this stylesheet - see this file's own top docblock on why the rest
+ * of the plugin stayed a plain Bootstrap-first look; the dashboard's
+ * summary cards/charts are the one place a heavier visual treatment
+ * earns its keep, since they ARE the content (not a form/table wrapper).
+ * ----------------------------------------------------------------- */
+
+.findept-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.findept-stat-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 1rem;
+    padding: 1.25rem 1.4rem;
+    box-shadow: 0 2px 10px rgba(20, 30, 60, 0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Coloured top accent bar, matching the icon's variant - drawn with a
+ * pseudo-element rather than a border so it sits flush with the card's
+ * rounded corners. */
+.findept-stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.findept-stat-card.findept-variant-success::before { background: linear-gradient(90deg, #2fb380, #1a9c6b); }
+.findept-stat-card.findept-variant-warning::before { background: linear-gradient(90deg, #f5a623, #e08e00); }
+.findept-stat-card.findept-variant-danger::before  { background: linear-gradient(90deg, #ef5b5b, #d63d3d); }
+.findept-stat-card.findept-variant-info::before    { background: linear-gradient(90deg, #6f42c1, #4e2c99); }
+.findept-stat-card.findept-variant-teal::before    { background: linear-gradient(90deg, #17a2b8, #12808f); }
+
+.findept-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(20, 30, 60, 0.09);
+}
+
+.findept-stat-icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.85rem;
+    font-size: 1.3rem;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(20, 30, 60, 0.15);
+}
+
+.findept-stat-icon.findept-variant-success { background: linear-gradient(135deg, #2fb380 0%, #1a9c6b 100%); }
+.findept-stat-icon.findept-variant-warning { background: linear-gradient(135deg, #f5a623 0%, #e08e00 100%); }
+.findept-stat-icon.findept-variant-danger  { background: linear-gradient(135deg, #ef5b5b 0%, #d63d3d 100%); }
+.findept-stat-icon.findept-variant-info    { background: linear-gradient(135deg, #6f42c1 0%, #4e2c99 100%); }
+.findept-stat-icon.findept-variant-teal    { background: linear-gradient(135deg, #17a2b8 0%, #12808f 100%); }
+
+.findept-stat-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Long MMK amounts (institution-wide totals) must never overflow/clip -
+ * they wrap onto a second line instead, sized down slightly via clamp()
+ * so a card stays compact whenever the value DOES fit on one line. */
+.findept-stat-value {
+    font-size: clamp(1.15rem, 1.6vw + 0.6rem, 1.5rem);
+    font-weight: 700;
+    color: #1a1d29;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.findept-stat-label {
+    color: #6c757d;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 0.15rem;
+}
+
+.findept-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    align-items: stretch;
+}
+
+.findept-chart-card {
+    background: #fff;
+    border: 1px solid #e3e6ec;
+    border-radius: 1rem;
+    padding: 1.25rem 1.4rem;
+    box-shadow: 0 2px 10px rgba(20, 30, 60, 0.05);
+}
+
+/*
+ * Moodle core (theme_boost core.scss) hardcodes .chart-area .chart-image to
+ * height: 48vh; width: 46vw on large screens - fine for a chart with many
+ * data points, but a chart with only one or two categories (very likely on
+ * this dashboard: a single fee category, a single academic year) then
+ * renders as a huge, near-square coloured block filling that whole area,
+ * since Chart.js (responsive: true, maintainAspectRatio: false, the Moodle
+ * default) always fills its container exactly. Overriding to a fixed,
+ * reasonable height here keeps the chart sensibly sized regardless of how
+ * few data points it has or how wide the viewport is.
+ */
+.findept-chart-card .chart-area .chart-image {
+    height: 280px;
+    width: 100%;
+}
+
+
+.findept-chart-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1d29;
+    margin: 0 0 1rem;
+}
+
+.findept-export-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.findept-export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.findept-export-btn:hover {
+    border-color: #2f6fed;
+    color: #2f6fed;
+    text-decoration: none;
+}

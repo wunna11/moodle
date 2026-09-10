@@ -15,11 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * View one fee record's details and its assignment/edit/cancel history.
- * The scholarship/discount/paid breakdown fields are shown as-is (all
- * zero until Steps 7.4/7.5/7.7 are built) - the full itemised statement
- * view is Step 7.9's job, this is just this one record's own detail
- * page, same role pages/fees/view.php plays for a fee structure.
+ * View one fee record's details and its assignment/edit/cancel history -
+ * this already IS the itemised statement Step 7.9 asks for (fee
+ * structure + scholarship + discount + payments + balance, all in one
+ * view), just under its original Step 7.3 page rather than a new one.
+ *
+ * 2026-09-10 (Step 7.9): gate widened from managefeerecords-only to
+ * ALSO accept local/financedepartment:viewallrecords, via the new
+ * access_manager::require_manage_any() - matches viewallrecords' own
+ * db/access.php comment ("view any student's fee statement, regardless
+ * of who assigned or manages it"), previously defined since Step 7.1
+ * but never actually wired to any page. A viewallrecords-only viewer
+ * (no managefeerecords) can now open this page from the new
+ * pages/feerecords/all.php list, but sees NO mutating action (no Edit/
+ * Cancel button, and the back link routes to all.php instead of the
+ * managefeerecords-gated index.php) - see the $actions/back-link
+ * construction below.
  *
  * @package   local_financedepartment
  * @copyright 2026 Wunna
@@ -39,7 +50,11 @@ require_login();
 $id = required_param('id', PARAM_INT);
 
 $context = context_system::instance();
-access_manager::require_manage('local/financedepartment:managefeerecords');
+access_manager::require_manage_any([
+    'local/financedepartment:managefeerecords',
+    'local/financedepartment:viewallrecords',
+]);
+$canmanagefeerecords = access_manager::can_manage('local/financedepartment:managefeerecords');
 
 $feerecord = feerecord_manager::get($id);
 if (!$feerecord) {
@@ -60,22 +75,30 @@ $PAGE->set_heading(access_manager::get_display_name());
 
 echo $OUTPUT->header();
 
-echo local_financedepartment_render_tab_bar('feerecords');
+echo local_financedepartment_render_tab_bar($canmanagefeerecords ? 'feerecords' : 'allfeerecords');
 
 echo html_writer::start_div('local-financedepartment-feerecords-view');
 
-echo local_financedepartment_render_back_link(
-    new moodle_url('/local/financedepartment/pages/feerecords/index.php', ['studentid' => $feerecord->studentid]),
-    get_string('backtofeerecords', 'local_financedepartment')
-);
+if ($canmanagefeerecords) {
+    echo local_financedepartment_render_back_link(
+        new moodle_url('/local/financedepartment/pages/feerecords/index.php', ['studentid' => $feerecord->studentid]),
+        get_string('backtofeerecords', 'local_financedepartment')
+    );
+} else {
+    echo local_financedepartment_render_back_link(
+        new moodle_url('/local/financedepartment/pages/feerecords/all.php'),
+        get_string('backtoallfeerecords', 'local_financedepartment')
+    );
+}
 
-$actions = [
-    [
+$actions = [];
+if ($canmanagefeerecords) {
+    $actions[] = [
         'url' => new moodle_url('/local/financedepartment/pages/feerecords/edit.php', ['id' => $id]),
         'label' => get_string('edit'),
         'icon' => 'fa-pencil-alt',
-    ],
-];
+    ];
+}
 if ($feerecord->status !== constants::FEE_STATUS_CANCELLED) {
     // Record payment/refund - Step 7.7. Refund is only offered once
     // something has actually been paid (feerecord_manager::add_payment_amount()
@@ -96,11 +119,13 @@ if ($feerecord->status !== constants::FEE_STATUS_CANCELLED) {
         ];
     }
 
-    $actions[] = [
-        'url' => new moodle_url('/local/financedepartment/pages/feerecords/cancel.php', ['id' => $id]),
-        'label' => get_string('cancel'),
-        'icon' => 'fa-ban',
-    ];
+    if ($canmanagefeerecords) {
+        $actions[] = [
+            'url' => new moodle_url('/local/financedepartment/pages/feerecords/cancel.php', ['id' => $id]),
+            'label' => get_string('cancel'),
+            'icon' => 'fa-ban',
+        ];
+    }
 }
 
 echo local_financedepartment_render_page_hero(
