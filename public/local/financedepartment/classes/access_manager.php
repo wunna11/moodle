@@ -369,11 +369,33 @@ class access_manager {
             return false;
         }
 
+        $userid = (int) $USER->id;
         $context = \context_system::instance();
 
-        return self::can_access_finance_department((int) $USER->id)
-            || has_capability('local/financedepartment:viewfinancereports', $context)
-            || has_capability('local/financedepartment:viewownfeerecord', $context)
+        if (self::can_access_finance_department($userid)
+                || has_capability('local/financedepartment:viewfinancereports', $context)) {
+            return true;
+        }
+
+        // 2026-09-12: a self-service-only capability (viewownfeerecord/
+        // submitscholarshiprequest/submitdiscountrequest) is granted to
+        // the 'user' archetype by default, so EVERY logged-in user used
+        // to qualify here, including local_hrdepartment HR-department
+        // staff - who then saw this plugin's "Scholarship" top-nav entry
+        // instead of their own plugin's "HR Department" one (which never
+        // had a top-nav entry point at all until the same-day fix to
+        // local_hrdepartment/classes/hooks/navigation/primary_extend.php).
+        // Per an explicit user request, HR staff must see ONLY "HR
+        // Department" in the top nav bar, never "Scholarship" - a plain
+        // student (no hrdep_employee record at all) is UNCHANGED and
+        // still sees "Scholarship" via this branch. A site admin is
+        // unaffected either way, since can_access_finance_department()
+        // above already returns true for them.
+        if (\local_hrdepartment\access_manager::can_access_hr_department($userid)) {
+            return false;
+        }
+
+        return has_capability('local/financedepartment:viewownfeerecord', $context)
             || has_capability('local/financedepartment:submitscholarshiprequest', $context)
             || has_capability('local/financedepartment:submitdiscountrequest', $context);
     }

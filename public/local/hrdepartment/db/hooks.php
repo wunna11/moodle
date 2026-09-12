@@ -17,6 +17,12 @@
 /**
  * Hook callback registrations for the HR Department local plugin.
  *
+ * 2026-09-12: added the primary_extend registration below - see
+ * classes/hooks/navigation/primary_extend.php's docblock for why (this
+ * plugin was invisible in the site's TOP nav bar; the pre-existing
+ * extend_user_menu registration only ever builds the account/avatar
+ * dropdown menu, a separate hook entirely).
+ *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -28,6 +34,11 @@ $callbacks = [
     [
         'hook' => \core_user\hook\extend_user_menu::class,
         'callback' => \local_hrdepartment\hook_callbacks::class . '::extend_user_menu',
+        'priority' => 0,
+    ],
+    [
+        'hook' => \core\hook\navigation\primary_extend::class,
+        'callback' => \local_hrdepartment\hooks\navigation\primary_extend::class . '::callback',
         'priority' => 0,
     ],
 ];

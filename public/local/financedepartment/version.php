@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026091206;
+$plugin->version   = 2026091207;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.9.7';
+$plugin->release   = '0.9.8';
 
 // 2026-09-10: Step 7.11 (Finance Dashboard & Reports) built, per the
 // user's own request ("let's go step 7.11 and create modern beautiful
@@ -1055,6 +1055,53 @@ $plugin->release   = '0.9.7';
 // No DB schema/capability/lang-string/PHP change - styles.css only.
 // Verified with a CSS brace-balance check (85/85). See
 // [[financedepartment-uipolish]] project memory for the full write-up.
+
+
+// 2026-09-12, v2026091207/0.9.8: the user reported (in Burmese) that
+// the top navbar showed "Scholarship" for local_hrdepartment HR staff
+// too, instead of an "HR Department" entry, and asked that a site admin
+// see BOTH "HR Department" and "Finance" in the top bar. Confirmed scope
+// via AskUserQuestion: a plain student keeps seeing "Scholarship"
+// unchanged; HR staff should see ONLY "HR Department", never
+// "Scholarship"; a Finance-staff member keeps seeing ONLY "Finance"
+// (unchanged - already true via is_finance_staff_viewer()); a site admin
+// sees both.
+//
+// Root cause: access_manager::can_view_navigation_entry()'s self-service
+// branch (viewownfeerecord/submitscholarshiprequest/submitdiscountrequest
+// - all 'user'-archetype capabilities granted to every logged-in account
+// by default) had no exclusion for local_hrdepartment HR-department
+// staff, so they qualified for this plugin's "Scholarship" top-nav entry
+// exactly like a plain student would - and had no "HR Department"
+// top-nav entry of their own to see instead, since local_hrdepartment
+// never had a primary_extend hook until the SAME-day companion fix
+// (local_hrdepartment v2026090603/0.7.1) added one.
+//
+// Fixed by adding one exclusion to can_view_navigation_entry()'s
+// self-service branch: if \local_hrdepartmentccess_manager::
+// can_access_hr_department($userid) is true, the self-service branch is
+// skipped entirely (HR staff sees local_hrdepartment's new "HR
+// Department" entry instead). The finance-staff/admin branch
+// (can_access_finance_department()/viewfinancereports) is UNCHANGED and
+// checked FIRST, so a site admin (who satisfies both) still sees this
+// plugin's own "Finance Department" entry regardless - and, thanks to
+// the same-day local_hrdepartment fix, ALSO sees "HR Department" in the
+// same top bar, satisfying the "admin sees both" requirement without
+// this plugin needing to know anything about local_hrdepartment's own
+// nav entry.
+//
+// Referencing \local_hrdepartmentccess_manager directly here (rather
+// than duplicating its "is HR staff" SQL, the way
+// is_staff_in_finance_department() otherwise mirrors it independently)
+// is safe and already precedented: local_hrdepartment is a hard
+// $plugin->dependencies requirement below, and this same file already
+// references \local_hrdepartment\constants::EMPLOYEE_TYPE_STAFF
+// directly elsewhere.
+//
+// No DB schema/capability/lang-string change - classes/access_manager.php
+// only. See [[hrdepartment-studentleave-schema-fix]] project memory's
+// sibling note, and local_hrdepartment's own v2026090603/0.7.1 changelog,
+// for the full two-plugin write-up.
 
 
 $plugin->dependencies = [
