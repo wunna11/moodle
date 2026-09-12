@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/hrdepartment/db" VERSION="20260817" COMMENT="XMLDB file for Moodle local/hrdepartment"
+<XMLDB PATH="local/hrdepartment/db" VERSION="20260912" COMMENT="XMLDB file for Moodle local/hrdepartment"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
     <TABLES>
@@ -209,6 +209,91 @@
             </KEYS>
             <INDEXES>
                 <INDEX NAME="idx_payrollid" UNIQUE="false" FIELDS="payrollid"/>
+            </INDEXES>
+        </TABLE>
+
+        <!-- 2026-09-12: the three tables below (Task 6: student leave
+             self-service/approval workflow) were only ever created via
+             db/upgrade.php (savepoints 2026081400/2026081600, plus the
+             2026081900 approverid field/index addition to
+             hrdep_studentleaveapp) and this install.xml was never synced
+             to match. On a site that incrementally upgraded through
+             those versions this was invisible (the tables already
+             existed), but a FRESH install of this plugin uses install.xml
+             alone as the complete schema and stamps the plugin straight
+             to the current version - skipping upgrade.php's steps
+             entirely - so these three tables never got created there at
+             all. See hrdepartment-studentleave-schema-fix memory. The
+             shapes below are the tables' FINAL current shape (i.e.
+             matching the DB state after every upgrade.php step through
+             2026081900 has run), not a copy of any single upgrade step. -->
+        <TABLE NAME="hrdep_studentleavetype" COMMENT="Configurable leave types available to students (e.g. Medical, Personal, Emergency, Family)">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="description" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="maxdaysperyear" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="requiresapproval" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+                <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_name" UNIQUE="true" FIELDS="name"/>
+                <INDEX NAME="idx_active" UNIQUE="false" FIELDS="active"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_studentleaveapp" COMMENT="Student leave requests and their approval workflow state">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_course.id, optional"/>
+                <FIELD NAME="leavetypeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_studentleavetype.id"/>
+                <FIELD NAME="startdate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="enddate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="totaldays" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false"/>
+                <FIELD NAME="submittedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="approverid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id, the specific teacher chosen to review a self-service application (leave/apply.php); null for HR-logged applications"/>
+                <FIELD NAME="reviewedby" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="reviewnote" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_studentid" UNIQUE="false" FIELDS="studentid"/>
+                <INDEX NAME="idx_leavetypeid" UNIQUE="false" FIELDS="leavetypeid"/>
+                <INDEX NAME="idx_courseid" UNIQUE="false" FIELDS="courseid"/>
+                <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
+                <INDEX NAME="idx_dates" UNIQUE="false" FIELDS="startdate, enddate"/>
+                <INDEX NAME="idx_approverid" UNIQUE="false" FIELDS="approverid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_studentleavebalance" COMMENT="Per-student, per-academic-year leave balance tracking by leave type">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="studentid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
+                <FIELD NAME="leavetypeid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_studentleavetype.id"/>
+                <FIELD NAME="academicyear" TYPE="char" LENGTH="9" NOTNULL="true" SEQUENCE="false"/>
+                <FIELD NAME="allocated" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="used" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="remaining" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_student_type_year" UNIQUE="true" FIELDS="studentid, leavetypeid, academicyear"/>
             </INDEXES>
         </TABLE>
     </TABLES>

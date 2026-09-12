@@ -177,6 +177,24 @@ class student_leave_manager {
     public static function is_approver(int $userid): bool {
         global $DB;
 
+        // 2026-09-12: this is called unconditionally, for every logged-in
+        // page load, from hook_callbacks::extend_user_menu() (it decides
+        // whether to add "Leave requests to review" to the account menu
+        // that renders on EVERY page). db/install.xml was never kept in
+        // sync with the tables db/upgrade.php creates from 2026081400
+        // onward (hrdep_studentleavetype/-leaveapp/-leavebalance), so on
+        // any site where this plugin was freshly installed rather than
+        // incrementally upgraded, hrdep_studentleaveapp never gets
+        // created and this query used to throw a dml_exception that took
+        // down the site-wide user menu (and with it every page) - see
+        // hrdepartment-studentleave-schema-fix memory. Guarding here is
+        // the fix that can never regress regardless of DB/install state;
+        // install.xml has also been corrected separately so future fresh
+        // installs don't hit this at all.
+        if (!$DB->get_manager()->table_exists('hrdep_studentleaveapp')) {
+            return false;
+        }
+
         return $DB->record_exists('hrdep_studentleaveapp', ['approverid' => $userid]);
     }
 
