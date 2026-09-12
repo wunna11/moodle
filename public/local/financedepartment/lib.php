@@ -202,20 +202,30 @@ function local_financedepartment_get_tabs(string $selected): array {
         );
     }
 
-    // Reports tab (Step 7.11, 2026-09-10) - a SEPARATE top-level slot
-    // from the fee-records one above (not an else-if branch there),
-    // since the dashboard is a distinct concept from the fee-records
-    // list/assign flow - a full finance manager sees BOTH "Fee records"
-    // and "Reports" tabs at once. Gated purely on viewfinancereports,
-    // independent of every other capability, matching that capability's
-    // own db/access.php comment ("the finance dashboard, summary cards,
-    // and the finance staff list view").
+    // A "Reports" tab used to sit here (Step 7.11, 2026-09-10), pointing
+    // at the now-removed pages/reports/index.php. Removed 2026-09-12 per
+    // the user's own request to make index.php itself the finance
+    // dashboard - that page's content (summary cards/charts/filters/
+    // exports) now renders directly on index.php for a viewfinancereports
+    // holder, so a separate tab pointing at a stand-alone dashboard page
+    // no longer applies. This tab bar still has no "Home" entry of its
+    // own (unchanged) - a viewer returns to index.php via the plugin's
+    // top-nav entry (local_financedepartment_extend_navigation()/the
+    // primary_extend hook) or the browser back button, same as before
+    // this removal. See [[financedepartment-uipolish]] project memory.
+
+    // Access tab (Step 7.12, 2026-09-10) - the read-only capability/role
+    // + Finance staff summary page, pages/access/index.php. Gated on the
+    // SAME viewfinancereports capability as the Reports tab above (per
+    // the user's own AskUserQuestion scope decision) - deliberately NOT
+    // a stricter admin-only capability, so any existing report-viewer
+    // role also sees this without a new capability being introduced.
     if (access_manager::can_manage('local/financedepartment:viewfinancereports')) {
         $tabs[] = local_financedepartment_make_tab(
-            'reports',
-            new moodle_url('/local/financedepartment/pages/reports/index.php'),
-            get_string('financedashboard', 'local_financedepartment'),
-            'fa-bar-chart'
+            'access',
+            new moodle_url('/local/financedepartment/pages/access/index.php'),
+            get_string('accesssummary', 'local_financedepartment'),
+            'fa-key'
         );
     }
 
@@ -563,33 +573,43 @@ function local_financedepartment_render_quicklink(moodle_url $url, string $label
 }
 
 /**
- * Renders one summary stat card for pages/reports/index.php (Step
- * 7.11). $value is passed already formatted (money string or a plain
- * count) - this helper only handles layout/icon/colour, not formatting,
- * since some cards are MMK amounts and others are plain integers.
+ * Renders one summary stat card, originally built for pages/reports/
+ * index.php (Step 7.11), now shown directly on index.php's dashboard
+ * section (2026-09-12). $value is passed already formatted (money
+ * string or a plain count) - this helper only handles layout/icon/
+ * colour, not formatting, since some cards are MMK amounts and others
+ * are plain integers.
  *
  * @param string $label already a get_string() result
  * @param string $value already-formatted display value
  * @param string $icon a Font Awesome class, e.g. 'fa-money'
  * @param string $variant one of success|warning|danger|info|teal
+ * @param moodle_url|null $url optional (2026-09-12) - when given, the
+ *        whole card becomes a clickable link to it (e.g. a "pending
+ *        requests" card linking straight to that review queue) instead
+ *        of a plain, non-interactive div. See styles.css's
+ *        `a.findept-stat-card` rule for the matching hover/underline
+ *        override.
  * @return string
  */
-function local_financedepartment_render_stat_card(string $label, string $value, string $icon, string $variant = 'info'): string {
-    $out = html_writer::start_div('findept-stat-card findept-variant-' . $variant);
+function local_financedepartment_render_stat_card(string $label, string $value, string $icon, string $variant = 'info', ?moodle_url $url = null): string {
+    $classes = 'findept-stat-card findept-variant-' . $variant;
 
-    $out .= html_writer::div(
+    $inner = html_writer::div(
         html_writer::tag('i', '', ['class' => 'icon fa ' . $icon, 'aria-hidden' => 'true']),
         'findept-stat-icon findept-variant-' . $variant
     );
 
-    $out .= html_writer::start_div('findept-stat-body');
-    $out .= html_writer::div($value, 'findept-stat-value');
-    $out .= html_writer::div($label, 'findept-stat-label');
-    $out .= html_writer::end_div();
+    $inner .= html_writer::start_div('findept-stat-body');
+    $inner .= html_writer::div($value, 'findept-stat-value');
+    $inner .= html_writer::div($label, 'findept-stat-label');
+    $inner .= html_writer::end_div();
 
-    $out .= html_writer::end_div();
+    if ($url !== null) {
+        return html_writer::link($url, $inner, ['class' => $classes]);
+    }
 
-    return $out;
+    return html_writer::div($inner, $classes);
 }
 
 /**

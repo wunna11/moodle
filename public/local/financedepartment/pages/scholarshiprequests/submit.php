@@ -58,6 +58,7 @@ use local_financedepartment\form\scholarshiprequest_form;
 require_once(__DIR__ . '/../../../../config.php');
 
 require_login();
+$PAGE->set_primary_active_tab('local_financedepartment');
 
 $context = context_system::instance();
 require_capability('local/financedepartment:submitscholarshiprequest', $context);

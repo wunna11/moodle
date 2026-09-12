@@ -76,6 +76,17 @@ class discount_form extends \moodleform {
         $mform->addRule('amountvalue', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('amountvalue', 'amountvalue', 'local_financedepartment');
 
+        // Dynamic unit hint (2026-09-12) - identical fix as
+        // scholarship_form.php's amountvalue field, applied here too since
+        // this form has the exact same amounttype/amountvalue pattern. See
+        // that form's own comment for the full "why hideIf instead of
+        // label-text JS" reasoning.
+        $mform->addElement('static', 'amountvaluehint_fixed', '', get_string('amountvaluehint_fixed', 'local_financedepartment'));
+        $mform->hideIf('amountvaluehint_fixed', 'amounttype', 'eq', constants::AMOUNT_TYPE_PERCENTAGE);
+
+        $mform->addElement('static', 'amountvaluehint_percentage', '', get_string('amountvaluehint_percentage', 'local_financedepartment'));
+        $mform->hideIf('amountvaluehint_percentage', 'amounttype', 'neq', constants::AMOUNT_TYPE_PERCENTAGE);
+
         $mform->addElement('static', 'discountautomaticnotice', '', get_string('discountautomaticnotice', 'local_financedepartment'));
 
         $mform->addElement('textarea', 'description', get_string('description', 'local_financedepartment'), ['rows' => 3]);

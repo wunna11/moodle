@@ -86,7 +86,12 @@ $string['erroramountnegative'] = 'Amount must be a number of 0 or more.';
 $string['erroracademicyeartoolong'] = 'Academic year must be 20 characters or fewer.';
 $string['category'] = 'Course category';
 $string['academicyear'] = 'Academic year';
-$string['academicyear_help'] = 'A free-text label for the academic year this fee applies to, e.g. "2026-2027". There is no separate academic year list to choose from - type it exactly as you want it shown.';
+$string['academicyear_help'] = 'Pick the academic year as a From/To year range, e.g. 2026 to 2027 (stored as "2026-2027"; picking the same year for both stores just "2026"). If the period does not fit a plain year range - for example it runs by specific months - tick "Use a custom label instead" and type it exactly as you want it shown.';
+$string['academicyearfrom'] = 'Academic year (from)';
+$string['academicyearto'] = 'Academic year (to)';
+$string['academicyearcustom'] = 'Use a custom label instead (e.g. a period spanning specific months, not a plain year range)';
+$string['academicyeartext'] = 'Custom academic year label';
+$string['erroracademicyearrange'] = '"Academic year (to)" must be the same as or after "Academic year (from)".';
 $string['amount'] = 'Amount (MMK)';
 $string['amount_help'] = 'The fee amount in Myanmar Kyat (MMK). This plugin handles MMK only.';
 $string['description'] = 'Description';
@@ -210,6 +215,8 @@ $string['amounttype_fixed'] = 'Fixed MMK amount';
 $string['amounttype_percentage'] = 'Percentage of fee';
 $string['amountvalue'] = 'Amount';
 $string['amountvalue_help'] = 'A fixed MMK amount, or a percentage (0-100) of the fee record\'s total amount, depending on the amount type chosen above.';
+$string['amountvaluehint_fixed'] = 'Enter a fixed MMK amount.';
+$string['amountvaluehint_percentage'] = 'Enter a percentage of the fee record\'s total amount (0-100).';
 $string['errorpercentagerange'] = 'A percentage amount must be between 0 and 100.';
 $string['noscholarships'] = 'No scholarships match these filters yet.';
 $string['backtoscholarships'] = 'Back to scholarships';
@@ -522,3 +529,33 @@ $string['nochartdata'] = 'Not enough data yet to draw this chart.';
 $string['exportrecords'] = 'Export records';
 $string['exportfeerecords'] = 'Fee records ({$a})';
 $string['exportpayments'] = 'Payments ({$a})';
+// 2026-09-12: dashboard additions (moved to index.php the same day) -
+// pending-request stat cards + the recent-payments widget.
+$string['pendingscholarshiprequests'] = 'Pending scholarship requests';
+$string['pendingdiscountrequests'] = 'Pending discount requests';
+$string['viewallpayments'] = 'View all payments »';
+
+// -----------------------------------------------------------------
+// Access summary (Step 7.12, 2026-09-10) - pages/access/index.php.
+// Read-only view of this plugin's capabilities/role assignments plus
+// the Finance Department staff list - see access_summary_manager.php.
+// -----------------------------------------------------------------
+$string['accesssummary'] = 'Access';
+$string['accesssummarydesc'] = 'A read-only summary of who has access to this plugin - the current Finance Department staff list, and which Moodle roles hold each capability. To change access, use Moodle\'s Define roles page (capabilities) or the HR Department Staff pages (Finance staff membership).';
+$string['financestafflist'] = 'Finance Department staff';
+$string['financestafflistdesc'] = 'These are the users with a Finance-department Staff record in HR Department - the primary way this plugin grants full access, independent of any Moodle role. A site administrator always has full access too, whether or not listed here.';
+$string['nofinancestaff'] = 'No Finance Department staff are set up yet. Add one from HR Department\'s Staff page, picking "Finance" as the department.';
+$string['staffname'] = 'Name';
+$string['staffemail'] = 'Email';
+$string['staffdesignation'] = 'Designation';
+$string['staffemployeecode'] = 'Employee code';
+$string['capabilitysummary'] = 'Capabilities & role access';
+$string['capabilitysummarydesc'] = 'Every permission this plugin defines, and which Moodle roles currently grant it. A role assignment is a SECOND way in, alongside (not instead of) the Finance staff list above.';
+$string['managerolesinmoodle'] = 'Manage roles & permissions in Moodle';
+$string['capabilityname'] = 'Capability';
+$string['capabilitydescription'] = 'Description';
+$string['assignedroles'] = 'Roles with this permission';
+$string['noroles'] = 'No role currently grants this';
+$string['capabilitytype_read'] = 'View';
+$string['capabilitytype_write'] = 'Manage';
+

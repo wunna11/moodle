@@ -31,6 +31,7 @@ use local_financedepartment\feerecord_manager;
 require_once(__DIR__ . '/../../../../config.php');
 
 require_login();
+$PAGE->set_primary_active_tab('local_financedepartment');
 
 $id = required_param('id', PARAM_INT);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);

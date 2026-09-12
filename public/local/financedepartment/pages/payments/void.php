@@ -32,6 +32,7 @@ use local_financedepartment\form\feepaymentvoid_form;
 require_once(__DIR__ . '/../../../../config.php');
 
 require_login();
+$PAGE->set_primary_active_tab('local_financedepartment');
 
 $id = required_param('id', PARAM_INT);
 

@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die;
 
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026091011;
+$plugin->version   = 2026091206;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.8.7';
+$plugin->release   = '0.9.7';
 
 // 2026-09-10: Step 7.11 (Finance Dashboard & Reports) built, per the
 // user's own request ("let's go step 7.11 and create modern beautiful
@@ -690,6 +690,43 @@ $plugin->release   = '0.8.7';
 // PHP/lang/capability change. See [[financedepartment-step711]] project
 // memory.
 
+// 2026-09-12: the user reported (in Burmese) that Add Scholarship's
+// Amount field gives no indication of what unit to type once "Amount
+// type" is switched to Percentage - it still just says "Amount" whether
+// a fixed MMK figure or a 0-100 percentage is expected. Fixed in BOTH
+// classes/form/scholarship_form.php and classes/form/discount_form.php
+// (identical amounttype/amountvalue pattern in both) with a dynamic
+// static-text hint shown right under the field, toggled instantly via
+// Moodle's own $mform->hideIf('elementname', 'amounttype', 'eq'|'neq',
+// constants::AMOUNT_TYPE_PERCENTAGE) - NOT by mutating the field's own
+// label text via custom JS, which would risk clobbering mform's own
+// required-field asterisk markup and would have been this plugin's
+// first custom JS ever. Two new lang strings (amountvaluehint_fixed,
+// amountvaluehint_percentage). No schema/capability change.
+
+// 2026-09-10, Step 7.12 (Access) built - classes/access_summary_manager.php
+// (new) + pages/access/index.php (new). A READ-ONLY permission summary
+// page: (1) the actual Finance Department staff list (hrdep_employee
+// rows, department "Finance") - the PRIMARY real-world access grant this
+// plugin's access_manager::can_manage() uses, independent of any Moodle
+// role; (2) every local/financedepartment:* capability this plugin
+// defines (read LIVE from the {capabilities} table, not hardcoded, so
+// it can never drift out of sync with db/access.php) with which Moodle
+// roles currently hold each one at system context, via core's own
+// get_roles_with_capability()/role_get_name(). The user was offered a
+// choice between this read-only summary (chosen) and a fuller
+// permission-EDITING UI - editing still goes through Moodle's stock
+// Define roles page (linked from this page for a site admin viewer) or
+// local_hrdepartment's Staff pages, deliberately not reimplemented here.
+// New "Access" tab in local_financedepartment_get_tabs() (lib.php) and a
+// matching index.php quicklink tile, both gated on the SAME
+// viewfinancereports capability as the Reports tab/tile - no new
+// capability was introduced for this step. 17 new lang strings, zero
+// missing/duplicate (comm-style cross-check: 312 used / 399 defined).
+// No DB schema change. See [[financedepartment-step712]] project memory
+// for the full AskUserQuestion scope decision (gating, page content,
+// navigation placement).
+
 // 2026-09-10 (post-deploy fix #8): Step 7.11's finance dashboard
 // (pages/reports/index.php) had a visual bug reported by the user - the
 // two money-value stat cards ("Total collected", "Total outstanding")
@@ -740,6 +777,286 @@ $plugin->release   = '0.8.7';
 // model instead of maintaining its own financedep_employee table - see
 // classes/access_manager.php's docblock and [[financedepartment-schema]]
 // project memory. Requires HR's departmentid support on hrdep_employee.
+
+
+// 2026-09-12: plugin-wide visual redesign of styles.css, per the user's
+// own request (in Burmese) to make the whole Finance department UI
+// "clean and beautiful" - the design was "too plain" up to this point.
+// Confirmed scope via AskUserQuestion before touching anything (all
+// three Recommended options chosen): (1) redesign applies to EVERY page
+// in the plugin, not only the Step 7.11 dashboard (previously the one
+// deliberately more-designed corner of the stylesheet); (2) reuse the
+// SAME colour/gradient family that dashboard already established
+// (brand blue/purple gradient + the five stat-card variant colours -
+// success/warning/danger/info/teal) rather than inventing a new
+// palette, so the plugin now reads as one consistent design system
+// instead of one polished section next to a plain rest; (3) Add/Edit
+// forms get the same visual upgrade too, not just list/dashboard pages.
+//
+// Implemented as a CSS-ONLY change - zero PHP files touched, zero
+// functional/logic risk. This was possible because of two patterns
+// already consistently present across every page in this plugin
+// (verified by grep before writing a single rule): every page's outer
+// wrapper div carries a "local-financedepartment-<page>[-suffix]" class
+// (its ONLY class, confirmed across every pages/*.php + index.php), and
+// every Add/Edit form already wraps $form->display() in
+// .findept-form-card. This let the "forms get upgraded too" requirement
+// be met purely via scoped CSS selectors like
+// [class^="local-financedepartment-"] .mform / .btn-primary / .btn-secondary,
+// reaching every form/button/table-link in the plugin without editing
+// a single form class or page script.
+//
+// New: a :root block of CSS custom properties (--findept-brand-1/-2 and
+// -gradient, --findept-success/warning/danger/info/teal-1/-2,
+// --findept-text/-text-muted/-border/-bg-soft, --findept-radius-sm/-md/-lg,
+// --findept-shadow-sm/-md/-brand) centralising every colour/radius/shadow
+// value used across the stylesheet - the exact same hex values Step
+// 7.11's dashboard already used, just named and reused instead of
+// hardcoded in multiple places. Restyled: .findept-tab-bar (pill-style
+// tabs, active tab gets the brand gradient), .findept-page-hero (added a
+// soft decorative radial-gradient highlight), .findept-filter-bar
+// (shadow + focus-ring on inputs, gradient submit button),
+// .findept-table-card (header row background wash, row hover
+// highlight), .findept-empty-state (larger padding, styled icon),
+// .findept-form-card/.findept-detail-card (refined shadow/typography),
+// .findept-quicklink (icons became circular gradient badges, hover lift
+// effect). The entire Step 7.11 dashboard section (stat cards, chart
+// cards, export buttons) was preserved with IDENTICAL pixel output -
+// only its hardcoded hex colours were refactored to reference the new
+// custom properties, so post-deploy fixes #8 and #9's visual fixes are
+// untouched.
+//
+// No DB schema, capability, or lang-string change - styles.css only.
+// No PHP file was modified. See [[financedepartment-uipolish]] project
+// memory for the full write-up.
+// 2026-09-12: the user asked directly for index.php (the plugin's
+// shared landing page) to become the finance dashboard itself, instead
+// of the dashboard living on its own separate page. Confirmed scope via
+// AskUserQuestion before touching anything (both Recommended options
+// chosen): (1) the dashboard content (filter bar + 5 summary stat cards
+// + 2 charts + CSV/Excel/PDF export links) now renders directly on
+// index.php, ABOVE the quicklink tile grid, but ONLY for a viewer who
+// holds viewfinancereports - every other role (a plain self-service
+// student, finance staff without that specific capability, etc.) still
+// sees exactly the plain quicklink hub index.php always was, completely
+// unchanged; (2) the separate pages/reports/index.php page and its
+// "Reports" tab (lib.php)/quicklink tile (index.php) were removed, so
+// there is now a single dashboard entry point instead of two.
+//
+// index.php gained the exact same category/academic-year/status filter
+// bar, dashboard_manager::get_summary()/get_outstanding_by_category()
+// calls, core\chart_pie/chart_bar rendering, and export-link row that
+// pages/reports/index.php used to have (moved, not reimplemented) -
+// wrapped in "if ($canviewreports)" and placed between the page hero and
+// the quicklink grid. $PAGE->set_url() now conditionally carries the
+// three filter params, but ONLY when $canviewreports, so a viewer who
+// never sees the dashboard section never gets filter params cluttering
+// their landing-page URL either.
+//
+// lib.php's local_financedepartment_get_tabs() lost its "Reports" tab
+// entry entirely (the dashboard is no longer a distinct page to link a
+// tab to). pages/reports/index.php was deliberately NOT deleted outright
+// (a discretionary safety choice, not asked about) - it is now a thin
+// redirect stub forwarding straight to index.php with the same filter
+// params, so an old bookmark or saved link keeps working instead of
+// 404ing. pages/reports/export.php (the actual CSV/Excel/PDF download
+// dispatcher) is completely unchanged - only the summary/chart page
+// moved, not the exports themselves.
+//
+// No DB schema, capability, or lang-string change - index.php, lib.php,
+// and pages/reports/index.php only. Verified with php -l on all three
+// files and the usual lang-string cross-check (314 used / 373 defined,
+// zero missing/duplicate). See [[financedepartment-uipolish]] project
+// memory for the full write-up.
+
+// 2026-09-12 (same day, follow-up to making index.php the finance
+// dashboard): the user asked what else the dashboard should show. Given
+// a short menu of options via AskUserQuestion, the user picked "pending
+// scholarship/discount request counts + a recent payments feed" over
+// collection-rate/overdue-list, payment-method breakdown, and monthly
+// trend chart options.
+//
+// dashboard_manager::get_summary() gained two more unfiltered count
+// fields, pendingscholarshiprequests/pendingdiscountrequests
+// ($DB->count_records() against financedep_scholarshipreq/
+// financedep_discountreq where status = PENDING) - same "unfiltered by
+// category/year" treatment as the existing activescholarships/
+// activediscounts fields, for the same reason (a request has nothing to
+// filter a category/year against - scholarship requests haven't had a
+// feerecordid at all since v2026091004/0.8.0).
+//
+// lib.php's local_financedepartment_render_stat_card() gained an
+// optional $url parameter (backward compatible, every existing call
+// site untouched) - when given, the whole card renders as a clickable
+// link instead of a plain div. index.php's dashboard section uses this
+// for two new stat cards, "Pending scholarship requests"/"Pending
+// discount requests", each linking straight to that request type's
+// PENDING-filtered review queue
+// (pages/scholarshiprequests|discountrequests/index.php?status=pending,
+// both pages already supported that filter param) - shown only to a
+// viewer who holds the matching manage/approve capability, so a
+// viewfinancereports-only reporting role never sees a card linking to a
+// queue they'd 403 on. styles.css gained a small `a.findept-stat-card`
+// rule so the link variant doesn't pick up the theme's default anchor
+// underline/colour.
+//
+// index.php also gained a "Recent payments" widget (gated on
+// recordpayments/managerefunds, matching pages/payments/view.php's own
+// gate) - a 5-row table via feepayment_manager::get_recent(5), the
+// EXACT SAME call pages/payments/index.php's own default view already
+// makes, so no new manager/query code was needed - plus a "View all
+// payments" link to that full page. Deliberately did NOT reproduce that
+// page's per-row "click student name to filter" link - it turns out to
+// reference $payment->studentid, a column financedep_feepayment does not
+// have (only feerecordid) and get_recent()'s SQL never aliases one
+// either, so that existing link on pages/payments/index.php silently
+// resolves to an empty/missing param. Left AS-IS on that page (out of
+// scope, pre-existing, not asked about) but flagged to the user
+// separately - the new dashboard widget just shows the student's name as
+// plain text instead of repeating the same latent bug.
+//
+// No DB schema or capability change. 3 new lang strings
+// (pendingscholarshiprequests, pendingdiscountrequests,
+// viewallpayments). Verified with php -l on every changed PHP file, a
+// CSS brace-balance check (84/84), and the usual lang-string cross-check
+// (317 used / 376 defined, zero missing/duplicate). See
+// [[financedepartment-uipolish]] project memory for the full write-up.
+
+// 2026-09-12, v2026091204/0.9.5: two post-deploy fixes, both reported
+// directly by the user.
+//
+// (1) FIXED the pages/payments/index.php studentid bug flagged (but
+// deliberately left unfixed) in the v0.9.4 changelog above: that page's
+// default "Recent payments" view links each row's student name via
+// $payment->studentid, but feepayment_manager::get_recent()'s SQL never
+// selected/aliased such a column, so the link silently resolved to an
+// empty param. Fixed at the source - get_recent() now also selects
+// r.studentid (the financedep_feerecord row's real student), mirroring
+// the exact same r.studentid selection feepayment_manager::get()
+// already does. This one query-level fix automatically corrects BOTH
+// call sites: pages/payments/index.php's own link now works, and
+// index.php's "Recent payments" dashboard widget (added in v0.9.4) was
+// updated to also link the student name the same way, replacing the
+// plain-text rendering that widget deliberately used while the bug was
+// still open.
+//
+// (2) FIXED the plugin's top primary-nav bar item ("Finance
+// Department"/"Scholarship", added in v0.7.8's primary_extend hook)
+// never showing as the ACTIVE/highlighted tab - "Home" stayed
+// highlighted instead, on every Finance Department page. Root cause:
+// Moodle's core\navigation\views\primary::search_and_set_active_node()
+// only marks a primary-nav node active either (a) via an EXACT URL
+// match against $PAGE->url (core\navigation\navigation_node::
+// check_if_active(), default strength URL_MATCH_EXACT), or (b) if the
+// page explicitly calls $PAGE->set_primary_active_tab($key) with a key
+// matching the node's own key. This plugin's node is added with key
+// 'local_financedepartment' (both lib.php's extend_navigation() and the
+// primary_extend hook callback already pass that as the 5th ->add()
+// arg), but NO page ever called set_primary_active_tab() - so route (b)
+// was always unused, and route (a)'s exact-URL match only ever succeeds
+// on a completely bare visit to index.php with zero query params (the
+// node's action URL is exactly '/local/financedepartment/index.php');
+// every other page in the plugin - all 40 of them, plus index.php
+// itself whenever a categoryid/academicyear/status filter is active -
+// has a different or longer URL and can never match, so Moodle's
+// fallback logic defaults the highlight back to 'Home'. FIXED by adding
+// $PAGE->set_primary_active_tab('local_financedepartment'); right after
+// require_login() on every one of this plugin's 41 real pages
+// (mechanically via a script matching each file's own require_login();
+// call and preserving its indentation, then spot-checked) - the two
+// pages with a student-self-service/staff branch that each call
+// require_login() once but set_url() twice
+// (scholarshiprequests/index.php, discountrequests/index.php) only
+// needed the one insertion, since it does not depend on which branch's
+// URL ends up set. pages/reports/index.php (now a pure redirect stub,
+// see v0.9.3 above) and pages/reports/export.php (a raw file download,
+// no page/header ever rendered) were deliberately left untouched - a
+// redirect never reaches header() and a download has no nav bar to
+// highlight.
+//
+// No DB schema/capability/lang-string change either fix. Verified with
+// php -l on all 42 changed PHP files and the usual lang-string
+// cross-check (zero missing/duplicate). See [[financedepartment-uipolish]]
+// project memory for the full write-up.
+
+
+// 2026-09-12, v2026091205/0.9.6: the user asked (in Burmese) to turn Add
+// Fee Structure's plain "Academic year" text field into a picker, but
+// raised a real concern themselves in the same message - an academic
+// year isn't always exactly one calendar year, it can sometimes be
+// described by specific months instead. Asked via AskUserQuestion how
+// to handle that before building (4 options: year-range dropdown +
+// custom fallback / single-year dropdown only / full month+year range
+// picker / leave it free text) - the user picked "Year range dropdown +
+// Custom option (Recommended)".
+//
+// classes/form/feestructure_form.php: the single 'academicyear' text
+// field was replaced with two year <select> elements
+// (academicyearfrom/academicyearto, populated currentyear-5 ..
+// currentyear+10) plus an 'academicyearcustom' advcheckbox that
+// hideIf()-reveals a free-text 'academicyeartext' field instead (the
+// exact same hideIf() toggle pattern this form's Amount/Percentage hint
+// fix already used in v0.9.1). The single stored value
+// (financedep_feestructure.academicyear, still a plain char(20) - NO
+// schema change) is unchanged in shape: picking 2026/2027 stores
+// "2026-2027", picking the SAME year for both stores just "2026", and
+// the custom checkbox stores whatever free text was typed - so every
+// other manager/table/filter/export that already reads academicyear as
+// a plain string (dashboard_manager, feerecord_table, the reports
+// export, etc.) needed ZERO changes. A new protected static
+// compose_academicyear() helper builds that final string from whichever
+// path was used, shared by validation() (duplicate-checks the value
+// that will actually be saved) and a new get_data() override (so
+// $data->academicyear keeps existing for every caller exactly as
+// before). A new set_data() override does the reverse for the EDIT
+// form - it parses the existing stored string back into the picker
+// (regex match on "YYYY-YYYY" or "YYYY") or into the custom fallback
+// (anything else, e.g. a month-based label saved before this change or
+// via the custom checkbox), so editing an old fee structure doesn't
+// reset to today's default years.
+//
+// 2 new lang strings for labels/checkbox/custom field
+// (academicyearfrom, academicyearto, academicyearcustom,
+// academicyeartext, erroracademicyearrange - 5 total) plus an updated
+// academicyear_help string explaining the picker and the custom
+// fallback. No DB schema change. Verified with php -l and the lang
+// cross-check (294 used / 381 defined, zero missing/duplicate). See
+// [[financedepartment-uipolish]] project memory for the full write-up.
+
+
+// 2026-09-12, v2026091206/0.9.7: the user asked (in Burmese) to remove
+// the "Required" box that appears below the Save/Cancel buttons on
+// every Add/Edit form in the plugin. This is Moodle CORE's standard
+// mform behaviour, not anything this plugin built - every \moodleform
+// with at least one required field automatically gets a required-fields
+// legend appended via lib/formslib.php's setRequiredNote() (called in
+// every form's constructor), rendered as
+// `<div class="fdescription required" aria-hidden="true">[icon]
+// Required</div>` right after the form's closing buttons - the same box
+// this plugin's forms have always shown, on every site running this
+// Moodle version, not something introduced by any earlier change here.
+//
+// FIXED with one small CSS rule, `[class^="local-financedepartment-"]
+// .mform .fdescription.required { display: none; }`, added to the
+// existing "Plugin-wide form/table/button polish" section of styles.css
+// (v0.9.2) - scoped the same way every other rule in that section is, so
+// it only ever hides this legend on THIS plugin's own pages, never
+// touching Moodle core's own admin forms or any other plugin's forms
+// site-wide. Deliberately did NOT touch the PER-FIELD red asterisk
+// marker next to each required field's label (`.fitem .required`, the
+// rule directly above this new one in styles.css) - only the one
+// whole-form legend box is hidden, so a field still visibly shows it is
+// required, just without the explanatory legend repeating that at the
+// bottom. The legend div was already `aria-hidden="true"` in Moodle's
+// own markup (not something added by this fix), so hiding it visually
+// has no additional accessibility impact beyond what Moodle core itself
+// already intended.
+//
+// No DB schema/capability/lang-string/PHP change - styles.css only.
+// Verified with a CSS brace-balance check (85/85). See
+// [[financedepartment-uipolish]] project memory for the full write-up.
+
+
 $plugin->dependencies = [
     'local_hrdepartment' => 2026081908,
 ];

@@ -37,6 +37,7 @@ use local_financedepartment\form\feepayment_form;
 require_once(__DIR__ . '/../../../../config.php');
 
 require_login();
+$PAGE->set_primary_active_tab('local_financedepartment');
 
 $feerecordid = required_param('feerecordid', PARAM_INT);
 $installmentschedid = optional_param('installmentschedid', 0, PARAM_INT);

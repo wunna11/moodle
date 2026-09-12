@@ -132,7 +132,7 @@ class feepayment_manager {
     public static function get_recent(int $limit = 10): array {
         global $DB;
 
-        $sql = "SELECT p.*, u.firstname, u.lastname, u.email,
+        $sql = "SELECT p.*, r.studentid, u.firstname, u.lastname, u.email,
                        f.academicyear, cc.name AS categoryname
                   FROM {financedep_feepayment} p
                   JOIN {financedep_feerecord} r ON r.id = p.feerecordid

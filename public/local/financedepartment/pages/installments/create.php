@@ -29,6 +29,7 @@ use local_financedepartment\form\installmentplan_form;
 require_once(__DIR__ . '/../../../../config.php');
 
 require_login();
+$PAGE->set_primary_active_tab('local_financedepartment');
 
 $feerecordid = optional_param('feerecordid', 0, PARAM_INT);
 $numinstallments = optional_param('numinstallments', 0, PARAM_INT);

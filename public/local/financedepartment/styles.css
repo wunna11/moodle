@@ -3,57 +3,155 @@
  * styles.css - no explicit include needed. Every findept-* class below
  * is only ever emitted by this plugin's own lib.php helpers (see
  * local_financedepartment_render_*()), so it's safe for these rules to
- * stay unscoped by a wrapping .local-financedepartment-* container.
+ * stay unscoped by a wrapping .local-financedepartment-* container -
+ * EXCEPT the "form/table polish" section near the end, which
+ * deliberately scopes broad selectors (.mform, .btn-primary, table
+ * links) under [class^="local-financedepartment-"] so this plugin never
+ * accidentally restyles some OTHER plugin's forms/buttons/tables
+ * elsewhere on the site.
  *
- * Deliberately a light, standard-Bootstrap-first stylesheet rather than
- * a bespoke gradient design system - see [[financedepartment-schema]]
- * project memory for why this plugin didn't replicate local_hrdepartment's
- * multi-iteration visual redesign for Step 7.2. Can be extended the same
- * way HR's was if a fuller visual pass is wanted later.
+ * REDESIGNED 2026-09-12 (plugin-wide visual pass, per the user's own
+ * request: "make the UI clean and beautiful, it's too plain right
+ * now"). Confirmed scope via AskUserQuestion (all Recommended): (1)
+ * apply this treatment to EVERY page, not just the Step 7.11 dashboard;
+ * (2) reuse the SAME colour/gradient family the dashboard already
+ * established (purple/blue brand gradient + the 5 stat-card variant
+ * colours) rather than inventing a new palette, so the whole plugin now
+ * reads as one consistent design system instead of "one designed corner
+ * plus a plain rest"; (3) forms get the same visual upgrade too - see
+ * the .findept-form-card + scoped .mform rules near the end.
+ *
+ * Every page's outer wrapper div already carries a unique
+ * "local-financedepartment-<page>[-suffix]" class (checked via grep
+ * across every pages/*.php file before writing this rule set) - EVERY
+ * "-form" suffixed one wraps a real moodleform's ->display() output
+ * inside .findept-form-card, so the scoped .mform rules below reach
+ * every Add/Edit form in the plugin without a single PHP file needing
+ * to change. This whole redesign is CSS-only - zero PHP/logic changes,
+ * zero risk to any existing feature's behaviour.
  */
 
-/* Tab bar. */
+:root {
+    --findept-brand-1: #2f6fed;
+    --findept-brand-2: #6f42c1;
+    --findept-brand-gradient: linear-gradient(135deg, var(--findept-brand-1) 0%, var(--findept-brand-2) 100%);
+
+    --findept-success-1: #2fb380;
+    --findept-success-2: #1a9c6b;
+    --findept-warning-1: #f5a623;
+    --findept-warning-2: #e08e00;
+    --findept-danger-1: #ef5b5b;
+    --findept-danger-2: #d63d3d;
+    --findept-info-1: #6f42c1;
+    --findept-info-2: #4e2c99;
+    --findept-teal-1: #17a2b8;
+    --findept-teal-2: #12808f;
+
+    --findept-text: #1a1d29;
+    --findept-text-muted: #6c757d;
+    --findept-border: #e3e6ec;
+    --findept-bg-soft: #f8f9fb;
+
+    --findept-radius-sm: 0.5rem;
+    --findept-radius-md: 0.75rem;
+    --findept-radius-lg: 1rem;
+
+    --findept-shadow-sm: 0 2px 10px rgba(20, 30, 60, 0.05);
+    --findept-shadow-md: 0 8px 20px rgba(20, 30, 60, 0.09);
+    --findept-shadow-brand: 0 4px 14px rgba(47, 111, 237, 0.25);
+}
+
+/* Tab bar - pill-style, matching the same redesign local_hrdepartment's
+ * own tab bar already went through, so the two plugins' navigation feels
+ * like one family. */
 .findept-tab-bar {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
 }
 
 .findept-tab-bar .nav-tabs {
-    border-bottom: 2px solid #e3e6ec;
+    border-bottom: 0;
+    gap: 0.4rem;
+    flex-wrap: wrap;
 }
 
-.findept-tab-bar .nav-link.active {
+.findept-tab-bar .nav-tabs .nav-link {
+    border: 1px solid var(--findept-border);
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    color: var(--findept-text-muted);
     font-weight: 600;
-    border-bottom: 2px solid #2f6fed;
-    color: #2f6fed;
+    background: #fff;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.findept-tab-bar .nav-tabs .nav-link:hover {
+    color: var(--findept-brand-1);
+    border-color: var(--findept-brand-1);
+    transform: translateY(-1px);
+}
+
+.findept-tab-bar .nav-tabs .nav-link.active {
+    background: var(--findept-brand-gradient);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: var(--findept-shadow-brand);
+}
+
+.findept-tab-bar .nav-tabs .nav-link .icon {
+    margin-right: 0.35rem;
 }
 
 /* Page hero. */
 .findept-page-hero {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 1rem;
-    background: linear-gradient(135deg, #2f6fed 0%, #6f42c1 100%);
+    background: var(--findept-brand-gradient);
     color: #fff;
-    border-radius: 0.75rem;
-    padding: 1.5rem 1.75rem;
+    border-radius: var(--findept-radius-md);
+    padding: 1.6rem 1.85rem;
     margin-bottom: 1.5rem;
+    box-shadow: var(--findept-shadow-brand);
+}
+
+/* Soft decorative highlight, purely visual - keeps the hero from
+ * reading as a flat colour block. */
+.findept-page-hero::after {
+    content: "";
+    position: absolute;
+    top: -60%;
+    right: -8%;
+    width: 16rem;
+    height: 16rem;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+    pointer-events: none;
+}
+
+.findept-page-hero-text {
+    position: relative;
+    z-index: 1;
 }
 
 .findept-page-hero-title {
     margin: 0;
     color: #fff;
-    font-size: 1.5rem;
+    font-size: 1.55rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .findept-page-hero-subtitle {
-    margin: 0.25rem 0 0;
-    color: rgba(255, 255, 255, 0.85);
+    margin: 0.3rem 0 0;
+    color: rgba(255, 255, 255, 0.88);
 }
 
 .findept-page-hero-actions {
+    position: relative;
+    z-index: 1;
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
@@ -63,19 +161,22 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.16);
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 0.5rem;
-    padding: 0.5rem 0.9rem;
+    border-radius: var(--findept-radius-sm);
+    padding: 0.5rem 0.95rem;
     font-weight: 600;
     text-decoration: none;
+    backdrop-filter: blur(2px);
+    transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .findept-page-hero-btn:hover {
-    background: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.3);
     color: #fff;
     text-decoration: none;
+    transform: translateY(-1px);
 }
 
 /* Back link. */
@@ -84,12 +185,13 @@
     align-items: center;
     gap: 0.35rem;
     margin-bottom: 0.75rem;
-    color: #495057;
-    font-weight: 500;
+    color: var(--findept-text-muted);
+    font-weight: 600;
+    transition: color 0.15s ease;
 }
 
 .findept-back-link:hover {
-    color: #2f6fed;
+    color: var(--findept-brand-1);
     text-decoration: none;
 }
 
@@ -98,64 +200,116 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.6rem;
     background: #fff;
-    border: 1px solid #e3e6ec;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    margin-bottom: 1rem;
+    border: 1px solid var(--findept-border);
+    border-radius: var(--findept-radius-md);
+    padding: 0.9rem 1rem;
+    margin-bottom: 1.25rem;
+    box-shadow: var(--findept-shadow-sm);
 }
 
 .findept-filter-select,
 .findept-filter-text {
     border: 1px solid #ced4da;
-    border-radius: 0.4rem;
-    padding: 0.4rem 0.6rem;
+    border-radius: var(--findept-radius-sm);
+    padding: 0.45rem 0.7rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.findept-filter-select:focus,
+.findept-filter-text:focus {
+    border-color: var(--findept-brand-1);
+    box-shadow: 0 0 0 0.15rem rgba(47, 111, 237, 0.15);
+    outline: none;
+}
+
+.findept-filter-submit {
+    background: var(--findept-brand-gradient);
+    border: 0;
+    border-radius: var(--findept-radius-sm);
+    box-shadow: var(--findept-shadow-brand);
 }
 
 .findept-filter-reset {
-    color: #6c757d;
+    color: var(--findept-text-muted);
     font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.findept-filter-reset:hover {
+    color: var(--findept-brand-1);
 }
 
 /* Table card. */
 .findept-table-card {
     background: #fff;
-    border: 1px solid #e3e6ec;
-    border-radius: 0.75rem;
+    border: 1px solid var(--findept-border);
+    border-radius: var(--findept-radius-md);
     padding: 0.5rem 1rem 1rem;
     overflow-x: auto;
+    box-shadow: var(--findept-shadow-sm);
 }
 
 .findept-table-card table.generaltable {
     margin-bottom: 0;
 }
 
+.findept-table-card table.generaltable thead th {
+    background: var(--findept-bg-soft);
+    color: var(--findept-text);
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    border-bottom: 2px solid var(--findept-border);
+}
+
+.findept-table-card table.generaltable tbody tr {
+    transition: background 0.12s ease;
+}
+
+.findept-table-card table.generaltable tbody tr:hover {
+    background: var(--findept-bg-soft);
+}
+
+.findept-table-card table.generaltable td,
+.findept-table-card table.generaltable th {
+    vertical-align: middle;
+}
+
 /* Empty state. */
 .findept-empty-state {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    background: #f8f9fb;
+    gap: 0.7rem;
+    background: var(--findept-bg-soft);
     border: 1px dashed #d7dbe3;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    color: #6c757d;
+    border-radius: var(--findept-radius-md);
+    padding: 1.75rem;
+    color: var(--findept-text-muted);
     justify-content: center;
+    font-size: 1.02rem;
 }
 
-/* Form hero / card. */
+.findept-empty-state .icon {
+    font-size: 1.4rem;
+    color: var(--findept-brand-1);
+    opacity: 0.7;
+}
+
+/* Form card. */
 .findept-form-card {
     background: #fff;
-    border: 1px solid #e3e6ec;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
+    border: 1px solid var(--findept-border);
+    border-radius: var(--findept-radius-md);
+    padding: 1.75rem;
     max-width: 720px;
+    box-shadow: var(--findept-shadow-sm);
 }
 
-/* Short explanatory paragraph above a form/step inside a .findept-form-card (e.g. installments/create.php's "how many installments?" step). */
 .findept-form-intro {
-    color: #6c757d;
+    color: var(--findept-text-muted);
     margin-top: 0;
     margin-bottom: 1rem;
 }
@@ -163,40 +317,46 @@
 /* Detail card (view page). */
 .findept-detail-card {
     background: #fff;
-    border: 1px solid #e3e6ec;
-    border-radius: 0.75rem;
-    padding: 1.25rem 1.5rem;
+    border: 1px solid var(--findept-border);
+    border-radius: var(--findept-radius-md);
+    padding: 1.4rem 1.6rem;
     margin-bottom: 1.5rem;
     max-width: 720px;
+    box-shadow: var(--findept-shadow-sm);
 }
 
 .findept-detail-list {
     display: grid;
     grid-template-columns: 200px 1fr;
-    row-gap: 0.6rem;
+    row-gap: 0.7rem;
     column-gap: 1rem;
     margin: 0;
 }
 
 .findept-detail-list dt {
-    font-weight: 600;
-    color: #495057;
+    font-weight: 700;
+    color: var(--findept-text-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 .findept-detail-list dd {
     margin: 0;
+    color: var(--findept-text);
 }
 
 .findept-section-title {
     font-size: 1.15rem;
     font-weight: 700;
-    margin: 1.5rem 0 0.75rem;
+    color: var(--findept-text);
+    margin: 1.6rem 0 0.85rem;
 }
 
 /* Quicklink grid (index.php). */
 .findept-quicklink-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
     gap: 1rem;
 }
 
@@ -204,34 +364,51 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.7rem;
     background: #fff;
-    border: 1px solid #e3e6ec;
-    border-radius: 0.75rem;
-    padding: 1.25rem 1rem;
+    border: 1px solid var(--findept-border);
+    border-radius: var(--findept-radius-md);
+    padding: 1.5rem 1rem;
     text-align: center;
-    color: #212529;
-    font-weight: 600;
+    color: var(--findept-text);
+    font-weight: 700;
+    box-shadow: var(--findept-shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .findept-quicklink:hover {
-    border-color: #2f6fed;
-    color: #2f6fed;
+    border-color: transparent;
+    color: var(--findept-text);
     text-decoration: none;
+    transform: translateY(-3px);
+    box-shadow: var(--findept-shadow-md);
 }
 
 .findept-quicklink-icon {
-    font-size: 1.5rem;
-    color: #2f6fed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: var(--findept-brand-gradient);
+    color: #fff;
+    font-size: 1.3rem;
+    box-shadow: var(--findept-shadow-brand);
+}
+
+.findept-quicklink-label {
+    font-size: 0.95rem;
 }
 
 /* -----------------------------------------------------------------
  * Finance Dashboard & Reports (Step 7.11, 2026-09-10) -
- * pages/reports/index.php. The one deliberately more "designed" corner
- * of this stylesheet - see this file's own top docblock on why the rest
- * of the plugin stayed a plain Bootstrap-first look; the dashboard's
- * summary cards/charts are the one place a heavier visual treatment
- * earns its keep, since they ARE the content (not a form/table wrapper).
+ * pages/reports/index.php. Was previously called out as "the one
+ * deliberately more designed corner" of this stylesheet - as of the
+ * 2026-09-12 plugin-wide redesign that's no longer true (every page now
+ * shares this same visual language), so these rules stay as they were,
+ * just now consistent with the rest of the plugin rather than standing
+ * apart from it.
  * ----------------------------------------------------------------- */
 
 .findept-stat-grid {
@@ -249,11 +426,24 @@
     min-width: 0;
     overflow: hidden;
     background: #fff;
-    border: 1px solid #e3e6ec;
-    border-radius: 1rem;
+    border: 1px solid var(--findept-border);
+    border-radius: var(--findept-radius-lg);
     padding: 1.25rem 1.4rem;
-    box-shadow: 0 2px 10px rgba(20, 30, 60, 0.05);
+    box-shadow: var(--findept-shadow-sm);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* A stat card rendered as a link (2026-09-12 - see lib.php's
+ * local_financedepartment_render_stat_card()'s optional $url param,
+ * used by the dashboard's clickable "pending requests" cards) must not
+ * pick up the theme's default anchor underline/colour - its children
+ * (.findept-stat-value/.findept-stat-label) already set their own
+ * explicit colours regardless. */
+a.findept-stat-card,
+a.findept-stat-card:hover,
+a.findept-stat-card:focus {
+    color: inherit;
+    text-decoration: none;
 }
 
 /* Coloured top accent bar, matching the icon's variant - drawn with a
@@ -268,15 +458,15 @@
     height: 4px;
 }
 
-.findept-stat-card.findept-variant-success::before { background: linear-gradient(90deg, #2fb380, #1a9c6b); }
-.findept-stat-card.findept-variant-warning::before { background: linear-gradient(90deg, #f5a623, #e08e00); }
-.findept-stat-card.findept-variant-danger::before  { background: linear-gradient(90deg, #ef5b5b, #d63d3d); }
-.findept-stat-card.findept-variant-info::before    { background: linear-gradient(90deg, #6f42c1, #4e2c99); }
-.findept-stat-card.findept-variant-teal::before    { background: linear-gradient(90deg, #17a2b8, #12808f); }
+.findept-stat-card.findept-variant-success::before { background: linear-gradient(90deg, var(--findept-success-1), var(--findept-success-2)); }
+.findept-stat-card.findept-variant-warning::before { background: linear-gradient(90deg, var(--findept-warning-1), var(--findept-warning-2)); }
+.findept-stat-card.findept-variant-danger::before  { background: linear-gradient(90deg, var(--findept-danger-1), var(--findept-danger-2)); }
+.findept-stat-card.findept-variant-info::before    { background: linear-gradient(90deg, var(--findept-info-1), var(--findept-info-2)); }
+.findept-stat-card.findept-variant-teal::before    { background: linear-gradient(90deg, var(--findept-teal-1), var(--findept-teal-2)); }
 
 .findept-stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(20, 30, 60, 0.09);
+    box-shadow: var(--findept-shadow-md);
 }
 
 .findept-stat-icon {
@@ -292,11 +482,11 @@
     box-shadow: 0 4px 10px rgba(20, 30, 60, 0.15);
 }
 
-.findept-stat-icon.findept-variant-success { background: linear-gradient(135deg, #2fb380 0%, #1a9c6b 100%); }
-.findept-stat-icon.findept-variant-warning { background: linear-gradient(135deg, #f5a623 0%, #e08e00 100%); }
-.findept-stat-icon.findept-variant-danger  { background: linear-gradient(135deg, #ef5b5b 0%, #d63d3d 100%); }
-.findept-stat-icon.findept-variant-info    { background: linear-gradient(135deg, #6f42c1 0%, #4e2c99 100%); }
-.findept-stat-icon.findept-variant-teal    { background: linear-gradient(135deg, #17a2b8 0%, #12808f 100%); }
+.findept-stat-icon.findept-variant-success { background: linear-gradient(135deg, var(--findept-success-1) 0%, var(--findept-success-2) 100%); }
+.findept-stat-icon.findept-variant-warning { background: linear-gradient(135deg, var(--findept-warning-1) 0%, var(--findept-warning-2) 100%); }
+.findept-stat-icon.findept-variant-danger  { background: linear-gradient(135deg, var(--findept-danger-1) 0%, var(--findept-danger-2) 100%); }
+.findept-stat-icon.findept-variant-info    { background: linear-gradient(135deg, var(--findept-info-1) 0%, var(--findept-info-2) 100%); }
+.findept-stat-icon.findept-variant-teal    { background: linear-gradient(135deg, var(--findept-teal-1) 0%, var(--findept-teal-2) 100%); }
 
 .findept-stat-body {
     flex: 1 1 auto;
@@ -309,7 +499,7 @@
 .findept-stat-value {
     font-size: clamp(1.15rem, 1.6vw + 0.6rem, 1.5rem);
     font-weight: 700;
-    color: #1a1d29;
+    color: var(--findept-text);
     line-height: 1.25;
     white-space: normal;
     overflow-wrap: anywhere;
@@ -317,7 +507,7 @@
 }
 
 .findept-stat-label {
-    color: #6c757d;
+    color: var(--findept-text-muted);
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -335,10 +525,10 @@
 
 .findept-chart-card {
     background: #fff;
-    border: 1px solid #e3e6ec;
-    border-radius: 1rem;
+    border: 1px solid var(--findept-border);
+    border-radius: var(--findept-radius-lg);
     padding: 1.25rem 1.4rem;
-    box-shadow: 0 2px 10px rgba(20, 30, 60, 0.05);
+    box-shadow: var(--findept-shadow-sm);
 }
 
 /*
@@ -357,11 +547,10 @@
     width: 100%;
 }
 
-
 .findept-chart-card-title {
     font-size: 1rem;
     font-weight: 700;
-    color: #1a1d29;
+    color: var(--findept-text);
     margin: 0 0 1rem;
 }
 
@@ -378,15 +567,154 @@
     gap: 0.4rem;
     background: #fff;
     border: 1px solid #ced4da;
-    border-radius: 0.5rem;
-    padding: 0.45rem 0.85rem;
+    border-radius: var(--findept-radius-sm);
+    padding: 0.5rem 0.9rem;
     font-weight: 600;
-    color: #495057;
+    color: var(--findept-text-muted);
     font-size: 0.9rem;
+    transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .findept-export-btn:hover {
-    border-color: #2f6fed;
-    color: #2f6fed;
+    border-color: var(--findept-brand-1);
+    color: var(--findept-brand-1);
     text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* -----------------------------------------------------------------
+ * Plugin-wide form/table/button polish (2026-09-12). Deliberately
+ * SCOPED under [class^="local-financedepartment-"] - every page's outer
+ * wrapper div carries that prefix (verified by grep across every
+ * pages/*.php file) - so these broader selectors (.mform, .btn-primary,
+ * plain <a> links inside a table) only ever affect THIS plugin's own
+ * pages, never another plugin's forms/buttons/tables elsewhere on the
+ * site. This is what makes the "forms get a visual upgrade too" scope
+ * decision possible with ZERO changes to any form/page PHP file - every
+ * Add/Edit form already renders inside a .findept-form-card inside one
+ * of these wrapper divs.
+ * ----------------------------------------------------------------- */
+
+[class^="local-financedepartment-"] .mform .fitem {
+    margin-bottom: 1.1rem;
+}
+
+[class^="local-financedepartment-"] .mform .fitem .fitemtitle,
+[class^="local-financedepartment-"] .mform legend {
+    font-weight: 600;
+    color: var(--findept-text);
+}
+
+[class^="local-financedepartment-"] .mform .fitem .required {
+    color: var(--findept-danger-1);
+}
+
+/* 2026-09-12: user asked to remove the "Required" legend box Moodle core
+ * automatically appends below the Save/Cancel buttons on every mform
+ * that has at least one required field (lib/formslib.php's
+ * setRequiredNote(), rendered as <div class="fdescription required"
+ * aria-hidden="true">...) - it is already aria-hidden (Moodle's own
+ * choice, not this fix), so hiding it visually here has no additional
+ * accessibility impact. Scoped to this plugin's own pages only, same as
+ * the rest of this section - the per-field red asterisk markers
+ * (.fitem .required above) are untouched, only this one whole-form
+ * legend box is hidden. */
+[class^="local-financedepartment-"] .mform .fdescription.required {
+    display: none;
+}
+
+[class^="local-financedepartment-"] .mform input.form-control,
+[class^="local-financedepartment-"] .mform select.form-control,
+[class^="local-financedepartment-"] .mform textarea.form-control {
+    border: 1px solid #ced4da;
+    border-radius: var(--findept-radius-sm);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+[class^="local-financedepartment-"] .mform input.form-control:focus,
+[class^="local-financedepartment-"] .mform select.form-control:focus,
+[class^="local-financedepartment-"] .mform textarea.form-control:focus {
+    border-color: var(--findept-brand-1);
+    box-shadow: 0 0 0 0.15rem rgba(47, 111, 237, 0.15);
+}
+
+[class^="local-financedepartment-"] .mform .form-description,
+[class^="local-financedepartment-"] .mform .fdescription {
+    background: var(--findept-bg-soft);
+    border-radius: var(--findept-radius-sm);
+    padding: 0.85rem 1rem;
+    color: var(--findept-text-muted);
+}
+
+[class^="local-financedepartment-"] .mform fieldset.felement,
+[class^="local-financedepartment-"] .mform .fitem .felement {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Save/Cancel action row at the bottom of every form. */
+[class^="local-financedepartment-"] .mform .form-group.row:last-child,
+[class^="local-financedepartment-"] .mform .felement.fitemtitle + .form-group {
+    margin-top: 0.5rem;
+}
+
+[class^="local-financedepartment-"] .btn-primary {
+    background: var(--findept-brand-gradient);
+    border: 0;
+    font-weight: 600;
+    box-shadow: var(--findept-shadow-brand);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+[class^="local-financedepartment-"] .btn-primary:hover,
+[class^="local-financedepartment-"] .btn-primary:focus {
+    background: var(--findept-brand-gradient);
+    transform: translateY(-1px);
+    box-shadow: var(--findept-shadow-md);
+}
+
+[class^="local-financedepartment-"] .btn-secondary {
+    background: #fff;
+    border: 1px solid var(--findept-border);
+    color: var(--findept-text-muted);
+    font-weight: 600;
+}
+
+[class^="local-financedepartment-"] .btn-secondary:hover {
+    border-color: var(--findept-brand-1);
+    color: var(--findept-brand-1);
+}
+
+/* Plain row-action links inside a table (View / Edit / Cancel / etc.) -
+ * small pill "chips" instead of bare underlined text, without touching
+ * any table-building PHP (feerecord_table.php and every plain
+ * html_writer::table() usage already just emit ordinary <a> tags). */
+[class^="local-financedepartment-"] .findept-table-card table.generaltable td a:not(.badge) {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    margin: 0.1rem 0.15rem 0.1rem 0;
+    border-radius: 999px;
+    background: var(--findept-bg-soft);
+    color: var(--findept-brand-1);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+[class^="local-financedepartment-"] .findept-table-card table.generaltable td a:not(.badge):hover {
+    background: var(--findept-brand-1);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* Badges (status pills) - slightly bolder weight/letter-spacing so they
+ * read clearly against the new lighter table row backgrounds. */
+[class^="local-financedepartment-"] .badge {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 0.35em 0.65em;
 }

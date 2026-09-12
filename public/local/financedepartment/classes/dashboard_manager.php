@@ -106,18 +106,29 @@ class dashboard_manager {
     }
 
     /**
-     * The five summary-card figures: total collected (net of
-     * voided/refunded, since financedep_feerecord.paidamount is already
-     * the running NET total - see feerecord_manager::add_payment_amount()),
+     * The summary-card figures: total collected (net of voided/
+     * refunded, since financedep_feerecord.paidamount is already the
+     * running NET total - see feerecord_manager::add_payment_amount()),
      * total outstanding balance, how many fee records are currently
      * DISPLAYED as overdue (live-computed, same rule as
-     * feerecord_manager::display_status()), and how many scholarship/
-     * discount definitions are currently ACTIVE (unaffected by the
-     * category/year filter - see class docblock).
+     * feerecord_manager::display_status()), how many scholarship/
+     * discount definitions are currently ACTIVE, and (2026-09-12) how
+     * many scholarship/discount REQUESTS are currently PENDING review.
+     * All four of the latter *count fields are unaffected by the
+     * category/year filter, same as the original two
+     * (activescholarships/activediscounts) - a scholarship/discount
+     * DEFINITION has no feerecordid to filter on, and neither does a
+     * scholarship REQUEST as of v2026091004/0.8.0 (feerecordid removed
+     * from that flow entirely - see [[financedepartment-schema]] project
+     * memory); a discount REQUEST still has one, but is left unfiltered
+     * here too for consistency with its scholarship counterpart, since
+     * "how many requests need MY review right now" is a global
+     * queue-depth figure a finance reviewer cares about regardless of
+     * whatever category/year the dashboard happens to be filtered to.
      *
      * @param int $categoryid 0 = any category
      * @param string $academicyear '' = any academic year
-     * @return \stdClass {totalcollected, totaloutstanding, overduecount, activescholarships, activediscounts}
+     * @return \stdClass {totalcollected, totaloutstanding, overduecount, activescholarships, activediscounts, pendingscholarshiprequests, pendingdiscountrequests}
      */
     public static function get_summary(int $categoryid = 0, string $academicyear = ''): \stdClass {
         global $DB;
@@ -154,6 +165,14 @@ class dashboard_manager {
         $summary->activediscounts = (int) $DB->count_records(
             'financedep_discount',
             ['status' => constants::DISCOUNT_STATUS_ACTIVE]
+        );
+        $summary->pendingscholarshiprequests = (int) $DB->count_records(
+            'financedep_scholarshipreq',
+            ['status' => constants::REQUEST_STATUS_PENDING]
+        );
+        $summary->pendingdiscountrequests = (int) $DB->count_records(
+            'financedep_discountreq',
+            ['status' => constants::REQUEST_STATUS_PENDING]
         );
 
         return $summary;

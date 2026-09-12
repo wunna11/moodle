@@ -74,6 +74,24 @@ class scholarship_form extends \moodleform {
         $mform->addRule('amountvalue', get_string('required'), 'required', null, 'client');
         $mform->addHelpButton('amountvalue', 'amountvalue', 'local_financedepartment');
 
+        // Dynamic unit hint (2026-09-12, per the user's own request): the
+        // amountvalue field's label itself stays "Amount" for every
+        // amounttype (Moodle's mform label rendering has no clean,
+        // non-fragile way to swap a field's LABEL TEXT client-side without
+        // custom JS touching that label's internal markup, including the
+        // required-field asterisk span) - instead, exactly one of these two
+        // static hint lines is shown right under the field via hideIf(),
+        // toggled instantly as amounttype changes, using only mform's own
+        // built-in dependency mechanism (no custom JS at all - this plugin
+        // has never shipped any). Achieves the same practical goal (make it
+        // obvious whether to type an MMK amount or a 0-100 percentage)
+        // without the fragility of mutating mform's own label DOM.
+        $mform->addElement('static', 'amountvaluehint_fixed', '', get_string('amountvaluehint_fixed', 'local_financedepartment'));
+        $mform->hideIf('amountvaluehint_fixed', 'amounttype', 'eq', constants::AMOUNT_TYPE_PERCENTAGE);
+
+        $mform->addElement('static', 'amountvaluehint_percentage', '', get_string('amountvaluehint_percentage', 'local_financedepartment'));
+        $mform->hideIf('amountvaluehint_percentage', 'amounttype', 'neq', constants::AMOUNT_TYPE_PERCENTAGE);
+
         $mform->addElement('textarea', 'description', get_string('description', 'local_financedepartment'), ['rows' => 3]);
         $mform->setType('description', PARAM_TEXT);
 

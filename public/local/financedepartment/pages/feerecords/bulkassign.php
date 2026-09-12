@@ -29,6 +29,7 @@ use local_financedepartment\form\feerecord_bulkassign_form;
 require_once(__DIR__ . '/../../../../config.php');
 
 require_login();
+$PAGE->set_primary_active_tab('local_financedepartment');
 
 $context = context_system::instance();
 access_manager::require_manage('local/financedepartment:managefeerecords');
