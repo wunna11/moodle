@@ -256,6 +256,7 @@
                 <FIELD NAME="startdate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
                 <FIELD NAME="enddate" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
                 <FIELD NAME="totaldays" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+                <FIELD NAME="leavescope" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="day" SEQUENCE="false" COMMENT="'day' (whole calendar day(s), the original behaviour) or 'session' (one or more specific mod_attendance sessions of a single course on a single day - see hrdep_studentleaveappsession). Session-scope applications always store totaldays=0 and never touch hrdep_studentleavebalance - they are a pure history/notification record, not a balance-affecting leave."/>
                 <FIELD NAME="reason" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
                 <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="pending" SEQUENCE="false"/>
                 <FIELD NAME="submittedby" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_user.id"/>
@@ -275,6 +276,23 @@
                 <INDEX NAME="idx_status" UNIQUE="false" FIELDS="status"/>
                 <INDEX NAME="idx_dates" UNIQUE="false" FIELDS="startdate, enddate"/>
                 <INDEX NAME="idx_approverid" UNIQUE="false" FIELDS="approverid"/>
+            </INDEXES>
+        </TABLE>
+
+        <TABLE NAME="hrdep_studentleaveappsession" COMMENT="Junction: which specific mod_attendance session(s) a session-scope leave application (hrdep_studentleaveapp.leavescope = 'session') covers. Not used for 'day'-scope applications.">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="leaveappid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to hrdep_studentleaveapp.id"/>
+                <FIELD NAME="sessionid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK to mdl_attendance_sessions.id (mod_attendance) - read-only reference, never written back to"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="idx_leaveappid" UNIQUE="false" FIELDS="leaveappid"/>
+                <INDEX NAME="idx_sessionid" UNIQUE="false" FIELDS="sessionid"/>
+                <INDEX NAME="idx_leaveapp_session" UNIQUE="true" FIELDS="leaveappid, sessionid"/>
             </INDEXES>
         </TABLE>
 

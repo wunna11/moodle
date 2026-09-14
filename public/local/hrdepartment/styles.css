@@ -2676,6 +2676,26 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
     border-radius: 2rem;
 }
 
+/* ---- "Change request type" / "Change course/date" back-links on the
+   session-scope leave/apply.php steps added 2026-09-13 - same look as
+   the student-profile page's back-link. ---- */
+
+.local-hrdepartment-leave-form .hrdept-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-decoration: none;
+    margin-bottom: 1rem;
+}
+
+.local-hrdepartment-leave-form .hrdept-back-link:hover {
+    color: #4e73df;
+    text-decoration: underline;
+}
+
 /* ---- Responsive: stack heroes/subheaders on small screens ---- */
 
 @media (max-width: 575.98px) {

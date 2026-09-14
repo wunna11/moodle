@@ -739,12 +739,21 @@ class student_leave_manager {
      * @param \stdClass $data form data: studentid, leavetypeid, courseid, startdate, enddate, reason,
      *                        approverid (optional - only set by the self-service leave/apply.php form,
      *                        the teacher the student themselves chose to review this one application;
-     *                        see can_review_application())
+     *                        see can_review_application()), leavescope (optional, one of
+     *                        constants::LEAVE_SCOPE_DAY/LEAVE_SCOPE_SESSION - defaults to
+     *                        LEAVE_SCOPE_DAY when absent, e.g. from the HR/staff-facing
+     *                        student_leave_form which has no such element), sessionids (optional
+     *                        array of mod_attendance session ids - required/used only when
+     *                        leavescope is LEAVE_SCOPE_SESSION, see
+     *                        student_leave_apply_session_form)
      * @param int $submittedby
      * @return int the new application id
      */
     public static function create_application(\stdClass $data, int $submittedby): int {
         global $DB;
+
+        $leavescope = $data->leavescope ?? constants::LEAVE_SCOPE_DAY;
+        $issession = ($leavescope === constants::LEAVE_SCOPE_SESSION);
 
         $now = time();
         $record = (object) [
@@ -753,7 +762,15 @@ class student_leave_manager {
             'leavetypeid' => (int) $data->leavetypeid,
             'startdate' => (int) $data->startdate,
             'enddate' => (int) $data->enddate,
-            'totaldays' => self::calculate_total_days((int) $data->startdate, (int) $data->enddate),
+            // Session-scope requests always store 0 here, by explicit user
+            // decision: they are a pure history/notification record and
+            // must never affect hrdep_studentleavebalance - review_application()'s
+            // adjust_balance_used() call further down simply adds 0, a
+            // no-op, so no special-casing is needed there.
+            'totaldays' => $issession
+                ? 0.0
+                : self::calculate_total_days((int) $data->startdate, (int) $data->enddate),
+            'leavescope' => $leavescope,
             'reason' => $data->reason ?? null,
             'status' => constants::LEAVE_STATUS_PENDING,
             'submittedby' => $submittedby,
@@ -769,7 +786,44 @@ class student_leave_manager {
             'timemodified' => $now,
         ];
 
-        return (int) $DB->insert_record('hrdep_studentleaveapp', $record);
+        $newid = (int) $DB->insert_record('hrdep_studentleaveapp', $record);
+
+        if ($issession && !empty($data->sessionids)) {
+            foreach (array_unique(array_map('intval', (array) $data->sessionids)) as $sessionid) {
+                $DB->insert_record('hrdep_studentleaveappsession', (object) [
+                    'leaveappid' => $newid,
+                    'sessionid' => $sessionid,
+                    'timecreated' => $now,
+                ]);
+            }
+        }
+
+        return $newid;
+    }
+
+    /**
+     * Returns the mod_attendance session(s) a session-scope leave
+     * application covers (empty for a 'day'-scope application), each
+     * enriched with its date/description/attendance-activity name for
+     * display - see leave/view.php and leave/myrequests.php.
+     *
+     * @param int $leaveappid
+     * @return \stdClass[] sessionid, sessdate, description, descriptionformat, duration, attendancename, cmid
+     */
+    public static function get_sessions_for_application(int $leaveappid): array {
+        global $DB;
+
+        $sql = "SELECT s.id AS sessionid, s.sessdate, s.description, s.descriptionformat, s.duration,
+                       a.name AS attendancename, cm.id AS cmid
+                  FROM {hrdep_studentleaveappsession} las
+                  JOIN {attendance_sessions} s ON s.id = las.sessionid
+                  JOIN {attendance} a ON a.id = s.attendanceid
+                  JOIN {modules} m ON m.name = 'attendance'
+                  JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
+                 WHERE las.leaveappid = :leaveappid
+              ORDER BY s.sessdate ASC";
+
+        return array_values($DB->get_records_sql($sql, ['leaveappid' => $leaveappid]));
     }
 
     /**

@@ -114,6 +114,12 @@ $string['noaccessdashboard'] = 'You do not currently have access to any HR Depar
 
 // My HR (self-service) strings.
 $string['myhrsubtitle'] = 'Here is your personal HR snapshot.';
+
+// Self-service top-nav label + no-employee-record landing page, added
+// 2026-09-13 - see classes/hooks/navigation/primary_extend.php and
+// index.php.
+$string['pluginnameselfservice'] = 'My HR';
+$string['selfservicelandingsubtitle'] = 'Here are the pages you can use.';
 $string['noemployeerecord'] = 'No HR employee record is linked to your account yet. Contact HR if you believe this is a mistake.';
 $string['myattendancethismonth'] = 'My attendance this month';
 $string['myleavebalance'] = 'My leave balance';
@@ -365,6 +371,28 @@ $string['approver'] = 'Approver';
 $string['noapproverassigned'] = 'Not assigned';
 $string['errorapprovernotteacher'] = 'Please choose one of your own course teachers as the approving teacher.';
 $string['leaverequestsubmitted'] = 'Your leave request has been submitted.';
+
+// Session-scope self-service leave (leave/apply.php), added 2026-09-13:
+// a student can request leave against 1+ specific mod_attendance
+// session(s) of one of their own courses on a single day, instead of
+// only a whole day - see student_leave_manager::create_application()/
+// get_sessions_for_application() and constants::LEAVE_SCOPE_SESSION.
+$string['applyforleavewholeday'] = 'Apply for whole-day leave';
+$string['applyforleavesession'] = 'Apply for session-based leave';
+$string['choosehowtoapplysubtitle'] = 'Choose whether to request a whole day off, or just miss one or two specific class sessions.';
+$string['changeleaverequesttype'] = 'Change request type';
+$string['selectcoursedatesubtitle'] = 'Choose the course and the day you need to be absent from, then pick which session(s) to cover.';
+$string['nocoursesforsessionleave'] = 'You are not enrolled in any course with an Attendance activity, so session-based leave is not available. Choose whole-day leave instead.';
+$string['sessiondate'] = 'Date';
+$string['findsessions'] = 'Find sessions';
+$string['changecourseordate'] = 'Change course/date';
+$string['nosessionsonthatdate'] = 'No attendance sessions were found for this course on the selected date. Choose a different course or date.';
+$string['selectsessions'] = 'Session(s)';
+$string['selectsessions_help'] = "Select one or more of this course's class sessions on the chosen date that you will miss. Hold Ctrl (Cmd on a Mac) to select more than one.";
+$string['errornosessionsselected'] = 'Select at least one session.';
+$string['errorinvalidsessionselected'] = 'One of the selected sessions is not valid for this course and date.';
+$string['sessionleavelabel'] = 'Session leave';
+$string['sessionleavecount'] = '{$a} session(s)';
 $string['notastudentnoaccess'] = 'This page is only available to users holding the student role.';
 $string['myapprovals'] = 'Leave requests to review';
 $string['myapprovalssubtitle'] = 'Applications where a student has chosen you as their approving teacher.';

@@ -86,10 +86,68 @@ $plugin->component = 'local_hrdepartment';
 // that plugin's matching same-day exclusion in its own
 // can_view_navigation_entry(). No schema/capability/lang-string change.
 // Needs a Moodle cache purge to take effect (new hook registration).
-$plugin->version   = 2026090603;
+// 2026-09-13, v2026091300/0.8.0: the user asked (in Burmese) for a
+// session-scope option on the student self-service leave form
+// (leave/apply.php) - a student can now request leave for either a
+// whole day (unchanged) or just 1+ specific mod_attendance session(s)
+// (e.g. one class period) of one of their own courses on a single day,
+// then still view it back on leave/myrequests.php alongside their
+// whole-day requests. Confirmed 3 scope questions via AskUserQuestion
+// before building (all Recommended): (1) a session-scope request never
+// deducts from hrdep_studentleavebalance - it's a pure history/
+// notification record, achieved for free by always storing
+// totaldays = 0 for these rows so review_application()'s existing
+// balance-adjustment maths is naturally a no-op, no special-case code
+// needed; (2) the sessions a single application can cover must all fall
+// on ONE calendar day (matching "1 or 2 periods of that day", not a
+// multi-day session spree); (3) approving a session-scope request never
+// writes back into any mod_attendance table - it stays purely within
+// this plugin's own hrdep_studentleaveapp/-appsession tables, preserving
+// student_attendance_manager's existing read-only-attendance rule.
+//
+// New table hrdep_studentleaveappsession (leaveappid -> sessionid
+// junction) + new hrdep_studentleaveapp.leavescope field ('day'|
+// 'session'). apply.php is now a 3-step flow: choose scope -> (if
+// session) pick course + date -> the actual form (day form unchanged;
+// a new student_leave_apply_session_form shows that date's sessions for
+// that course as checkboxes, sourced read-only from a new
+// student_attendance_manager::get_sessions_for_course_on_date()).
+// myrequests.php/view.php updated to render session-scope rows (session
+// list instead of a day count).
+// 2026-09-13, v2026091301/0.8.1: same-day post-deploy fix - the user
+// reported (in English) they could not find the leave request option in
+// a student account at all. Root cause was TWO separate, pre-existing
+// gaps that the new session-scope leave feature above simply exposed by
+// making self-service leave something worth actually reaching for the
+// first time:
+// 1. classes/hooks/navigation/primary_extend.php (the TOP nav bar entry
+//    point, added 2026-09-12) was deliberately HR-staff/admin-only by a
+//    same-day design decision - a plain student was assumed to reach
+//    their own pages via the classic extend_navigation() side-drawer
+//    entry (lib.php) instead, which DOES check the broader self-service
+//    condition, but doesn't render on this site's custom theme (the
+//    exact top-bar-vs-drawer split this hook exists to work around in
+//    the first place) - so a plain student had no nav path to this
+//    plugin AT ALL. Fixed by widening the hook to also add a
+//    differently-labelled entry (pluginnameselfservice = "My HR") for
+//    any self-service-only viewer.
+// 2. Even after landing on index.php, the self-service branch
+//    (classes/output/my_summary.php) is built entirely from an
+//    hrdep_employee record - dashboard_helper::get_my_snapshot() returns
+//    null and the page shows nothing at all for a plain student or an
+//    approver-only teacher, neither of whom necessarily has one (that
+//    view was designed for STAFF/LECTURER self-service, a fully separate
+//    data model from student_leave_manager/student_attendance_manager).
+//    Fixed with a new index.php branch, gated on "$canselfservice but no
+//    employee record", showing a small quicklink landing (Attendance/
+//    Leave tiles, each individually capability-gated) instead of the
+//    employee-oriented snapshot.
+// No DB schema/capability change; 2 new lang strings
+// (pluginnameselfservice, selfservicelandingsubtitle).
+$plugin->version   = 2026091301;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.7.1';
+$plugin->release   = '0.8.1';
 $plugin->dependencies = [
     'mod_attendance' => ANY_VERSION,
 ];

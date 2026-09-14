@@ -61,6 +61,21 @@ class primary_extend {
     /**
      * Hook callback - see db/hooks.php.
      *
+     * 2026-09-13 addendum: this was HR-staff/admin-only when first added
+     * (see the class docblock above), by deliberate 2026-09-12 design -
+     * a plain student was meant to see ONLY local_financedepartment's
+     * "Scholarship" entry in this top bar. That design assumed a
+     * student's OWN self-service pages (leave/apply.php, myrequests.php)
+     * were reachable some other way - but they never were: the classic
+     * extend_navigation() side-drawer entry (lib.php) does check the
+     * broader self-service condition, yet doesn't render on this site's
+     * custom theme (the same top-bar-vs-drawer split this hook exists to
+     * work around in the first place), so a plain student had NO path to
+     * their own leave/attendance pages at all. Fixed by widening this
+     * hook to also add a (differently-labelled) entry for a self-service
+     * -only viewer, mirroring local_financedepartment's own
+     * pluginnamestudent role-based-label precedent - see version.php.
+     *
      * @param \core\hook\navigation\primary_extend $hook
      * @return void
      */
@@ -71,11 +86,22 @@ class primary_extend {
             return;
         }
 
-        if (!access_manager::can_access_hr_department((int) $USER->id)) {
+        $context = \context_system::instance();
+        $ismanagement = access_manager::can_access_hr_department((int) $USER->id);
+        $isselfservice = $ismanagement
+            || has_capability('local/hrdepartment:viewownattendance', $context)
+            || \local_hrdepartment\student_leave_manager::can_view()
+            || has_capability('local/hrdepartment:applyownleave', $context)
+            || \local_hrdepartment\student_leave_manager::is_approver((int) $USER->id)
+            || has_capability('local/hrdepartment:viewownpayroll', $context);
+
+        if (!$isselfservice) {
             return;
         }
 
-        $name = get_string('pluginname', 'local_hrdepartment');
+        $name = $ismanagement
+            ? get_string('pluginname', 'local_hrdepartment')
+            : get_string('pluginnameselfservice', 'local_hrdepartment');
 
         $primarynav = $hook->get_primaryview();
         $primarynav->add(

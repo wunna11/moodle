@@ -78,6 +78,12 @@ class constants {
     /** @var string Leave application status: cancelled. */
     const LEAVE_STATUS_CANCELLED = 'cancelled';
 
+    /** @var string Leave application scope: whole calendar day(s) - the original behaviour. */
+    const LEAVE_SCOPE_DAY = 'day';
+
+    /** @var string Leave application scope: one or more specific mod_attendance sessions of a single course, all on one calendar day. Never deducts from hrdep_studentleavebalance. */
+    const LEAVE_SCOPE_SESSION = 'session';
+
     /** @var string Payroll payment status: pending. */
     const PAYROLL_STATUS_PENDING = 'pending';
 

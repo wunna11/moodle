@@ -25,6 +25,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\constants;
 use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
@@ -89,12 +90,35 @@ if (empty($rows)) {
 
     foreach ($rows as $row) {
         $viewurl = new moodle_url('/local/hrdepartment/leave/view.php', ['id' => $row->id]);
+
+        $leavetypecell = format_string($row->leavetypename);
+        $totaldayscell = $row->totaldays;
+
+        // Session-scope rows (leave/apply.php's session-based flow, added
+        // 2026-09-13) never carry a meaningful day count - they always
+        // store totaldays = 0 by design (see student_leave_manager::
+        // create_application()) - so show which session(s) were
+        // requested instead of a "0".
+        if (($row->leavescope ?? constants::LEAVE_SCOPE_DAY) === constants::LEAVE_SCOPE_SESSION) {
+            $sessions = student_leave_manager::get_sessions_for_application((int) $row->id);
+            $sessionnames = array_map(function($session) {
+                return $session->attendancename;
+            }, $sessions);
+
+            $leavetypecell .= html_writer::tag(
+                'div',
+                get_string('sessionleavelabel', 'local_hrdepartment') . ': ' . implode(', ', $sessionnames),
+                ['class' => 'text-muted small']
+            );
+            $totaldayscell = get_string('sessionleavecount', 'local_hrdepartment', count($sessions));
+        }
+
         $table->data[] = [
-            format_string($row->leavetypename),
+            $leavetypecell,
             $row->approverfullname ?? get_string('noapproverassigned', 'local_hrdepartment'),
             userdate($row->startdate, $dateformat),
             userdate($row->enddate, $dateformat),
-            $row->totaldays,
+            $totaldayscell,
             local_hrdepartment_leave_status_badge($row->status),
             html_writer::link($viewurl, get_string('view')),
         ];

@@ -23,6 +23,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_hrdepartment\constants;
 use local_hrdepartment\student_leave_manager;
 
 require_once(__DIR__ . '/../../../config.php');
@@ -78,11 +79,39 @@ echo html_writer::span(
 );
 echo html_writer::end_div();
 
+$issessionscope = (($application->leavescope ?? constants::LEAVE_SCOPE_DAY) === constants::LEAVE_SCOPE_SESSION);
+
 $rows = [
     [get_string('student', 'local_hrdepartment'), s($application->studentfullname) . ' (' . s($application->studentemail) . ')'],
-    [get_string('startdate', 'local_hrdepartment'), userdate($application->startdate, $dateformat)],
-    [get_string('enddate', 'local_hrdepartment'), userdate($application->enddate, $dateformat)],
-    [get_string('totaldays', 'local_hrdepartment'), $application->totaldays],
+];
+
+if ($issessionscope) {
+    // Session-scope: the date row is more useful than a start/end pair
+    // that's always the same single day, and totaldays is always 0 (by
+    // design - see student_leave_manager::create_application()) so it's
+    // replaced with the actual session list instead of a bare "0".
+    $rows[] = [get_string('sessiondate', 'local_hrdepartment'), userdate($application->startdate, $dateformat)];
+
+    $sessions = student_leave_manager::get_sessions_for_application((int) $application->id);
+    $timeformat = get_string('strftimetime', 'langconfig');
+    $sessionlines = array_map(function($session) use ($timeformat) {
+        $line = userdate($session->sessdate, $timeformat) . ' - ' . s($session->attendancename);
+        if (!empty($session->description)) {
+            $line .= ' (' . format_string($session->description) . ')';
+        }
+        return $line;
+    }, $sessions);
+    $rows[] = [
+        get_string('selectsessions', 'local_hrdepartment'),
+        !empty($sessionlines) ? implode(html_writer::empty_tag('br'), $sessionlines) : '-',
+    ];
+} else {
+    $rows[] = [get_string('startdate', 'local_hrdepartment'), userdate($application->startdate, $dateformat)];
+    $rows[] = [get_string('enddate', 'local_hrdepartment'), userdate($application->enddate, $dateformat)];
+    $rows[] = [get_string('totaldays', 'local_hrdepartment'), $application->totaldays];
+}
+
+$rows = array_merge($rows, [
     [get_string('reason', 'local_hrdepartment'), $application->reason !== null && $application->reason !== ''
         ? format_string($application->reason) : '-'],
     [get_string('submittedby', 'local_hrdepartment'), $application->submittedbyfullname],
@@ -90,7 +119,7 @@ $rows = [
     [get_string('reviewedby', 'local_hrdepartment'), $application->reviewedbyfullname ?? '-'],
     [get_string('reviewnote', 'local_hrdepartment'), $application->reviewnote !== null && $application->reviewnote !== ''
         ? format_string($application->reviewnote) : '-'],
-];
+]);
 
 echo html_writer::start_div('hrdept-detail-grid');
 foreach ($rows as [$label, $value]) {

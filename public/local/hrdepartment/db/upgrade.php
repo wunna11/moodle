@@ -316,6 +316,50 @@ function xmldb_local_hrdepartment_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026081900, 'local', 'hrdepartment');
     }
 
+    if ($oldversion < 2026091300) {
+        // Task: a student applying for their own leave (leave/apply.php)
+        // can now choose between a whole-day request (unchanged) or a
+        // session-scope request against 1+ of a specific course's
+        // mod_attendance sessions on a single day (e.g. missing just
+        // period 1, or periods 1 and 2, rather than the whole day). See
+        // student_leave_manager::create_application()/
+        // get_sessions_for_application() and the new apply.php flow.
+        //
+        // Per explicit user decision: a session-scope application NEVER
+        // touches hrdep_studentleavebalance (it always stores
+        // totaldays = 0, so review_application()'s existing balance
+        // maths is naturally a no-op for these rows - no special-case
+        // code needed there) and approving one NEVER writes back into
+        // any mod_attendance table (this plugin's read-only-attendance
+        // rule, unchanged - see student_attendance_manager.php's class
+        // docblock).
+        $table = new xmldb_table('hrdep_studentleaveapp');
+        if ($dbman->table_exists($table)) {
+            $field = new xmldb_field('leavescope', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'day', 'totaldays');
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        $table = new xmldb_table('hrdep_studentleaveappsession');
+        if (!$dbman->table_exists($table)) {
+            $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+            $table->add_field('leaveappid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('sessionid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+            $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+            $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+
+            $table->add_index('idx_leaveappid', XMLDB_INDEX_NOTUNIQUE, ['leaveappid']);
+            $table->add_index('idx_sessionid', XMLDB_INDEX_NOTUNIQUE, ['sessionid']);
+            $table->add_index('idx_leaveapp_session', XMLDB_INDEX_UNIQUE, ['leaveappid', 'sessionid']);
+
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091300, 'local', 'hrdepartment');
+    }
+
     // Future upgrade steps go here, gated by $oldversion checks, e.g.:
     // if ($oldversion < 2026090100) {
     //     ... table/field changes via $dbman ...

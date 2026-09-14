@@ -158,6 +158,41 @@ class student_attendance_manager {
     }
 
     /**
+     * Returns one course's mod_attendance sessions falling on a single
+     * calendar day (server timezone), for the student self-service leave
+     * form (local_hrdepartment\student_leave_manager::create_application())
+     * to let a student pick just 1+ specific session(s) - e.g. one class
+     * period - instead of a whole-day leave request. Read-only, same as
+     * every other method here: nothing is ever written back to
+     * mod_attendance.
+     *
+     * @param int $courseid
+     * @param int $date any timestamp on the target calendar day
+     * @return \stdClass[] sessionid, sessdate, description, descriptionformat, duration, attendanceid, attendancename, cmid
+     */
+    public static function get_sessions_for_course_on_date(int $courseid, int $date): array {
+        global $DB;
+
+        $daystart = usergetmidnight($date);
+        $dayend = $daystart + DAYSECS;
+
+        $sql = "SELECT s.id AS sessionid, s.sessdate, s.description, s.descriptionformat, s.duration,
+                       a.id AS attendanceid, a.name AS attendancename,
+                       cm.id AS cmid
+                  FROM {attendance_sessions} s
+                  JOIN {attendance} a ON a.id = s.attendanceid
+                  JOIN {modules} m ON m.name = 'attendance'
+                  JOIN {course_modules} cm ON cm.module = m.id AND cm.instance = a.id
+                 WHERE a.course = :courseid
+                   AND s.sessdate >= :daystart AND s.sessdate < :dayend
+              ORDER BY s.sessdate ASC";
+
+        return array_values($DB->get_records_sql($sql, [
+            'courseid' => $courseid, 'daystart' => $daystart, 'dayend' => $dayend,
+        ]));
+    }
+
+    /**
      * Returns one session's header details (date, course, activity name)
      * needed to render the records page and check access, or false if
      * the session doesn't exist.
