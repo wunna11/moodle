@@ -45,6 +45,11 @@ $canviewall = access_manager::can_manage('local/hrdepartment:manageattendance');
 $manageablecourses = student_attendance_manager::get_manageable_courses((int) $USER->id, $canviewall);
 $canviewany = $canviewall || !empty($manageablecourses);
 
+// Self-service "My attendance" filters (course.php note in this file's
+// header still applies: only used in the else branch below).
+$filtercourseid = optional_param('courseid', 0, PARAM_INT);
+$filterstatus = optional_param('status', '', PARAM_TEXT);
+
 if (!$canviewany) {
     // Falls through to the self-service branch below - viewownattendance
     // defaults to every logged-in user, so this is mostly a safety net
@@ -113,7 +118,10 @@ if ($canviewany) {
         get_string('myattendancesubtitle', 'local_hrdepartment')
     );
 
-    $summary = student_attendance_manager::get_student_status_summary((int) $USER->id);
+    // Stats respect the course filter (so switching course updates the
+    // counts) but never the status filter, otherwise picking "Absent"
+    // would zero out every other card.
+    $summary = student_attendance_manager::get_student_status_summary((int) $USER->id, $filtercourseid ?: null);
 
     if (empty($summary)) {
         echo local_hrdepartment_render_empty_state(
@@ -133,29 +141,87 @@ if ($canviewany) {
         }
         echo html_writer::end_div();
 
-        $records = student_attendance_manager::get_student_records((int) $USER->id);
+        // Filter bar: course + status (Present/Absent/Late/... - whatever
+        // this student's attendance activities actually define).
+        $mycourses = student_attendance_manager::get_student_courses((int) $USER->id);
 
-        $table = new html_table();
-        $table->head = [
-            get_string('course', 'local_hrdepartment'),
-            get_string('attendancedate', 'local_hrdepartment'),
-            get_string('status', 'local_hrdepartment'),
-            get_string('remarks', 'local_hrdepartment'),
-        ];
-        $table->attributes['class'] = 'generaltable local-hrdepartment-my-attendance';
+        echo html_writer::start_tag('form', ['method' => 'get', 'action' => $PAGE->url, 'class' => 'hrdept-filter-bar']);
 
-        $dateformat = get_string('strftimedatefullshort', 'langconfig');
+        $courseoptions = [0 => get_string('allcourses', 'local_hrdepartment')];
+        foreach ($mycourses as $mycourse) {
+            $courseoptions[$mycourse->id] = $mycourse->shortname . ': ' . format_string($mycourse->fullname);
+        }
+        echo html_writer::select($courseoptions, 'courseid', $filtercourseid, null, ['class' => 'form-control']);
 
-        foreach ($records as $record) {
-            $table->data[] = [
-                $record->shortname . ': ' . format_string($record->fullname),
-                userdate($record->sessdate, $dateformat),
-                s($record->statusdescription) . ' (' . s($record->acronym) . ')',
-                $record->remarks !== null && $record->remarks !== '' ? format_string($record->remarks) : '-',
-            ];
+        $statusoptions = ['' => get_string('allstatuses', 'local_hrdepartment')];
+        foreach ($summary as $row) {
+            $statusoptions[$row->acronym] = s($row->description) . ' (' . s($row->acronym) . ')';
+        }
+        echo html_writer::select($statusoptions, 'status', $filterstatus, null, ['class' => 'form-control']);
+
+        echo html_writer::empty_tag('input', [
+            'type' => 'submit',
+            'value' => get_string('filter', 'local_hrdepartment'),
+            'class' => 'btn btn-secondary',
+        ]);
+
+        if ($filtercourseid || $filterstatus !== '') {
+            echo html_writer::link(
+                $PAGE->url,
+                get_string('resetfilters', 'local_hrdepartment'),
+                ['class' => 'hrdept-filter-reset btn btn-link']
+            );
         }
 
-        echo local_hrdepartment_render_table_card(html_writer::table($table));
+        echo html_writer::end_tag('form');
+
+        $records = student_attendance_manager::get_student_records(
+            (int) $USER->id,
+            $filtercourseid ?: null,
+            $filterstatus !== '' ? $filterstatus : null
+        );
+
+        if (empty($records)) {
+            echo local_hrdepartment_render_empty_state(
+                get_string('noattendancerecords', 'local_hrdepartment'),
+                'fa-clipboard-check'
+            );
+        } else {
+            $table = new html_table();
+            $table->head = [
+                get_string('course', 'local_hrdepartment'),
+                get_string('attendancedate', 'local_hrdepartment'),
+                get_string('status', 'local_hrdepartment'),
+                get_string('remarks', 'local_hrdepartment'),
+            ];
+            $table->attributes['class'] = 'generaltable local-hrdepartment-my-attendance';
+
+            $dateformat = get_string('strftimedatefullshort', 'langconfig');
+            $badgeclasses = [
+                'p' => 'hrdept-attendance-badge-present',
+                'a' => 'hrdept-attendance-badge-absent',
+                'l' => 'hrdept-attendance-badge-late',
+                'e' => 'hrdept-attendance-badge-excused',
+            ];
+
+            foreach ($records as $record) {
+                $key = strtolower(trim($record->acronym));
+                $badgeclass = 'hrdept-attendance-badge ' . ($badgeclasses[$key] ?? 'hrdept-attendance-badge-default');
+                $statusbadge = html_writer::span(
+                    s($record->statusdescription) . ' (' . s($record->acronym) . ')',
+                    $badgeclass
+                );
+
+                $table->data[] = [
+                    $record->shortname . ': ' . format_string($record->fullname),
+                    userdate($record->sessdate, $dateformat),
+                    $statusbadge,
+                    $record->remarks !== null && $record->remarks !== '' ? format_string($record->remarks) : '-',
+                ];
+            }
+
+            echo local_hrdepartment_render_table_card(html_writer::table($table));
+        }
     }
 }
 

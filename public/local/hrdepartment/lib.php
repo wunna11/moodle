@@ -35,22 +35,16 @@ use local_hrdepartment\student_leave_manager;
  * @param global_navigation $nav
  */
 function local_hrdepartment_extend_navigation(global_navigation $nav) {
-    global $PAGE, $USER;
+    global $PAGE;
 
-    if (!isloggedin() || isguestuser()) {
-        return;
-    }
-
-    $context = context_system::instance();
-
-    $cancontent = access_manager::can_access_hr_department((int) $USER->id)
-        || has_capability('local/hrdepartment:viewownattendance', $context)
-        || student_leave_manager::can_view()
-        || has_capability('local/hrdepartment:applyownleave', $context)
-        || student_leave_manager::is_approver((int) $USER->id)
-        || has_capability('local/hrdepartment:viewownpayroll', $context);
-
-    if (!$cancontent) {
+    // 2026-09-14 (Phase 4 of the access-model migration, project memory
+    // hrdepartment-access-migration-plan.md): this used to maintain its
+    // own copy of the "who should see this at all" OR chain, duplicated
+    // with classes/hooks/navigation/primary_extend.php's equivalent
+    // check - see that class's docblock for the v2026091301/0.8.1 bug
+    // that duplication caused. Both now call
+    // access_manager::can_view_navigation_entry() instead.
+    if (!access_manager::can_view_navigation_entry()) {
         return;
     }
 

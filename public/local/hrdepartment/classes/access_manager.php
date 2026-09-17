@@ -31,52 +31,65 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Class access_manager
  *
- * Implements the "who is HR" rule (added 2026-08-17, widened same day to
- * cover every management-side section, not just the Dashboard):
+ * Implements the "who is HR" rule:
  *
- *   (hrdep_employee Staff record whose department is "HR")
+ *   (a Moodle role holding at least one local/hrdepartment:* management
+ *    capability - see MANAGEMENT_CAPABILITIES below)
  *   OR  (Moodle site administrator)
  *
  * =>  full access to every HR Department management feature: the
  *     org-wide Dashboard, Lecturers, Staff, Students, Attendance
  *     management, Leave management, and Payroll (once built).
  *
- * "Role is staff" is decided by this plugin's own hrdep_employee.type
- * field (constants::EMPLOYEE_TYPE_STAFF), NOT a separate Moodle role
- * assignment. A first version (2026-08-17, same day) checked a Moodle
- * role with shortname "staff" instead - confirmed via a live diagnostic
- * (local/hrdepartment/debug_access.php) that no such role existed on
- * the site at all (zero role assignments for the test account), while
- * the hrdep_employee record was already correct (type=staff,
- * department=HR). Switched to reading the employee record directly:
- * works with zero extra Moodle admin setup, and matches what "Staff"
- * already means everywhere else in this plugin. If a real Moodle role
- * requirement is wanted later, it needs to be created and assigned in
- * Site administration > Users > Permissions first - this class won't
- * silently start requiring one again.
+ * HISTORY: from 2026-08-17 to 2026-09-14 (v2026091301/0.8.1 and
+ * earlier) this rule was instead decided by reading an hrdep_employee
+ * row directly (type=staff, department="HR") rather than a Moodle role
+ * assignment - see is_staff_in_hr_department() below, kept for
+ * reference/rollback but no longer called. That approach was itself a
+ * fallback from an even earlier attempt (same day) to check a Moodle
+ * role with shortname "staff", abandoned when a live diagnostic found
+ * no such role existed on the site at all.
  *
- * This can't be expressed as a plain Moodle capability, because a
- * capability has no way to condition on a custom field's value (the
- * employee's department) - so it lives here as a runtime check instead.
- * Two entry points:
+ * 2026-09-14, v2026091400/0.8.2 (Phase 1) added a real Moodle role
+ * (hrdepartmentstaff, system context) kept in sync with every
+ * hrdep_employee Staff record by classes/role_sync_manager.php, as
+ * dual-write "shadow" data alongside the still-authoritative
+ * employee-record check.
+ *
+ * 2026-09-14, v2026091401/0.8.3 (Phase 2, THIS cutover) flips this
+ * class over to reading that role's capabilities via has_capability()
+ * instead of hrdep_employee directly - see project memory
+ * hrdepartment-access-migration-plan.md for the full multi-phase plan.
+ * Every public method's signature is UNCHANGED, so no caller anywhere
+ * in the codebase needed to change. Rollback: revert can_access_hr_
+ * department()'s and can_manage()'s bodies only (git revert this
+ * commit) - is_staff_in_hr_department() was deliberately left in place
+ * to make that a clean one-file revert; role_sync_manager's shadow data
+ * is harmless to leave in place either way.
+ *
+ * This still can't be expressed as a single plain Moodle capability
+ * (no one capability means "is HR"), so it lives here as a runtime
+ * check over several. Three entry points:
  *
  * - can_access_hr_department(): the rule on its own. Used as a drop-in
  *   replacement for every former has_capability('local/hrdepartment:
  *   managedashboard', ...) call site (index.php's dashboard-vs-self-
- *   service branch, lib.php's navigation visibility,
- *   student_leave_manager::is_leave_attendance_only_role()'s "is this a
- *   manager" check).
- * - can_manage($capability): the rule OR'd with the plugin's normal
- *   per-section capability (managelecturers/managestaff/managestudents/
- *   manageattendance/managepayroll - see db/access.php), so a role that
- *   already grants one of those capabilities keeps working exactly as
- *   before, and the new Staff+HR rule (or a site admin) additionally
- *   gets in everywhere too. Used as a drop-in replacement for every
- *   has_capability()/require_capability() call site gating those five
- *   capabilities across lecturer/*.php, staff/*.php, students/*.php,
+ *   service branch, student_leave_manager::is_leave_attendance_only_role()
+ *   's "is this a manager" check).
+ * - can_manage($capability): now a plain has_capability() call (site
+ *   admins are already covered by Moodle's own has_capability()
+ *   shortcut for them) - kept as a named wrapper rather than inlined at
+ *   every call site so a future policy change again has one place to
+ *   change, and so lecturer/*.php, staff/*.php, students/*.php,
  *   attendance/*.php, lib.php's tab visibility, and
  *   student_leave_manager::can_manage()'s global (studentid = 0) branch
- *   for Leave.
+ *   for Leave never call has_capability() directly.
+ * - can_view_navigation_entry(): added 2026-09-14 (Phase 4) - whether
+ *   the current user should see ANY HR Department nav entry (management
+ *   or self-service), shared by both of this plugin's nav entry points
+ *   (lib.php's extend_navigation() and classes/hooks/navigation/
+ *   primary_extend.php) so they can't drift apart again. See that
+ *   method's own docblock.
  *
  * Every one of the plugin's own manage* capability definitions is left
  * in place in db/access.php purely for its display name/description in
@@ -91,16 +104,47 @@ defined('MOODLE_INTERNAL') || die();
  */
 class access_manager {
 
-    /** @var string hrdep_department.name value that grants access to a Staff-type employee. */
+    /** @var string hrdep_department.name value historically used by is_staff_in_hr_department() (no longer called - see this class's docblock). */
     const HR_DEPARTMENT_NAME = 'HR';
+
+    /**
+     * Every local/hrdepartment:* capability that marks someone as HR
+     * management staff, i.e. the exact 9 capabilities Allow-checked on
+     * the hrdepartmentstaff custom role as Phase 0 of the migration
+     * plan (managedepartments deliberately excluded - stays
+     * Manager-role-only, see can_manage_departments(); the viewown*
+     * self-service capabilities also excluded, they default to
+     * everyone via the 'user' archetype). Keep in sync with db/access.php
+     * and with Phase 0's role setup whenever a new manage- or view-style
+     * capability is added - mirrors local_financedepartment\access_manager
+     * ::MANAGEMENT_CAPABILITIES exactly, same caveat.
+     *
+     * @var string[]
+     */
+    const MANAGEMENT_CAPABILITIES = [
+        'managedashboard',
+        'managelecturers',
+        'managestaff',
+        'managestudents',
+        'manageattendance',
+        'managestudentleave',
+        'viewstudentleave',
+        'managepayroll',
+        'viewallrecords',
+    ];
 
     /**
      * Whether $userid may access the HR Department feature's management
      * side (the org-wide Dashboard, and everywhere else that used to
      * gate on local/hrdepartment:managedashboard).
      *
-     * True for a Moodle site administrator, or for a user who has an
-     * hrdep_employee Staff record whose department is named "HR".
+     * True for a Moodle site administrator, or for a user whose roles
+     * grant at least one of MANAGEMENT_CAPABILITIES above - in
+     * practice, on this site, that means the hrdepartmentstaff role
+     * (see role_sync_manager.php), assigned automatically to every
+     * active Staff-type hrdep_employee in the "HR" department, but any
+     * other role granting one of those capabilities also qualifies, the
+     * same as it always could have.
      *
      * @param int $userid defaults to $USER.
      * @return bool
@@ -113,23 +157,28 @@ class access_manager {
             return true;
         }
 
-        return self::is_staff_in_hr_department($userid);
+        $context = \context_system::instance();
+        foreach (self::MANAGEMENT_CAPABILITIES as $capability) {
+            if (has_capability('local/hrdepartment:' . $capability, $context, $userid)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Drop-in replacement for
      * has_capability($capability, context_system::instance(), $userid)
-     * for any of this plugin's manage* capabilities
-     * (managelecturers/managestaff/managestudents/manageattendance/
-     * managepayroll/managestudentleave). Grants access if the user holds
-     * $capability the normal Moodle way (so existing role setups keep
-     * working unchanged), OR satisfies can_access_hr_department() (the
-     * Staff+HR rule, or a site admin) even without that capability
-     * assigned via any role.
+     * for any of this plugin's manage* capabilities. Since Phase 2 of
+     * the migration this is a plain has_capability() call - a site
+     * administrator is already covered by Moodle's own has_capability()
+     * shortcut for them, so no separate is_siteadmin() check is needed
+     * here either.
      *
      * Do NOT use this for local/hrdepartment:managedepartments - see
-     * can_manage_departments() below, which is deliberately NOT OR'd
-     * with can_access_hr_department().
+     * can_manage_departments() below, which has always been a separate,
+     * plain has_capability() check.
      *
      * @param string $capability e.g. 'local/hrdepartment:managestaff'
      * @param int $userid defaults to $USER.
@@ -138,10 +187,6 @@ class access_manager {
     public static function can_manage(string $capability, int $userid = 0): bool {
         global $USER;
         $userid = $userid ?: (int) $USER->id;
-
-        if (self::can_access_hr_department($userid)) {
-            return true;
-        }
 
         return has_capability($capability, \context_system::instance(), $userid);
     }
@@ -220,9 +265,74 @@ class access_manager {
     }
 
     /**
+     * Whether the CURRENT user should see the HR Department entry in
+     * navigation at all - true for HR management staff/admin
+     * (can_access_hr_department()), or for a self-service-only viewer
+     * (a plain student/teacher holding any of the self-service
+     * attendance/leave/payroll capabilities, or a delegated leave
+     * approver).
+     *
+     * Added 2026-09-14 (Phase 4 of the access-model migration, project
+     * memory hrdepartment-access-migration-plan.md) to close the exact
+     * "two nav entry points computing this same condition independently"
+     * gap that caused the v2026091301/0.8.1 bug: classes/hooks/
+     * navigation/primary_extend.php originally had its OWN, narrower
+     * copy of this check (HR-staff/admin only) and simply never got
+     * updated when self-service capabilities were added to lib.php's
+     * local_hrdepartment_extend_navigation(), so a plain student had no
+     * path to their own leave/attendance pages in the top nav bar at
+     * all. Both of those call sites now call this method instead of
+     * maintaining their own copy of the OR chain, so they can never
+     * drift apart again - mirrors
+     * local_financedepartment\access_manager::can_view_navigation_entry()'s
+     * own reason for existing (added 2026-09-10 for the exact same
+     * reason, on that plugin's own two nav entry points).
+     *
+     * Deliberately does NOT decide which LABEL to show ("HR Department"
+     * vs "My HR") - that half of the decision still varies by call site
+     * (lib.php's side-drawer entry always uses the plain "HR Department"
+     * label regardless of viewer; primary_extend.php's top-bar entry
+     * picks between the two based on can_access_hr_department()) and was
+     * deliberately left as-is by this refactor rather than unified,
+     * since doing so would be a user-facing behaviour change, not a
+     * pure consolidation - flagged in project memory as a follow-up
+     * worth asking the user about, not decided unilaterally here.
+     *
+     * @return bool
+     */
+    public static function can_view_navigation_entry(): bool {
+        global $USER;
+
+        if (!isloggedin() || isguestuser()) {
+            return false;
+        }
+
+        $userid = (int) $USER->id;
+
+        if (self::can_access_hr_department($userid)) {
+            return true;
+        }
+
+        $context = \context_system::instance();
+
+        return has_capability('local/hrdepartment:viewownattendance', $context, $userid)
+            || student_leave_manager::can_view(0, $userid)
+            || has_capability('local/hrdepartment:applyownleave', $context, $userid)
+            || student_leave_manager::is_approver($userid)
+            || has_capability('local/hrdepartment:viewownpayroll', $context, $userid);
+    }
+
+    /**
      * Whether $userid has an hrdep_employee record of type "staff" (see
      * constants::EMPLOYEE_TYPE_STAFF) whose department is named "HR"
      * (case-insensitive).
+     *
+     * NO LONGER CALLED as of Phase 2 of the access-model migration
+     * (2026-09-14, v2026091401/0.8.3) - can_access_hr_department() now
+     * checks MANAGEMENT_CAPABILITIES via has_capability() instead. Left
+     * in place, unchanged, purely so a rollback of that method's body
+     * is a clean one-file git revert; safe to delete once Phase 2 has
+     * been running in production for a while with no issues.
      *
      * @param int $userid
      * @return bool

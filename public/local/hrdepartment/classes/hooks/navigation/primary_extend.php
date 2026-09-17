@@ -35,22 +35,35 @@ use local_hrdepartment\access_manager;
  * See local_financedepartment/db/hooks.php's docblock for the original
  * investigation this mirrors.
  *
- * DELIBERATELY narrower than lib.php's extend_navigation() cancontent
- * check: that side-drawer entry shows for ANY self-service capability
- * (applyownleave/viewownattendance/viewownpayroll/is_approver()/can_view()
- * leave - i.e. also a plain student/teacher), but this TOP-bar entry
- * shows ONLY for actual HR staff or a site admin
- * (access_manager::can_access_hr_department()) - a 2026-09-12 user
- * request: a plain student must keep seeing local_financedepartment's
- * "Scholarship" entry in the top bar and nothing else, an HR staff
- * member must see "HR Department" there instead of "Scholarship" (see
- * the matching exclusion added to
- * local_financedepartment\access_manager::can_view_navigation_entry()
- * the same day), and a site admin must see BOTH bars' entries. This is a
- * deliberate difference from local_financedepartment's own pattern
- * (which reuses ONE check for both its nav entry points to avoid drift)
- * - here the two entry points intentionally serve different audiences,
- * so sharing one check would be wrong, not right.
+ * HISTORY: this was originally (2026-09-12) HR-staff/admin-only, with
+ * its own inline copy of that narrower check, deliberately DIFFERENT
+ * from lib.php's broader self-service-inclusive check at the time. That
+ * turned out to be a real bug, not a real design difference: a plain
+ * student had no OTHER path to their own leave/attendance pages (the
+ * side-drawer entry lib.php adds doesn't render on this site's custom
+ * theme), so the 2026-09-13 fix widened this hook to also show a
+ * (differently-labelled) entry for a self-service-only viewer - see the
+ * callback()'s own docblock below. After that fix, this hook's
+ * visibility condition and lib.php's were actually IDENTICAL, just
+ * maintained as two separate copies of the same OR chain - exactly the
+ * kind of drift that caused the original bug in the first place, and
+ * this class's own docblock kept claiming a "deliberate narrower" split
+ * that was no longer true even by v0.8.1.
+ *
+ * FIXED 2026-09-14 (Phase 4 of the access-model migration, project
+ * memory hrdepartment-access-migration-plan.md): both this hook and
+ * lib.php's local_hrdepartment_extend_navigation() now call
+ * access_manager::can_view_navigation_entry() for the "should anything
+ * show at all" gate, so they share one implementation and cannot drift
+ * apart again - mirrors local_financedepartment's own
+ * can_view_navigation_entry() pattern, which this plugin now also
+ * follows. The LABEL choice ("HR Department" vs "My HR") is still
+ * decided independently here (this hook alone shows the self-service
+ * label; lib.php's side-drawer entry always shows the plain "HR
+ * Department" label regardless of viewer) - that inconsistency
+ * pre-dates this refactor and was deliberately left alone, since
+ * unifying it would be a user-facing behaviour change, not a pure
+ * consolidation.
  *
  * @package   local_hrdepartment
  * @copyright 2026 Wunna
@@ -61,44 +74,17 @@ class primary_extend {
     /**
      * Hook callback - see db/hooks.php.
      *
-     * 2026-09-13 addendum: this was HR-staff/admin-only when first added
-     * (see the class docblock above), by deliberate 2026-09-12 design -
-     * a plain student was meant to see ONLY local_financedepartment's
-     * "Scholarship" entry in this top bar. That design assumed a
-     * student's OWN self-service pages (leave/apply.php, myrequests.php)
-     * were reachable some other way - but they never were: the classic
-     * extend_navigation() side-drawer entry (lib.php) does check the
-     * broader self-service condition, yet doesn't render on this site's
-     * custom theme (the same top-bar-vs-drawer split this hook exists to
-     * work around in the first place), so a plain student had NO path to
-     * their own leave/attendance pages at all. Fixed by widening this
-     * hook to also add a (differently-labelled) entry for a self-service
-     * -only viewer, mirroring local_financedepartment's own
-     * pluginnamestudent role-based-label precedent - see version.php.
-     *
      * @param \core\hook\navigation\primary_extend $hook
      * @return void
      */
     public static function callback(\core\hook\navigation\primary_extend $hook): void {
         global $USER;
 
-        if (!isloggedin() || isguestuser()) {
+        if (!access_manager::can_view_navigation_entry()) {
             return;
         }
 
-        $context = \context_system::instance();
         $ismanagement = access_manager::can_access_hr_department((int) $USER->id);
-        $isselfservice = $ismanagement
-            || has_capability('local/hrdepartment:viewownattendance', $context)
-            || \local_hrdepartment\student_leave_manager::can_view()
-            || has_capability('local/hrdepartment:applyownleave', $context)
-            || \local_hrdepartment\student_leave_manager::is_approver((int) $USER->id)
-            || has_capability('local/hrdepartment:viewownpayroll', $context);
-
-        if (!$isselfservice) {
-            return;
-        }
-
         $name = $ismanagement
             ? get_string('pluginname', 'local_hrdepartment')
             : get_string('pluginnameselfservice', 'local_hrdepartment');

@@ -61,10 +61,32 @@
     --findept-shadow-brand: 0 4px 14px rgba(47, 111, 237, 0.25);
 }
 
+/* 2026-09-16: Moodle core (Boost theme) gives every <i class="icon ...">
+ * a default right-only margin (meant for an icon that prefixes inline
+ * text). .findept-quicklink-icon/.findept-stat-icon center their icon
+ * with flex (align-items/justify-content: center), but that centers the
+ * icon's MARGIN box, not the glyph itself - the inherited right-only
+ * margin was making every icon glyph sit visibly left of center inside
+ * its circular/rounded badge. Zero it out here, once, for every icon
+ * badge this plugin renders (mirrors local_hrdepartment's own styles.css
+ * fix for the exact same symptom). */
+.findept-quicklink-icon .icon,
+.findept-stat-icon .icon {
+    margin: 0;
+}
+
 /* Tab bar - pill-style, matching the same redesign local_hrdepartment's
  * own tab bar already went through, so the two plugins' navigation feels
- * like one family. */
+ * like one family.
+ *
+ * 2026-09-16: this is the very first thing local_financedepartment_
+ * render_tab_bar() echoes right after $OUTPUT->header() on every page -
+ * with no top spacing of its own it sat flush against the theme's page
+ * header/title band above it, looking cramped (reported by the user on
+ * the Scholarship self-service page). Added margin-top for breathing
+ * room, matching the bottom margin already there. */
 .findept-tab-bar {
+    margin-top: 1.5rem;
     margin-bottom: 1.5rem;
 }
 

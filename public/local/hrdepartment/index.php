@@ -46,15 +46,31 @@ require_once(__DIR__ . '/../../config.php');
 require_login();
 
 $context = context_system::instance();
+
+// 2026-09-16: the heading used to come from student_leave_manager::
+// get_page_heading(), a heuristic (is_leave_attendance_only_role())
+// meant to swap "HR Department" for a self-service-appropriate label -
+// but the user reported it was still showing the literal "HR Department"
+// page heading above the self-service tile grid below, which only ever
+// offers Attendance/Leave, never anything HR-department-wide (a plain
+// student has no path to Dashboard/Lecturers/Staff/etc). Rather than
+// chase that heuristic's edge case, the heading (and title) are now
+// decided by the EXACT SAME $canviewdashboard flag that picks which
+// branch renders below, so they can never again disagree with what the
+// page actually shows.
+$canviewdashboard = access_manager::can_access_hr_department((int) $USER->id);
+$pageheading = $canviewdashboard
+    ? get_string('pluginname', 'local_hrdepartment')
+    : get_string('pluginnameselfservice', 'local_hrdepartment');
+
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/local/hrdepartment/index.php'));
 $PAGE->set_pagelayout('standard');
-$PAGE->set_title(get_string('pluginname', 'local_hrdepartment'));
-$PAGE->set_heading(student_leave_manager::get_page_heading());
+$PAGE->set_title($pageheading);
+$PAGE->set_heading($pageheading);
 
 $renderer = $PAGE->get_renderer('local_hrdepartment');
 
-$canviewdashboard = access_manager::can_access_hr_department((int) $USER->id);
 $canselfservice = has_capability('local/hrdepartment:viewownattendance', $context)
     || has_capability('local/hrdepartment:applyownleave', $context)
     || has_capability('local/hrdepartment:viewownpayroll', $context);
@@ -78,9 +94,17 @@ if ($canviewdashboard) {
     $page = new my_summary((int) $USER->id);
     echo $renderer->render_my_summary($page);
 } else if ($canselfservice) {
+    // 2026-09-16: was a plain <h2>+<p>, the only spot in this plugin
+    // still using bare text instead of the gradient hero banner every
+    // other landing page (Dashboard, Attendance, Leave) already uses -
+    // switched to local_hrdepartment_render_page_hero() for visual
+    // consistency (see styles.css, where .local-hrdepartment-dashboard
+    // was added to that helper's existing .hrdept-page-hero selectors).
     echo html_writer::start_div('local-hrdepartment-dashboard');
-    echo html_writer::tag('h2', get_string('pluginnameselfservice', 'local_hrdepartment'), ['class' => 'mb-1']);
-    echo html_writer::tag('p', get_string('selfservicelandingsubtitle', 'local_hrdepartment'), ['class' => 'text-muted mb-3']);
+    echo local_hrdepartment_render_page_hero(
+        $pageheading,
+        get_string('selfservicelandingsubtitle', 'local_hrdepartment')
+    );
 
     echo html_writer::start_div('hrdept-quicklink-grid');
     if (has_capability('local/hrdepartment:viewownattendance', $context)) {

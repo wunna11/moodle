@@ -117,8 +117,15 @@ $string['myhrsubtitle'] = 'Here is your personal HR snapshot.';
 
 // Self-service top-nav label + no-employee-record landing page, added
 // 2026-09-13 - see classes/hooks/navigation/primary_extend.php and
-// index.php.
-$string['pluginnameselfservice'] = 'My HR';
+// index.php. Renamed 2026-09-16 from the generic "My HR" to name what a
+// self-service viewer (a plain student, or a leave-approving teacher)
+// actually finds here - Attendance and Leave are the only two sections
+// ever shown on this landing page for that audience (see index.php's
+// $canselfservice branch and student_leave_manager::
+// is_leave_attendance_only_role(), which hides Dashboard/Payroll from
+// them entirely) - the old "My HR" implied HR-staff-only content that
+// was never actually there for this viewer.
+$string['pluginnameselfservice'] = 'Attendance & Leave';
 $string['selfservicelandingsubtitle'] = 'Here are the pages you can use.';
 $string['noemployeerecord'] = 'No HR employee record is linked to your account yet. Contact HR if you believe this is a mistake.';
 $string['myattendancethismonth'] = 'My attendance this month';

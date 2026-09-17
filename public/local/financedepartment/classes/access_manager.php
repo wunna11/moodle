@@ -33,12 +33,25 @@ defined('MOODLE_INTERNAL') || die();
  *
  * Implements the "who is Finance staff" rule for this plugin:
  *
- *   (hrdep_employee Staff record whose department is "Finance")
+ *   (a Moodle role holding at least one local/financedepartment:*
+ *    management capability - see MANAGEMENT_CAPABILITIES below)
  *   OR  (Moodle site administrator)
  *
  * => full access to every Finance Department management feature (fee
  *    structures, fee record assignment, scholarship/discount approval,
  *    installment plans, payment recording, finance dashboard/reports).
+ *
+ * 2026-09-14, v2026091401/0.8.3 (Phase 2 of the HR/Finance access-model
+ * migration, project memory hrdepartment-access-migration-plan.md):
+ * can_access_finance_department() was cut over from reading an
+ * hrdep_employee row directly to has_capability() against
+ * MANAGEMENT_CAPABILITIES - in practice, on this site, that means the
+ * financedepartmentstaff role (see local_hrdepartment\role_sync_manager),
+ * assigned automatically to every active Staff-type hrdep_employee in
+ * the "Finance" department since Phase 1. is_staff_in_finance_department()
+ * below is no longer called but left in place for a clean one-file
+ * rollback. Every public method's signature is UNCHANGED, so no caller
+ * anywhere in either plugin needed to change.
  *
  * CHANGED 2026-08-22: this plugin no longer has its own staff table.
  * It originally shipped with a plugin-local `financedep_employee` table
@@ -204,9 +217,8 @@ class access_manager {
      * management side (fee structures, fee records, scholarships,
      * discounts, installments, payments, dashboard/reports).
      *
-     * True for a Moodle site administrator, or for a user who has a
-     * local_hrdepartment Staff record whose department is named
-     * "Finance".
+     * True for a Moodle site administrator, or for a user whose roles
+     * grant at least one of MANAGEMENT_CAPABILITIES above.
      *
      * @param int $userid defaults to $USER.
      * @return bool
@@ -219,17 +231,23 @@ class access_manager {
             return true;
         }
 
-        return self::is_staff_in_finance_department($userid);
+        $context = \context_system::instance();
+        foreach (self::MANAGEMENT_CAPABILITIES as $capability) {
+            if (has_capability('local/financedepartment:' . $capability, $context, $userid)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
      * Drop-in replacement for
      * has_capability($capability, context_system::instance(), $userid)
      * for any of this plugin's local/financedepartment:* capabilities.
-     * Grants access if the user holds $capability the normal Moodle way
-     * (so a role-based setup keeps working unchanged), OR satisfies
-     * can_access_finance_department() (a Finance-department hrdep_employee,
-     * or a site admin) even without that capability assigned via any role.
+     * Since Phase 2 of the migration this is a plain has_capability()
+     * call - a site administrator is already covered by Moodle's own
+     * has_capability() shortcut for them.
      *
      * @param string $capability e.g. 'local/financedepartment:managefeestructures'
      * @param int $userid defaults to $USER.
@@ -238,10 +256,6 @@ class access_manager {
     public static function can_manage(string $capability, int $userid = 0): bool {
         global $USER;
         $userid = $userid ?: (int) $USER->id;
-
-        if (self::can_access_finance_department($userid)) {
-            return true;
-        }
 
         return has_capability($capability, \context_system::instance(), $userid);
     }
@@ -405,6 +419,13 @@ class access_manager {
      * department is named "Finance" (case-insensitive). Identical query
      * shape to local_hrdepartment\access_manager::is_staff_in_hr_department(),
      * just checking FINANCE_DEPARTMENT_NAME instead of HR_DEPARTMENT_NAME.
+     *
+     * NO LONGER CALLED as of Phase 2 of the access-model migration
+     * (2026-09-14, v2026091401/0.8.3) - can_access_finance_department()
+     * now checks MANAGEMENT_CAPABILITIES via has_capability() instead.
+     * Left in place, unchanged, purely so a rollback of that method's
+     * body is a clean one-file git revert; safe to delete once Phase 2
+     * has been running in production for a while with no issues.
      *
      * @param int $userid
      * @return bool

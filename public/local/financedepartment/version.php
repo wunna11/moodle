@@ -24,11 +24,29 @@
 
 defined('MOODLE_INTERNAL') || die;
 
+// 2026-09-16, v2026091600/0.9.10: CSS-only fix, reported by the user
+// directly - the stat-card/quicklink circular icon badges (Dashboard and
+// every page reusing local_financedepartment_render_stat_card()/
+// render_quicklink()) rendered their icon glyph visibly off-center
+// inside its circle. Moodle core (Boost) gives every <i class="icon ...">
+// a default right-only margin meant for an icon that prefixes inline
+// text, and .findept-quicklink-icon/.findept-stat-icon's flex centering
+// centers the icon's MARGIN box, not the glyph itself. Fixed with one
+// rule in styles.css zeroing that margin - mirrors the identical fix
+// applied to local_hrdepartment's own styles.css in that plugin's
+// v2026091600/0.8.5 (same day, same root cause). No PHP/markup change.
+// 2026-09-16, v2026091601/0.9.11: same-day follow-up, CSS-only - the
+// user reported the tab bar (.findept-tab-bar, e.g. the "My Fee Record /
+// Scholarships / Discounts" pills on the Scholarship self-service page)
+// sat cramped right against the theme's page header with no breathing
+// room above it. local_financedepartment_render_tab_bar() echoes it as
+// literally the first thing after $OUTPUT->header() on every page, and
+// it only ever had a bottom margin - added a matching top margin.
 $plugin->component = 'local_financedepartment';
-$plugin->version   = 2026091207;
+$plugin->version   = 2026091601;
 $plugin->requires  = 2024042200; // Moodle 4.4+.
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.9.8';
+$plugin->release   = '0.9.11';
 
 // 2026-09-10: Step 7.11 (Finance Dashboard & Reports) built, per the
 // user's own request ("let's go step 7.11 and create modern beautiful
@@ -1102,6 +1120,30 @@ $plugin->release   = '0.9.8';
 // only. See [[hrdepartment-studentleave-schema-fix]] project memory's
 // sibling note, and local_hrdepartment's own v2026090603/0.7.1 changelog,
 // for the full two-plugin write-up.
+
+
+// 2026-09-14, v2026091208/0.9.9: Phase 2 of the HR/Finance access-model
+// migration (project memory hrdepartment-access-migration-plan.md) -
+// can_access_finance_department() was cut over from reading an
+// hrdep_employee row directly (is_staff_in_finance_department(), now
+// dead code kept for rollback) to has_capability() against
+// MANAGEMENT_CAPABILITIES, mirroring the same-day cutover in
+// local_hrdepartment\access_manager. In practice this means access is
+// now decided by the financedepartmentstaff Moodle role (Phase 0/1,
+// kept in sync with hrdep_employee by
+// local_hrdepartment\role_sync_manager since v2026091400/0.8.2 of that
+// plugin) rather than a live department-name string match. can_manage()
+// is now a plain has_capability() call (a site admin is already covered
+// by Moodle's own has_capability() shortcut). Every public method's
+// signature is UNCHANGED - is_finance_staff_viewer(), get_display_name(),
+// can_manage_any()/require_manage_any(), and can_view_navigation_entry()
+// all keep working exactly as before, since they call
+// can_access_finance_department()/can_manage() rather than duplicating
+// its old employee-record logic. No DB schema/capability/lang-string
+// change. Backfill (local_hrdepartment's standalone
+// backfill_department_roles.php) was run and confirmed before this
+// cutover shipped, so every existing Finance staff member's role
+// assignment already matched their employee record.
 
 
 $plugin->dependencies = [

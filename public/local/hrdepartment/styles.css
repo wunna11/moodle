@@ -10,6 +10,22 @@
  * students/index.php) and its Dashboard preview card.
  */
 
+/* ---- Global: icon centering inside quicklink/stat circular badges ----
+ * 2026-09-16: Moodle core (Boost theme) gives every <i class="icon ..."> a
+ * default right-only margin (meant for an icon that prefixes inline text).
+ * Every quicklink tile and stat card in this plugin renders its icon
+ * wrapped in a flex/text-align-centered box (see local_hrdepartment_
+ * render_quicklink()/render_stat_card() in lib.php), but that centering
+ * centers the icon's MARGIN box, not the glyph itself - the inherited
+ * right-only margin was making every icon glyph sit visibly left of
+ * center. This single, page-unscoped rule zeroes it out everywhere in
+ * this plugin rather than duplicating the fix into every one of the
+ * page-scoped .hrdept-stat-icon/.hrdept-quicklink-icon blocks below. */
+.hrdept-quicklink-icon .icon,
+.hrdept-stat-icon .icon {
+    margin: 0;
+}
+
 /* ---- Students directory: stat strip ---- */
 
 .local-hrdepartment-students .hrdept-stats-strip {
@@ -1943,7 +1959,9 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
 /* ---- Page hero (landing pages: attendance/index.php, leave/index.php) ---- */
 
 .local-hrdepartment-attendance .hrdept-page-hero,
-.local-hrdepartment-leave .hrdept-page-hero {
+.local-hrdepartment-leave .hrdept-page-hero,
+.local-hrdepartment-dashboard .hrdept-page-hero,
+.local-hrdepartment-departments .hrdept-page-hero {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -1958,7 +1976,9 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
 }
 
 .local-hrdepartment-attendance .hrdept-page-hero-title,
-.local-hrdepartment-leave .hrdept-page-hero-title {
+.local-hrdepartment-leave .hrdept-page-hero-title,
+.local-hrdepartment-dashboard .hrdept-page-hero-title,
+.local-hrdepartment-departments .hrdept-page-hero-title {
     margin: 0 0 0.35rem;
     font-size: 1.5rem;
     font-weight: 700;
@@ -1966,7 +1986,9 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
 }
 
 .local-hrdepartment-attendance .hrdept-page-hero-subtitle,
-.local-hrdepartment-leave .hrdept-page-hero-subtitle {
+.local-hrdepartment-leave .hrdept-page-hero-subtitle,
+.local-hrdepartment-dashboard .hrdept-page-hero-subtitle,
+.local-hrdepartment-departments .hrdept-page-hero-subtitle {
     margin: 0;
     font-size: 0.92rem;
     color: rgba(255, 255, 255, 0.85);
@@ -1974,14 +1996,18 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
 }
 
 .local-hrdepartment-attendance .hrdept-page-hero-actions,
-.local-hrdepartment-leave .hrdept-page-hero-actions {
+.local-hrdepartment-leave .hrdept-page-hero-actions,
+.local-hrdepartment-dashboard .hrdept-page-hero-actions,
+.local-hrdepartment-departments .hrdept-page-hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
 }
 
 .local-hrdepartment-attendance .hrdept-page-hero-btn,
-.local-hrdepartment-leave .hrdept-page-hero-btn {
+.local-hrdepartment-leave .hrdept-page-hero-btn,
+.local-hrdepartment-dashboard .hrdept-page-hero-btn,
+.local-hrdepartment-departments .hrdept-page-hero-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
@@ -1998,7 +2024,9 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
 }
 
 .local-hrdepartment-attendance .hrdept-page-hero-btn:hover,
-.local-hrdepartment-leave .hrdept-page-hero-btn:hover {
+.local-hrdepartment-leave .hrdept-page-hero-btn:hover,
+.local-hrdepartment-dashboard .hrdept-page-hero-btn:hover,
+.local-hrdepartment-departments .hrdept-page-hero-btn:hover {
     background: rgba(255, 255, 255, 0.28);
     border-color: #fff;
     color: #fff;
@@ -2364,6 +2392,74 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
     background: #f8f9fc;
 }
 
+/* ---- My attendance (student self-service): full-width, striped table ---- */
+
+.local-hrdepartment-attendance .hrdept-table-card table.local-hrdepartment-my-attendance {
+    width: 100%;
+    table-layout: auto;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.local-hrdepartment-my-attendance thead th {
+    background: #f8f9fc;
+    padding: 0.85rem 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.local-hrdepartment-my-attendance tbody td {
+    padding: 0.85rem 1rem;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.local-hrdepartment-my-attendance tbody tr:nth-child(even) {
+    background: #fbfbfd;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.local-hrdepartment-my-attendance tbody tr:hover {
+    background: #f0f4ff;
+}
+
+.local-hrdepartment-attendance .hrdept-table-card table.local-hrdepartment-my-attendance td:first-child {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+/* ---- Status badge (My attendance status column) ---- */
+
+.local-hrdepartment-attendance .hrdept-attendance-badge {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.local-hrdepartment-attendance .hrdept-attendance-badge-present {
+    background: #e3f9ec;
+    color: #1e8a4c;
+}
+
+.local-hrdepartment-attendance .hrdept-attendance-badge-absent {
+    background: #fdeaea;
+    color: #c0392b;
+}
+
+.local-hrdepartment-attendance .hrdept-attendance-badge-late {
+    background: #fdf0dc;
+    color: #b5730a;
+}
+
+.local-hrdepartment-attendance .hrdept-attendance-badge-excused {
+    background: #e8ecfd;
+    color: #3949ab;
+}
+
+.local-hrdepartment-attendance .hrdept-attendance-badge-default {
+    background: #f1f2f6;
+    color: #495057;
+}
+
 /* ---- Status badges (leave applications) - soft-pastel Bootstrap badges ---- */
 
 .local-hrdepartment-leave .badge {
@@ -2700,7 +2796,9 @@ a.hrdept-view-courses-btn:hover .hrdept-view-courses-arrow {
 
 @media (max-width: 575.98px) {
     .local-hrdepartment-attendance .hrdept-page-hero,
-    .local-hrdepartment-leave .hrdept-page-hero {
+    .local-hrdepartment-leave .hrdept-page-hero,
+    .local-hrdepartment-dashboard .hrdept-page-hero,
+    .local-hrdepartment-departments .hrdept-page-hero {
         flex-direction: column;
         align-items: flex-start;
         text-align: left;

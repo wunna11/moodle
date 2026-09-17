@@ -272,7 +272,15 @@ function attendance_form_sessiondate_selector(MoodleQuickForm $mform) {
     $mform->addElement('date_selector', 'sessiondate', get_string('sessiondate', 'attendance'));
 
     for ($i = 0; $i <= 23; $i++) {
-        $hours[$i] = sprintf("%02d", $i);
+        // Display hours in 12-hour AM/PM format, while keeping the
+        // underlying option value as 24-hour (0-23) so all existing
+        // calculations elsewhere continue to work unchanged.
+        $hour12 = $i % 12;
+        if ($hour12 == 0) {
+            $hour12 = 12;
+        }
+        $meridiem = ($i < 12) ? get_string('am', 'langconfig') : get_string('pm', 'langconfig');
+        $hours[$i] = sprintf('%02d %s', $hour12, strtoupper($meridiem));
     }
     for ($i = 0; $i < 60; $i++) {
         $minutes[$i] = sprintf("%02d", $i);

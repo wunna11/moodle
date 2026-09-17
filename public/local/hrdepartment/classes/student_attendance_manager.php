@@ -279,15 +279,39 @@ class student_attendance_manager {
     }
 
     /**
+     * Returns the distinct courses a student has attendance records in,
+     * used to populate the course filter on their self-service "My
+     * attendance" page.
+     *
+     * @param int $studentid
+     * @return \stdClass[] id, shortname, fullname - ordered by fullname
+     */
+    public static function get_student_courses(int $studentid): array {
+        global $DB;
+
+        $sql = "SELECT DISTINCT c.id, c.shortname, c.fullname
+                  FROM {attendance_log} l
+                  JOIN {attendance_sessions} s ON s.id = l.sessionid
+                  JOIN {attendance} a ON a.id = s.attendanceid
+                  JOIN {course} c ON c.id = a.course
+                 WHERE l.studentid = :studentid
+              ORDER BY c.fullname ASC";
+
+        return array_values($DB->get_records_sql($sql, ['studentid' => $studentid]));
+    }
+
+    /**
      * Returns a student's individual attendance records (their own rows
      * from attendance_log across every session), optionally scoped to
-     * one course - used for the per-student history page.
+     * one course and/or one attendance status - used for the per-student
+     * history page and the "My attendance" self-service filters.
      *
      * @param int $studentid
      * @param int|null $courseid
+     * @param string|null $statusacronym exact attendance_statuses.acronym to filter to (e.g. 'P', 'A', 'L')
      * @return \stdClass[] logid, sessdate, description, courseid, shortname, fullname, acronym, statusdescription, remarks
      */
-    public static function get_student_records(int $studentid, ?int $courseid = null): array {
+    public static function get_student_records(int $studentid, ?int $courseid = null, ?string $statusacronym = null): array {
         global $DB;
 
         $where = 'l.studentid = :studentid';
@@ -295,6 +319,10 @@ class student_attendance_manager {
         if ($courseid) {
             $where .= ' AND a.course = :courseid';
             $params['courseid'] = $courseid;
+        }
+        if ($statusacronym !== null && $statusacronym !== '') {
+            $where .= ' AND st.acronym = :acronym';
+            $params['acronym'] = $statusacronym;
         }
 
         $sql = "SELECT l.id AS logid, s.id AS sessionid, s.sessdate, s.description,

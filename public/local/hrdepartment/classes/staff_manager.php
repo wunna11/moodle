@@ -240,7 +240,15 @@ class staff_manager {
         $employee->timemodified = $now;
         $employee->usermodified = $usermodified;
 
-        return $DB->insert_record('hrdep_employee', $employee);
+        $employeeid = (int) $DB->insert_record('hrdep_employee', $employee);
+
+        // Phase 1 access-model migration dual-write - see
+        // role_sync_manager's own docblock and project memory
+        // hrdepartment-access-migration-plan.md. Does not affect what
+        // can_manage() grants; best-effort, never throws.
+        role_sync_manager::sync_for_employee($employeeid);
+
+        return $employeeid;
     }
 
     /**
@@ -269,6 +277,12 @@ class staff_manager {
         $employee->usermodified = $usermodified;
 
         $DB->update_record('hrdep_employee', $employee);
+
+        // Phase 1 access-model migration dual-write - see
+        // role_sync_manager's own docblock and project memory
+        // hrdepartment-access-migration-plan.md. Does not affect what
+        // can_manage() grants; best-effort, never throws.
+        role_sync_manager::sync_for_employee($employeeid);
     }
 
     /**
@@ -298,6 +312,12 @@ class staff_manager {
         ]);
 
         user_account_sync::sync_suspension($employee->userid, $status);
+
+        // Phase 1 access-model migration dual-write - see
+        // role_sync_manager's own docblock and project memory
+        // hrdepartment-access-migration-plan.md. Does not affect what
+        // can_manage() grants; best-effort, never throws.
+        role_sync_manager::sync_for_employee($employeeid);
 
         return course_assignment_manager::sync_assignments_for_employee_status($employeeid, $status, $usermodified);
     }
