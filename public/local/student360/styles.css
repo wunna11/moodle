@@ -1,0 +1,214 @@
+/* Student 360 Profile (local_student360) - shared page styling.
+ *
+ * Deliberately reuses local_financedepartment's own
+ * --findept-brand-gradient / --findept-brand-1/2 custom properties
+ * (defined in that plugin's styles.css :root, loaded site-wide since
+ * every installed plugin's CSS is concatenated into one theme sheet) -
+ * a fallback literal gradient is included on every var() below so this
+ * page still looks right if local_financedepartment is ever disabled,
+ * even though version.php hard-depends on it always being present.
+ *
+ * Every student360-* class below is only ever emitted by this plugin's
+ * own lib.php helpers/pages, so it's safe to leave unscoped - same
+ * convention as local_financedepartment's own styles.css. KPI stat
+ * cards on the view page reuse local_financedepartment's OWN
+ * findept-stat-card renderer/CSS directly rather than duplicating it -
+ * see pages/view.php's docblock.
+ */
+
+/* ---- Search page hero ---- */
+
+.student360-searchhero {
+    background: var(--findept-brand-gradient, linear-gradient(135deg, #2f6fed 0%, #6f42c1 100%));
+    color: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 30px rgba(47, 111, 237, 0.2);
+}
+
+.student360-searchhero-title {
+    margin: 0 0 0.35rem;
+    color: #fff;
+    font-weight: 700;
+}
+
+.student360-searchhero-subtitle {
+    margin: 0 0 1.25rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.student360-searchform {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.35rem 0.4rem 0.35rem 1.1rem;
+    max-width: 560px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.student360-searchform-icon {
+    color: #adb5bd;
+    margin-right: 0.6rem;
+}
+
+.student360-searchform-input {
+    flex: 1 1 auto;
+    border: 0;
+    outline: none;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.95rem;
+    color: #1a1d29;
+    background: transparent;
+}
+
+.student360-searchform-submit {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--findept-brand-gradient, linear-gradient(135deg, #2f6fed 0%, #6f42c1 100%));
+    cursor: pointer;
+}
+
+/* ---- Profile view hero ---- */
+
+.student360-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    background: var(--findept-brand-gradient, linear-gradient(135deg, #2f6fed 0%, #6f42c1 100%));
+    color: #fff;
+    border-radius: 1rem;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 30px rgba(47, 111, 237, 0.2);
+}
+
+.student360-hero-avatar {
+    flex: 0 0 auto;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.student360-hero-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.student360-hero-name {
+    margin: 0 0 0.15rem;
+    color: #fff;
+    font-weight: 700;
+}
+
+.student360-hero-email {
+    margin: 0 0 0.6rem;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.student360-hero-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.student360-chip {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.student360-chip-warning {
+    background: rgba(255, 193, 7, 0.35);
+    border-color: rgba(255, 193, 7, 0.6);
+}
+
+/* ---- KPI stat grid (spacing wrapper only - cards are findept-stat-card) ---- */
+
+.student360-statgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ---- Card-style panels ---- */
+
+.student360-panel {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 1rem;
+    box-shadow: 0 2px 10px rgba(20, 20, 43, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.student360-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 2px solid #f1f3f5;
+}
+
+.student360-panel-header .icon {
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    background: var(--findept-brand-gradient, linear-gradient(135deg, #2f6fed 0%, #6f42c1 100%));
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+}
+
+.student360-panel-header h3 {
+    margin: 0;
+}
+
+.student360-panel-subsection {
+    margin-top: 1.5rem;
+}
+
+.student360-panel-subsection h4 {
+    margin: 0 0 0.6rem;
+    color: #495057;
+}
+
+/* ---- Shared bits still used inside panels ---- */
+
+.student360-back-link {
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+.student360-table-card {
+    background: #f8f9fb;
+    border: 1px solid #e9ecef;
+    border-radius: 0.6rem;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+}
+
+.student360-empty-state {
+    padding: 1rem;
+    color: #6c757d;
+    font-style: italic;
+}
